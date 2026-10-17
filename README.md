@@ -65,5 +65,5 @@ pnpm deploy                         # ensuite : tests, API, site, autorisation d
 - Le site est construit avec l'adresse de l'API (`VITE_API_URL`) ; sans elle, il garde le moteur de génération simulé. Les dernières adresses déployées sont retenues dans `.deploy-state.json` (ignoré par git) ; `--api-url=…` et `--web-origin=…` les remplacent (domaines personnalisés).
 - La clé fal n'est lue que dans la variable d'environnement `FAL_KEY` au moment de l'enregistrer comme secret Cloudflare ; elle n'est ni affichée ni écrite sur disque.
 - Les configurations : `wrangler.jsonc` (site, à la racine) et `apps/api/wrangler.toml` (API). Les scripts passent toujours `-c` : sans lui, wrangler 4 prend le fichier de la racine même depuis `apps/api`.
-- Le site peut aussi se construire depuis Git (Workers Builds) : commande de build `pnpm build`, déploiement `npx wrangler deploy`.
+- Le site peut aussi se déployer depuis Git (Workers Builds) : la commande de déploiement `npx wrangler deploy` suffit, car `wrangler.jsonc` construit le site lui-même (`pnpm build`). Pour que le site appelle l'API, définissez la variable de build `VITE_API_URL` dans Cloudflare ; sans elle, il garde le moteur simulé.
 

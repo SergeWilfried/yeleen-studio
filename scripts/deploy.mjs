@@ -138,12 +138,11 @@ function deployWeb() {
   const api = apiUrl()
   if (!api) warn('adresse de l’API inconnue : le site utilisera le moteur de génération simulé (VITE_API_URL absente)')
   else ok(`le site appellera l’API : ${api}`)
-  const b = run('pnpm', ['build'], { env: { VITE_API_URL: api ?? '' }, quiet: true })
-  if (b.code !== 0) { process.stderr.write(b.out); fail('La construction du site a échoué.') }
-  if (api && !existsSync(join(ROOT, 'apps/web/dist'))) fail('apps/web/dist est introuvable après la construction.')
+  // `wrangler deploy` construit le site lui-même (champ « build » de wrangler.jsonc) : l'adresse de l'API doit donc lui être transmise aussi.
+  const d = wrangler(['deploy', '-c', WEB_CONFIG, ...(dry ? ['--dry-run'] : [])], { env: { VITE_API_URL: api ?? '' } })
+  if (d.code !== 0) fail('La construction ou le déploiement du site a échoué.')
+  if (!existsSync(join(ROOT, 'apps/web/dist/index.html'))) fail('apps/web/dist est introuvable après la construction.')
   ok('site construit')
-  const d = wrangler(['deploy', '-c', WEB_CONFIG, ...(dry ? ['--dry-run'] : [])])
-  if (d.code !== 0) fail('Le déploiement du site a échoué.')
   if (dry) return ok('configuration du site valide (simulation)')
   const url = urlIn(d.out)
   if (url) { saveState({ webOrigin: url }); ok(`site déployé : ${url}`) } else warn('adresse du site introuvable dans la sortie de wrangler')
