@@ -84,8 +84,11 @@ function priceVideo(req, model) {
     if (req.elements.length > 4 || req.elements.some((e) => !['image', 'video'].includes(e.kind) || !FAL_FILE.test(e.url ?? ''))) return { ok: false, error: 'invalid_elements' }
   }
 
-  // Vidéos de référence : fal en facture la durée, et le serveur ne peut pas la mesurer. On prend la durée annoncée par l'application,
-  // bornée à 30,2 s (maximum accepté par le modèle) ; sans annonce, le maximum.
-  const inputSecs = count('video') ? Math.min(30.2, Math.max(1.8, Number(req.inputSecs) || 30.2)) : 0
-  return { ok: true, model, count: 1, cost: videoCost(model, secs, c.resolutions ? req.resolution : undefined, { inputSecs }) }
+  // Vidéos de référence : fal facture leur durée (et, pour une modification, une sortie aussi longue que la vidéo), mais le serveur
+  // ne peut pas la mesurer et ne croit pas celle que le client annonce : il compte le pire cas (30,2 s en entrée, durée maximale en
+  // sortie pour une modification). Le prix affiché dans l'interface peut donc être plus bas que le prix facturé, jamais l'inverse ;
+  // à rapprocher quand le serveur mesurera lui-même la durée du fichier (et qu'on pourra déposer des vidéos, voir /uploads).
+  const inputSecs = count('video') ? 30.2 : 0
+  const billedSecs = task === 'editing' ? c.duration.max : secs
+  return { ok: true, model, count: 1, cost: videoCost(model, billedSecs, c.resolutions ? req.resolution : undefined, { inputSecs }) }
 }

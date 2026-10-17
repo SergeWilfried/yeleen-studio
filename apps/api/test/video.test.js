@@ -118,12 +118,21 @@ test('Seedance modifier : la durée devient « auto »', () => {
 test('Seedance : prix au jeton, et les vidéos de référence s’ajoutent à tarif réduit', () => {
   const plain = priceJob(SB)
   assert.equal(plain.cost, videoCost(seed, 5, '720p'))
+  // la durée annoncée par le client n'est pas crue : le pire cas (30,2 s) est toujours compté
+  const worst = videoCost(seed, 5, '720p', { inputSecs: 30.2 })
   const withVideo = priceJob({ ...SB, references: [{ kind: 'video', url: V }], inputSecs: 10 })
-  assert.equal(withVideo.cost, videoCost(seed, 5, '720p', { inputSecs: 10 }))
+  assert.equal(withVideo.cost, worst)
   assert.ok(withVideo.cost > plain.cost)
-  // sans durée annoncée, le maximum (30,2 s) est compté : on ne peut pas sous-payer en omettant l'information
-  assert.equal(priceJob({ ...SB, references: [{ kind: 'video', url: V }] }).cost, videoCost(seed, 5, '720p', { inputSecs: 30.2 }))
-  assert.equal(priceJob({ ...SB, references: [{ kind: 'video', url: V }], inputSecs: 999 }).cost, videoCost(seed, 5, '720p', { inputSecs: 30.2 }))
+  assert.equal(priceJob({ ...SB, references: [{ kind: 'video', url: V }] }).cost, worst)
+  assert.equal(priceJob({ ...SB, references: [{ kind: 'video', url: V }], inputSecs: 1.8 }).cost, worst)
+  assert.equal(priceJob({ ...SB, references: [{ kind: 'video', url: V }], inputSecs: 999 }).cost, worst)
+})
+
+test('Seedance : une modification est facturée à la durée maximale, quelle que soit celle annoncée', () => {
+  const edit = (secs) => priceJob({ ...SB, task: 'editing', secs, references: [{ kind: 'video', url: V }], inputSecs: 2 })
+  assert.equal(edit(4).cost, videoCost(seed, seed.caps.duration.max, '720p', { inputSecs: 30.2 }))
+  assert.equal(edit(4).cost, edit(30).cost)
+  assert.equal(edit(40).error, 'invalid_duration')
 })
 
 test('Seedance : limites et tâches', () => {
