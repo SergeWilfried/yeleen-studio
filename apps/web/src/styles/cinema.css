@@ -24,7 +24,11 @@
 .cs-nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .cs-nav a,.cs-row,.cs-price{display:flex;align-items:center;gap:12px;min-height:46px;padding:0 8px;border-radius:14px;color:var(--ink);font-size:15px;font-weight:500;text-decoration:none}
 .cs-nav a:hover,.cs-row:hover,.cs-price:hover{background:var(--card)}
-.cs-nav li:first-child a{background:var(--card)}
+.cs-modes{margin-bottom:10px}
+.cs-modes button{width:100%;border:0;background:none;font:inherit;font-size:15px;font-weight:500;text-align:left;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:12px;min-height:46px;padding:0 8px;border-radius:14px}
+.cs-modes button:hover{background:var(--card)}
+.cs-modes button[aria-checked="true"]{background:var(--chip)}
+.cs.min .cs-modes button{justify-content:center;padding:0;width:48px}
 .cs.min .cs-nav a,.cs.min .cs-row,.cs.min .cs-price{justify-content:center;padding:0;width:48px}
 .cs-row>span:nth-child(2){flex:1}
 .cs-row>svg{color:var(--ink-4)}
@@ -33,6 +37,7 @@
 .cs-ic.cyan{background:linear-gradient(145deg,#6bd6ff,#2a7ad6)}
 .cs-ic.blue{background:linear-gradient(145deg,#6b95ff,#3a4fd6)}
 .cs-ic.pink{background:linear-gradient(145deg,#ff78a8,#d6286a)}
+.cs-ic.lime{background:var(--lime);color:#111;box-shadow:none}
 .cs-ic.red{background:linear-gradient(145deg,#ff5273,#b0123a)}
 .cs-grow{flex:1}
 .cs-promo{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;background:var(--card)}
@@ -63,10 +68,6 @@
 /* Compositeur */
 .cn-dock{order:3;display:flex;align-items:flex-end;gap:10px;width:min(980px,100%)}
 .cn-main.busy .cn-dock{flex:none}
-.cn-modes{flex:none;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:26px;background:var(--card);border:1px solid #232427}
-.cn-modes button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:65px;height:56px;border:0;border-radius:18px;background:none;color:var(--ink-3);font-size:12px;font-weight:500;cursor:pointer;transition:background-color .15s,color .15s}
-.cn-modes button:hover{color:var(--ink)}
-.cn-modes button[aria-checked="true"]{background:var(--chip);color:var(--ink)}
 .cn-comp{flex:1;min-width:0;padding:12px;border-radius:26px;background:var(--card);border:1px solid #232427}
 .cn-strip{display:flex;gap:8px;margin:0 0 10px;padding:2px 2px 4px;list-style:none;overflow-x:auto;scrollbar-width:none}
 .cn-strip li{position:relative;flex:none}
@@ -149,7 +150,6 @@ dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 /* Icônes des commandes du compositeur, 10 % plus petites ; la puce du son n'a plus de texte */
 .cn-bar svg{width:14px;height:14px}
 .cn-pair svg{width:16px;height:16px}
-.cn-modes svg{width:18px;height:18px}
 .cn .cn-chip.icon{width:36px;padding:0;justify-content:center}
 
 /* Recettes */

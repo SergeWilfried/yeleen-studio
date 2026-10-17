@@ -109,6 +109,7 @@ export default function Cinema() {
   const [run, setRun] = useState(null) // { id, recipeId, shots } : la recette en cours
   const [rerror, setRerror] = useState('')
   const recipe = mode === 'recipe'
+  const changeMode = (m) => { setMode(m); setError(''); if (m === 'recipe' && !recipeId) pickRecipe(RECIPES[0].id) }
   const pickRecipe = (id) => { setRecipeId(id); setRtext((recipeById(id).text?.example ?? '')); setRerror('') }
   useEffect(() => { // « Envoyer vers » une recette : l'image arrive comme photo de départ
     const h = take('cinema.recipe')
@@ -229,7 +230,7 @@ export default function Cinema() {
   return (
     <div className={`cn${collapsed ? ' min' : ''}`}>
       <SkipLink />
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} mode={mode} onMode={changeMode} />
 
       <main className={`cn-main${busy ? ' busy' : ''}`} id="main" tabIndex={-1}>
         <div className="cn-stage">
@@ -239,12 +240,6 @@ export default function Cinema() {
         </div>
 
         <div className="cn-dock">
-          <div className="cn-modes" role="radiogroup" aria-label="Type de création">
-            <button type="button" role="radio" aria-checked={!video && !recipe} onClick={() => { setMode('image'); setError('') }}><Icon name="img" size={20} /></button>
-            <button type="button" role="radio" aria-checked={video} onClick={() => { setMode('video'); setError('') }}><Icon name="vid" size={20} /></button>
-            <button type="button" role="radio" aria-checked={recipe} onClick={() => { setMode('recipe'); setError(''); if (!recipeId) pickRecipe(RECIPES[0].id) }}><Icon name="layers" size={20} /></button>
-          </div>
-
           {recipe ? (recipeId && !busy && (
             <RecipeForm id={recipeId} text={rtext} onText={(t) => { setRtext(t); setRerror('') }} photos={photos} onAdd={() => setPicking('photo')} onRemove={(k) => setPhotos((x) => ({ ...x, [k]: undefined }))} onPick={pickRecipe} error={rerror} onRun={runRecipe} />
           )) : (

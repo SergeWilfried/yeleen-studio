@@ -7,15 +7,19 @@ import { jetons, useJobs } from '../../lib/jobs.jsx'
 const PROMO = 'studio.cinema.promo.v1'
 const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } catch { return false } }
 
+const MODES = [
+  { id: 'image', icon: 'img', label: 'Image', tint: 'blue' },
+  { id: 'video', icon: 'vid', label: 'Vidéo', tint: 'red' },
+  { id: 'recipe', icon: 'layers', label: 'Recettes', tint: 'lime' },
+]
 const NAV = [
-  { to: '/', icon: 'app', label: 'Accueil', tint: 'gray' },
   { to: '/library?source=generated', icon: 'sparkle', label: 'Mes générations', tint: 'cyan' },
   { to: '/library?source=upload', icon: 'at', label: 'Mes éléments', tint: 'blue' },
   { to: '/library?filter=starred', icon: 'star', label: 'Mes favoris', tint: 'pink' },
 ]
 
-/** Barre latérale de l'espace de travail : intitulé, accès aux fichiers, carte d'invitation, tarifs et compte. */
-export default function Sidebar({ collapsed, onToggle }) {
+/** Barre latérale de l'espace de travail : intitulé, type de création (Image, Vidéo, Recettes), accès aux fichiers, carte d'invitation, tarifs et compte. */
+export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
   const { balance } = useJobs()
   const [promo, setPromo] = useState(() => !dismissed())
   const close = () => { setPromo(false); try { localStorage.setItem(PROMO, 'off') } catch { /* ignoré */ } }
@@ -32,7 +36,21 @@ export default function Sidebar({ collapsed, onToggle }) {
         </button>
       </div>
 
-      <nav aria-label="Mes fichiers">
+      <div role="radiogroup" aria-label="Type de création">
+        <ul className="cs-nav cs-modes">
+          {MODES.map((m) => (
+            <li key={m.id}>
+              <button type="button" role="radio" aria-checked={mode === m.id} title={collapsed ? m.label : undefined} onClick={() => onMode(m.id)}>
+                <span className={`cs-ic ${m.tint}`}><Icon name={m.icon} size={16} /></span>
+                {!collapsed && m.label}
+                {collapsed && <span className="sr-only">{m.label}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <nav aria-label="Mes fichiers" className="cs-files">
         <ul className="cs-nav">
           {NAV.map((n) => (
             <li key={n.label}>
