@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../lib/icons.jsx'
 import icon from '../../assets/brand/yeelen-icon.svg'
+import { AccountMenu } from '../../lib/auth.jsx'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
@@ -89,7 +90,7 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
           {collapsed && <span className="sr-only">Tarifs</span>}
         </Link>
         <div className="cs-user">
-          <span className="av" aria-hidden="true" />
+          <AccountMenu fallback={<span className="av" aria-hidden="true" />} />
           {!collapsed && <span className="cs-who">Mon compte<small>{jetons(balance)} jetons</small></span>}
           {collapsed && <span className="sr-only">Mon compte, {jetons(balance)} jetons</span>}
         </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import BalanceChip from './BalanceChip.jsx'
+import { AccountMenu, authEnabled, useAuthState } from '../lib/auth.jsx'
 import logo from '../assets/brand/yeelen-logo-on-lime.svg'
 import mark from '../assets/brand/yeelen-mark-on-lime.svg'
 import '../styles/chrome.css'
@@ -53,10 +54,18 @@ export function ShellHeader() {
         <a href="#" className="pb">Tarifs<i className="of">-50 %</i></a>
         <a href="#" className="pb">Entreprise</a>
         <a href="#" className="pb">Ressources</a>
-        <span className="av" />
+        <AccountMenu fallback={<span className="av" />} />
       </div>
     </header>
   )
+}
+
+/** Connexion et création de compte (Clerk), ou le menu du compte une fois connecté. Sans Clerk (développement), les emplacements d'origine. */
+function HomeAccount() {
+  const { signedIn } = useAuthState()
+  if (!authEnabled) return (<><a href="#" className="pb">Connexion</a><a href="#" className="lim">Créer un compte</a></>)
+  if (signedIn) return <AccountMenu />
+  return (<><NavLink to="/sign-in" className="pb">Connexion</NavLink><NavLink to="/sign-up" className="lim">Créer un compte</NavLink></>)
 }
 
 /** En-tête de la page d'accueil. */
@@ -67,8 +76,7 @@ export function HomeHeader() {
       <NavLinks />
       <div className="rt">
         <a href="#tarifs" className="pb">Tarifs<i className="of">-30 %</i></a>
-        <a href="#" className="pb">Connexion</a>
-        <a href="#" className="lim">Créer un compte</a>
+        <HomeAccount />
       </div>
     </header>
   )

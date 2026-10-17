@@ -9,7 +9,9 @@
  *
  * Options : --dry-run (construit et valide, ne change rien chez Cloudflare), --yes (sans confirmation), --skip-tests,
  *           --api-url=URL, --web-origin=URL (sinon variables API_URL / WEB_ORIGIN, sinon dernières adresses connues).
- * Premier déploiement : FAL_KEY=… node scripts/deploy.mjs all   (la clé n'est lue que de l'environnement, jamais affichée).
+ * Connexion des utilisateurs (Clerk) : CLERK_ISSUER (adresse de l'instance, ex. https://xxx.clerk.accounts.dev) pour l'API et
+ *           VITE_CLERK_PUBLISHABLE_KEY (pk_…) pour le site, dans l'environnement ; `check` refuse un déploiement sans eux (sauf --no-auth).
+ * Premier déploiement : CLERK_ISSUER=… VITE_CLERK_PUBLISHABLE_KEY=… FAL_KEY=… node scripts/deploy.mjs all   (la clé n'est lue que de l'environnement, jamais affichée).
  * Connexion : `pnpm exec wrangler login`, ou CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID pour l'intégration continue.
  */
 import { spawnSync } from 'node:child_process'
@@ -29,6 +31,7 @@ const command = args.find((a) => !a.startsWith('--')) ?? 'help'
 const flag = (n) => args.includes(`--${n}`)
 const opt = (n) => args.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const dry = flag('dry-run')
+const needAuth = !flag('no-auth')
 
 const say = (m) => console.log(m)
 const step = (m) => console.log(`\n▸ ${m}`)
@@ -56,6 +59,7 @@ async function confirm(question) {
   if (!['o', 'oui', 'y', 'yes'].includes(a)) fail('Annulé.')
 }
 
+const clerkIssuer = () => (process.env.CLERK_ISSUER ?? readState().clerkIssuer ?? '').replace(/\/+$/, '') || null
 const normalize = (url) => (url ? url.replace(/\/+$/, '') : null)
 const origins = () => [...new Set([opt('web-origin') ?? process.env.WEB_ORIGIN ?? readState().webOrigin].filter(Boolean).map(normalize))]
 const apiUrl = () => normalize(opt('api-url') ?? process.env.API_URL ?? readState().apiUrl)
@@ -81,6 +85,16 @@ function check() {
     logged ? ok('connecté à Cloudflare') : warn('non connecté à Cloudflare (suffisant pour une simulation)')
   }
 
+  // Sans Clerk, l'API en production refuse tout (jamais de compte par défaut) et le site n'a pas de connexion : on s'en assure avant.
+  const needsApi = ['api', 'all'].includes(command)
+  const needsWeb = ['web', 'all'].includes(command)
+  const issuer = process.env.CLERK_ISSUER ?? readState().clerkIssuer
+  const pk = process.env.VITE_CLERK_PUBLISHABLE_KEY
+  if (needAuth && needsApi && !issuer) (dry ? warn : fail)('CLERK_ISSUER manquant (adresse de votre instance Clerk, ex. https://xxx.clerk.accounts.dev). L\'API refuserait toutes les requêtes. (--no-auth pour passer outre.)')
+  if (needAuth && needsWeb && !pk) (dry ? warn : fail)('VITE_CLERK_PUBLISHABLE_KEY manquante (clé publique pk_… de Clerk) : le site n\'aurait pas de connexion. (--no-auth pour passer outre.)')
+  if (issuer && !/^https:\/\/[\w.-]+$/.test(issuer.replace(/\/+$/, ''))) fail('CLERK_ISSUER doit être une adresse https:// sans chemin.')
+  if (pk && !/^pk_(test|live)_/.test(pk)) fail('VITE_CLERK_PUBLISHABLE_KEY doit commencer par pk_test_ ou pk_live_ (jamais la clé secrète sk_…).')
+  if (issuer) ok('Clerk : instance ' + issuer.replace(/\/+$/, ''))
   if (!flag('skip-tests')) {
     const t = run('pnpm', ['test'], { quiet: true })
     if (t.code !== 0) { process.stderr.write(t.out); fail('Les tests échouent : rien n’est déployé.') }
@@ -122,12 +136,12 @@ function deployApi({ firstPass = true } = {}) {
   if (firstPass) { ensureBucket(); ensureSecret() }
   const allowed = origins().join(',')
   if (!allowed) warn('adresse du site inconnue : ALLOWED_ORIGINS reste vide pour l’instant (corrigé automatiquement par « all »)')
-  const d = wrangler(['deploy', '-c', API_CONFIG, ...(dry ? ['--dry-run'] : []), ...(allowed ? ['--var', `ALLOWED_ORIGINS:${allowed}`] : [])])
+  const d = wrangler(['deploy', '-c', API_CONFIG, ...(dry ? ['--dry-run'] : []), ...(allowed ? ['--var', `ALLOWED_ORIGINS:${allowed}`] : []), ...(clerkIssuer() ? ['--var', `CLERK_ISSUER:${clerkIssuer()}`] : [])])
   if (d.code !== 0) fail('Le déploiement de l’API a échoué.')
   const url = urlIn(d.out)
   if (dry) return ok('configuration de l’API valide (simulation)')
   if (!url) warn('adresse de l’API introuvable dans la sortie de wrangler : passez --api-url=… à la commande web')
-  else { saveState({ apiUrl: url, apiOrigins: allowed }); ok(`API déployée : ${url}`) }
+  else { saveState({ apiUrl: url, apiOrigins: allowed, ...(clerkIssuer() ? { clerkIssuer: clerkIssuer() } : {}) }); ok(`API déployée : ${url}`) }
   return url
 }
 

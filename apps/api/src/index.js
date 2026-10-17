@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { isBlocked } from './moderation.js'
@@ -10,19 +11,39 @@ export { Account } from './account-do.js'
 
 /**
  * API du studio. Le navigateur ne parle jamais à fal : tout passe ici (prix serveur, débit, appel, remboursement).
- * Gabarit : l'identité du compte est fixe (`demo`) tant que la connexion n'existe pas ; les fichiers restent chez fal
+ * Chaque route (hors /health, /files et les webhooks) exige un jeton de session Clerk ; le compte est le `sub` du jeton. En local
+ * (ENV=dev) sans CLERK_ISSUER, un compte `demo` unique sert à développer sans connexion. Les fichiers restent chez fal
  * (adresses temporaires) tant que R2 n'est pas branché ; le suivi se fait par interrogation, le webhook viendra ensuite.
  * Quand le bucket R2 (`FILES`) existe, chaque sortie y est copiée à la fin de la génération et servie par `/files/…`.
  */
 const app = new Hono()
 
+const allowedOrigins = (env) => (env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+
 app.use('*', async (c, next) => {
-  const allowed = (c.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: ['content-type', 'range'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
+  const allowed = allowedOrigins(c.env)
+  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: ['content-type', 'range', 'authorization'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
 })
 
-const accountId = () => 'demo' // TODO : identité tirée de la session (code WhatsApp ou Google)
-const account = (c) => c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(accountId()))
+// Garde : tout passe par ici sauf la santé, les fichiers (adresses non devinables, lus par <img> et <video> sans en-tête) et les webhooks.
+const OPEN = (p) => p === '/health' || p.startsWith('/files/') || p.startsWith('/webhooks/')
+app.use('*', async (c, next) => {
+  if (c.req.method === 'OPTIONS' || OPEN(c.req.path)) return next()
+  if (c.env.ENV === 'dev' && !c.env.CLERK_ISSUER) { c.set('uid', 'demo'); return next() } // développement local seulement
+  if (!c.env.CLERK_ISSUER) return c.json({ error: 'auth_not_configured' }, 503) // en production, sans configuration : tout est refusé
+  try {
+    const token = (c.req.header('authorization') ?? '').replace(/^Bearer\s+/i, '')
+    const { sub } = await verifyClerkToken(token, { issuer: c.env.CLERK_ISSUER, authorizedParties: allowedOrigins(c.env) })
+    c.set('uid', sub)
+  } catch (e) {
+    if (!(e instanceof AuthError)) throw e
+    return c.json({ error: e.reason === 'jwks_unavailable' ? 'auth_unavailable' : 'unauthorized', reason: e.reason }, e.reason === 'jwks_unavailable' ? 503 : 401)
+  }
+  return next()
+})
+
+const accountId = (c) => c.get('uid')
+const account = (c) => c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(accountId(c)))
 const call = async (c, path, body) => {
   const res = await account(c).fetch(`https://account${path}`, body === undefined ? undefined : { method: 'POST', body: JSON.stringify(body) })
   return res.json()
@@ -77,7 +98,7 @@ app.post('/jobs', async (c) => {
   let sub
   const endpoint = req.kind === 'video' ? endpointFor(price.model, req) : price.model.endpoint
   try {
-    const input = buildInput(req.kind, price.model, { ...req, count: price.count, endUserId: accountId() })
+    const input = buildInput(req.kind, price.model, { ...req, count: price.count, endUserId: accountId(c) })
     sub = await fal(c).submit(endpoint, input)
   } catch (e) {
     const back = await call(c, '/refund', { jobId: id })
@@ -124,7 +145,7 @@ app.get('/jobs/:id', async (c) => {
     // Copie dans R2 : un seul suivi à la fois s'en charge ; les autres voient « enregistrement » et réessaient.
     if (job.storingAt && Date.now() - job.storingAt < 60_000) return c.json(view({ ...job, status: 'IN_PROGRESS' }, { logs: ['Enregistrement du résultat'], balance: (await call(c, '/balance')).balance }))
     if (c.env.FILES) await call(c, '/job/put', { ...job, status: 'IN_PROGRESS', storingAt: Date.now() })
-    const outputs = await storeOutputs({ bucket: c.env.FILES, origin: new URL(c.req.url).origin, accountId: accountId(), jobId: job.id, outputs: found })
+    const outputs = await storeOutputs({ bucket: c.env.FILES, origin: new URL(c.req.url).origin, accountId: accountId(c), jobId: job.id, outputs: found })
     const next = { ...job, status: 'COMPLETED', outputs, finishedAt: Date.now(), storingAt: undefined }
     await call(c, '/job/put', next)
     return c.json(view(next, { balance: (await call(c, '/balance')).balance }))

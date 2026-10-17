@@ -3,3 +3,6 @@ FAL_KEY=
 ENV=dev
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 MAX_JOB_COST=150
+# Connexion Clerk : laissez vide pour développer sans compte (un compte « demo » unique). Renseignez l'adresse de votre instance
+# (ex. https://xxx.clerk.accounts.dev) pour tester la vraie garde : alors chaque requête exige un jeton de session.
+CLERK_ISSUER=

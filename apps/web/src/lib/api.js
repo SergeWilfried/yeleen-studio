@@ -14,10 +14,21 @@ export class ApiError extends Error {
   }
 }
 
+// Fournisseur du jeton de session Clerk (installé par lib/auth.jsx) ; absent en développement sans Clerk.
+let tokenGetter = null
+export const setTokenGetter = (fn) => { tokenGetter = fn }
+async function authHeader() {
+  if (!tokenGetter) return {}
+  try {
+    const token = await tokenGetter()
+    return token ? { authorization: `Bearer ${token}` } : {}
+  } catch { return {} } // jeton introuvable : l'API répondra 401 et l'interface invitera à se reconnecter
+}
+
 async function request(path, init) {
   let res
   try {
-    res = await fetch(`${BASE}${path}`, { headers: { 'content-type': 'application/json' }, ...init })
+    res = await fetch(`${BASE}${path}`, { headers: { 'content-type': 'application/json', ...(await authHeader()) }, ...init })
   } catch {
     throw new ApiError(0, { error: 'unreachable' }) // API éteinte ou hors réseau
   }
@@ -35,7 +46,7 @@ export const api = {
   async upload(file) {
     let res
     try {
-      res = await fetch(`${BASE}/uploads?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': file.type }, body: file })
+      res = await fetch(`${BASE}/uploads?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': file.type, ...(await authHeader()) }, body: file })
     } catch {
       throw new ApiError(0, { error: 'unreachable' })
     }

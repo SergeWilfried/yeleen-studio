@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
 import { dueJobs } from './pollDelay.js'
+import { useAuthState } from './auth.jsx'
 import { api, apiEnabled } from './api.js'
 
 /**
@@ -43,6 +44,11 @@ export const FAILURES = {
   unreachable: {
     message: 'Le service de génération est injoignable',
     hint: 'Vos jetons n’ont pas été débités. Vérifiez que l’API tourne, puis relancez.',
+    retry: true,
+  },
+  auth: {
+    message: 'Connexion expirée',
+    hint: 'Reconnectez-vous, puis relancez. Rien n’a été débité.',
     retry: true,
   },
   busy: {
@@ -215,7 +221,7 @@ export function JobsProvider({ children }) {
   // Échec d'un appel à l'API (avant ou pendant l'envoi à fal) : la génération échoue, avec le remboursement que le serveur confirme.
   const failLive = useCallback((id, err) => {
     const code = err.body?.error
-    const failure = code === 'moderation' ? 'moderation' : code === 'insufficient' ? 'insufficient' : code === 'too_expensive' ? 'too_expensive' : code === 'too_many_active' ? 'busy' : err.status === 0 ? 'unreachable' : err.status === 400 ? 'rejected' : 'provider'
+    const failure = code === 'moderation' ? 'moderation' : code === 'insufficient' ? 'insufficient' : code === 'too_expensive' ? 'too_expensive' : code === 'too_many_active' ? 'busy' : err.status === 401 || code === 'unauthorized' ? 'auth' : err.status === 0 ? 'unreachable' : err.status === 400 ? 'rejected' : 'provider'
     const job = ref.current.jobs.find((j) => j.id === id)
     dispatch({
       type: 'REMOTE', id, balance: err.body?.balance,
@@ -272,11 +278,12 @@ export function JobsProvider({ children }) {
     return { ok: true, job }
   }, [make, failLive, startLive])
 
-  // Solde réel au démarrage.
+  // Solde réel au démarrage (et à la connexion : sans session, l'API refuse).
+  const { ready, signedIn } = useAuthState()
   useEffect(() => {
-    if (!apiEnabled) return
+    if (!apiEnabled || !ready || !signedIn) return
     api.wallet().then((w) => dispatch({ type: 'SYNC_WALLET', balance: w.balance })).catch(() => { /* API éteinte : le solde simulé reste affiché */ })
-  }, [])
+  }, [ready, signedIn])
 
   // Suivi des générations réelles : on interroge l'API tant qu'une génération est active.
   const polling = useRef(new Set())

@@ -8,6 +8,7 @@ import { HandoffProvider } from './lib/handoff.jsx'
 import { SpotsProvider } from './lib/spots.jsx'
 import { BrandProvider } from './lib/brand.jsx'
 import { ToastProvider } from './lib/toasts.jsx'
+import { Protected, SignInPage, SignUpPage } from './lib/auth.jsx'
 // Les écrans d'outils sont chargés à la demande : l'accueil n'embarque pas leur code.
 const Video = lazy(() => import('./pages/Video.jsx'))
 const ImageGen = lazy(() => import('./pages/ImageGen.jsx'))
@@ -39,13 +40,15 @@ export default function App() {
     <Suspense fallback={<div className="route-fallback" />}>
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/video" element={<Video />} />
-      <Route path="/image" element={<ImageGen />} />
-      <Route path="/audio" element={<Audio />} />
-      <Route path="/library" element={<Library />} />
-      <Route path="/spot" element={<Spot />} />
-      <Route path="/brand" element={<Brand />} />
-      <Route path="/cinema" element={<Cinema />} />
+      <Route path="/video" element={<Protected><Video /></Protected>} />
+      <Route path="/image" element={<Protected><ImageGen /></Protected>} />
+      <Route path="/audio" element={<Protected><Audio /></Protected>} />
+      <Route path="/library" element={<Protected><Library /></Protected>} />
+      <Route path="/spot" element={<Protected><Spot /></Protected>} />
+      <Route path="/brand" element={<Protected><Brand /></Protected>} />
+      <Route path="/cinema" element={<Protected><Cinema /></Protected>} />
+      <Route path="/sign-in/*" element={<SignInPage />} />
+      <Route path="/sign-up/*" element={<SignUpPage />} />
       <Route path="*" element={<Home />} />
     </Routes>
     </Suspense>
