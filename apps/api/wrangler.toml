@@ -2,6 +2,11 @@ name = "studio-api"
 main = "src/index.js"
 compatibility_date = "2024-10-01"
 
+# Valeurs de production. En local, `.dev.vars` les remplace (ENV=dev offre des jetons de test). ALLOWED_ORIGINS est ajouté au déploiement
+# par scripts/deploy.mjs ; FAL_KEY est un secret (jamais ici).
+[vars]
+ENV = "production"
+
 # Compte : portefeuille de jetons et générations, un Durable Object par compte (un seul écrivain, pas de double débit).
 [[durable_objects.bindings]]
 name = "ACCOUNT"

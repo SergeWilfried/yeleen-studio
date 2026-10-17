@@ -8,3 +8,6 @@ dist
 
 # Originaux lourds (vidéos 4K, photos 8 000 px) : conservés en local, pas dans le dépôt public
 apps/web/source-media/
+
+# Dernières adresses déployées (scripts/deploy.mjs)
+.deploy-state.json

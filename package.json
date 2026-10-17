@@ -7,6 +7,14 @@
     "build": "pnpm --filter @studio/web build",
     "dev:api": "pnpm --filter @studio/api dev",
     "dev:montage": "pnpm --filter @studio/montage dev",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "deploy:check": "node scripts/deploy.mjs check",
+    "deploy:api": "node scripts/deploy.mjs api",
+    "deploy:web": "node scripts/deploy.mjs web",
+    "deploy": "node scripts/deploy.mjs all",
+    "deploy:dry": "node scripts/deploy.mjs all --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.151.1"
   }
 }
