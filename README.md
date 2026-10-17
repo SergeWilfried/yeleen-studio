@@ -49,3 +49,21 @@ Ordre de construction conseillé : voir `docs/architecture.html`.
 ## Contexte produit
 
 `PRODUCT.md` décrit le positionnement et les principes de design (registre, ton, accessibilité).
+
+## Déploiement (Cloudflare)
+
+Un seul script déploie l'API (Worker, Durable Object, R2) puis le site (fichiers statiques) : `scripts/deploy.mjs`.
+
+```bash
+pnpm exec wrangler login            # une fois (ou CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID en intégration continue)
+pnpm deploy:dry                     # simulation : construit et valide les deux configurations, ne change rien
+FAL_KEY=… pnpm deploy               # premier déploiement : crée le bucket R2, enregistre le secret, déploie API puis site
+pnpm deploy                         # ensuite : tests, API, site, autorisation du site dans l'API (CORS), vérifications
+```
+
+- `pnpm deploy:check` vérifie l'environnement et lance les tests ; `pnpm deploy:api` et `pnpm deploy:web` déploient une moitié seulement.
+- Le site est construit avec l'adresse de l'API (`VITE_API_URL`) ; sans elle, il garde le moteur de génération simulé. Les dernières adresses déployées sont retenues dans `.deploy-state.json` (ignoré par git) ; `--api-url=…` et `--web-origin=…` les remplacent (domaines personnalisés).
+- La clé fal n'est lue que dans la variable d'environnement `FAL_KEY` au moment de l'enregistrer comme secret Cloudflare ; elle n'est ni affichée ni écrite sur disque.
+- Les configurations : `wrangler.jsonc` (site, à la racine) et `apps/api/wrangler.toml` (API). Les scripts passent toujours `-c` : sans lui, wrangler 4 prend le fichier de la racine même depuis `apps/api`.
+- Le site peut aussi se construire depuis Git (Workers Builds) : commande de build `pnpm build`, déploiement `npx wrangler deploy`.
+
