@@ -10,7 +10,7 @@ const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } c
 const MODES = [
   { id: 'image', icon: 'img', label: 'Image', tint: 'blue' },
   { id: 'video', icon: 'vid', label: 'Vidéo', tint: 'red' },
-  { id: 'recipe', icon: 'layers', label: 'Recettes', tint: 'lime' },
+  { id: 'recipe', icon: 'layers', label: 'Modèles', tint: 'lime' },
 ]
 const NAV = [
   { to: '/library?source=generated', icon: 'sparkle', label: 'Mes générations', tint: 'cyan' },
@@ -18,7 +18,7 @@ const NAV = [
   { to: '/library?filter=starred', icon: 'star', label: 'Mes favoris', tint: 'pink' },
 ]
 
-/** Barre latérale de l'espace de travail : intitulé, type de création (Image, Vidéo, Recettes), accès aux fichiers, carte d'invitation, tarifs et compte. */
+/** Barre latérale de l'espace de travail : intitulé, type de création (Image, Vidéo, Modèles), accès aux fichiers, carte d'invitation, tarifs et compte. */
 export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
   const { balance } = useJobs()
   const [promo, setPromo] = useState(() => !dismissed())

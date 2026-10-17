@@ -152,7 +152,7 @@ dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 .cn-pair svg{width:16px;height:16px}
 .cn .cn-chip.icon{width:36px;padding:0;justify-content:center}
 
-/* Recettes */
+/* Modèles */
 .rc-gal{order:3;display:flex;flex-direction:column;gap:16px;width:min(1120px,100%)}
 .rc-row{position:relative;display:flex;align-items:center;gap:8px}
 .rc-cards{flex:1;min-width:0;display:flex;gap:14px;margin:0;padding:2px;align-items:stretch;list-style:none;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
