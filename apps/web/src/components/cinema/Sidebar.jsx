@@ -1,22 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import Icon from '../../lib/icons.jsx'
-import Menu from '../Menu.jsx'
+import icon from '../../assets/brand/yeelen-icon.svg'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
 const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } catch { return false } }
 
-// Les autres espaces de l'application : le sélecteur en haut de la barre y mène.
-const STUDIOS = [
-  { id: '/cinema', icon: 'film', title: 'Studio cinéma' },
-  { id: '/image', icon: 'img', title: 'Image' },
-  { id: '/video', icon: 'vid', title: 'Vidéo' },
-  { id: '/audio', icon: 'mus', title: 'Audio' },
-  { id: '/spot', icon: 'burst', title: 'Spot pub' },
-  { id: '/brand', icon: 'palette', title: 'Marque' },
-  { id: '/library', icon: 'folder', title: 'Bibliothèque' },
-]
 const NAV = [
   { to: '/', icon: 'app', label: 'Accueil', tint: 'gray' },
   { to: '/library?source=generated', icon: 'sparkle', label: 'Mes générations', tint: 'cyan' },
@@ -24,9 +14,8 @@ const NAV = [
   { to: '/library?filter=starred', icon: 'star', label: 'Mes favoris', tint: 'pink' },
 ]
 
-/** Barre latérale de l'espace de travail : changement d'espace, accès aux fichiers, carte d'invitation, tarifs et compte. */
+/** Barre latérale de l'espace de travail : intitulé, accès aux fichiers, carte d'invitation, tarifs et compte. */
 export default function Sidebar({ collapsed, onToggle }) {
-  const navigate = useNavigate()
   const { balance } = useJobs()
   const [promo, setPromo] = useState(() => !dismissed())
   const close = () => { setPromo(false); try { localStorage.setItem(PROMO, 'off') } catch { /* ignoré */ } }
@@ -34,10 +23,10 @@ export default function Sidebar({ collapsed, onToggle }) {
   return (
     <aside className={`cs${collapsed ? ' min' : ''}`} aria-label="Espace de travail">
       <div className="cs-top">
-        <Menu items={STUDIOS} value="/cinema" onChange={navigate} label="Changer d’espace" menuWidth={240} className="cs-ws">
-          <span className="cs-logo"><Icon name="logo" size={18} color="#111" /></span>
-          {!collapsed && <span className="cs-name">Studio cinéma</span>}
-        </Menu>
+        <div className="cs-ws">
+          <img className="cs-logo" src={icon} alt="" width="30" height="30" />
+          {!collapsed && <h2 className="cs-name">Studio cinéma</h2>}
+        </div>
         <button type="button" className="cs-toggle" onClick={onToggle} aria-pressed={collapsed} aria-label={collapsed ? 'Déplier la barre latérale' : 'Replier la barre latérale'}>
           <Icon name="sidebar" size={18} />
         </button>

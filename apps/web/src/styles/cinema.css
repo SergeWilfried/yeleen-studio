@@ -15,11 +15,10 @@
 .cs.min{width:76px;align-items:center}
 .cs-top{display:flex;gap:8px;margin-bottom:10px}
 .cs.min .cs-top{flex-direction:column}
-.cs .cs-ws{flex:1;min-width:0;height:48px;padding:0 10px;border-radius:14px;background:var(--card);gap:10px}
+.cs .cs-ws{flex:1;min-width:0;height:48px;padding:0 10px;border-radius:14px;background:var(--card);gap:10px;display:flex;align-items:center}
 .cs.min .cs-ws{flex:none;width:48px;padding:0;justify-content:center}
-.cs.min .cs-ws>svg:last-child{display:none}
-.cs-logo{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:var(--lime)}
-.cs-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:600}
+.cs-logo{flex:none;display:block;width:30px;height:30px}
+.cs-name{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:600}
 .cs-toggle{flex:none;display:flex;align-items:center;justify-content:center;width:48px;height:48px;border:0;border-radius:14px;background:var(--card);color:var(--ink-2);cursor:pointer}
 .cs-toggle:hover{color:var(--ink)}
 .cs-nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}

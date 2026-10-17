@@ -1,0 +1,11 @@
+{
+  // Déploiement de l'application web (apps/web) sur Cloudflare Workers, en fichiers statiques.
+  // Commande de build : `pnpm build` (produit apps/web/dist). Commande de déploiement : `npx wrangler deploy`.
+  // L'API (apps/api) a son propre `wrangler.toml` et se déploie à part : `pnpm --filter @studio/api exec wrangler deploy`.
+  "name": "yeleen-studio",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
