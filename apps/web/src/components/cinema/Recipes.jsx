@@ -24,7 +24,7 @@ const PREVIEW = {
   'wf-documentary': { poster: scene },
 }
 
-/** Aperçu d'une recette : l'image, et la vidéo au survol ou au focus. */
+/** Aperçu d'un modèle : l'image, et la vidéo au survol ou au focus. */
 function Preview({ id }) {
   const p = PREVIEW[id]
   const play = (e) => e.currentTarget.querySelector('video')?.play().catch(() => {})
@@ -56,18 +56,18 @@ function Row({ children, label }) {
   const by = (dir) => box.current.scrollBy({ left: dir * Math.max(240, box.current.clientWidth * 0.8), behavior: 'smooth' })
   return (
     <div className="rc-row">
-      <button type="button" className="rc-nav" aria-label="Recettes précédentes" disabled={end.start} onClick={() => by(-1)}><Icon name="chevL" size={18} /></button>
+      <button type="button" className="rc-nav" aria-label="Modèles précédents" disabled={end.start} onClick={() => by(-1)}><Icon name="chevL" size={18} /></button>
       <ul className="rc-cards" aria-label={label} ref={box} onScroll={measure}>{children}</ul>
-      <button type="button" className="rc-nav" aria-label="Recettes suivantes" disabled={end.end} onClick={() => by(1)}><Icon name="chevR" size={18} /></button>
+      <button type="button" className="rc-nav" aria-label="Modèles suivants" disabled={end.end} onClick={() => by(1)}><Icon name="chevR" size={18} /></button>
     </div>
   )
 }
 
-/** La galerie des recettes, comme la vitrine de fal : une grande vignette par workflow, en rangée. */
+/** La galerie des modèles, comme la vitrine de fal : une grande vignette par workflow, en rangée. */
 export function RecipeCards({ value, onPick }) {
   return (
     <div className="rc-gal">
-      <Row label="Recettes">
+      <Row label="Modèles">
         {RECIPES.map((e) => (
           <li key={e.id}>
             <button type="button" className="rc-card" aria-pressed={value === e.id} onClick={() => onPick(e.id)}>
@@ -88,7 +88,7 @@ export function RunStrip({ jobs, onDone }) {
   const active = jobs.some((j) => j.status === 'IN_QUEUE' || j.status === 'IN_PROGRESS')
   return (
     <div className="rc-runbar">
-      <ol className="rc-run" aria-label="Avancement de la recette">
+      <ol className="rc-run" aria-label="Avancement du modèle">
         {jobs.map((j) => (
           <li key={j.id} data-s={j.status}>
             <span className="rc-dot" aria-hidden="true">{j.status === 'COMPLETED' ? <Icon name="check" size={12} /> : <Icon name="clock" size={12} />}</span>
@@ -97,13 +97,13 @@ export function RunStrip({ jobs, onDone }) {
           </li>
         ))}
       </ol>
-      <button type="button" className="rc-back" onClick={onDone}>Autres recettes</button>
+      <button type="button" className="rc-back" onClick={onDone}>Autres modèles</button>
     </div>
   )
 }
 
 /**
- * Formulaire d'une recette : la même barre que les créations Image et Vidéo (pièces jointes en vignettes, + pour importer,
+ * Formulaire d'un modèle : la même barre que les créations Image et Vidéo (pièces jointes en vignettes, + pour importer,
  * zone de texte, puces, bouton Générer avec le prix).
  */
 export function RecipeForm({ id, text, onText, photos, onAdd, onRemove, onPick, error, onRun }) {
@@ -142,7 +142,7 @@ export function RecipeForm({ id, text, onText, photos, onAdd, onRemove, onPick, 
           <div className="cn-pair">
             <button type="button" onClick={onAdd} aria-label={`Ajouter : ${r.photos.map((p) => p.label.toLowerCase()).join(', ')}`} title={r.photos.map((p) => p.label).join(' · ')}><Icon name="plus" size={18} /></button>
           </div>
-          <Menu items={RECIPES.map((x) => ({ id: x.id, title: x.name, icon: x.icon }))} value={id} onChange={onPick} label="Recette" menuWidth={280} className="cn-chip" listClass="cn-pop"><Icon name={r.icon} size={16} /><span>{r.name}</span></Menu>
+          <Menu items={RECIPES.map((x) => ({ id: x.id, title: x.name, icon: x.icon }))} value={id} onChange={onPick} label="Modèle" menuWidth={280} className="cn-chip" listClass="cn-pop"><Icon name={r.icon} size={16} /><span>{r.name}</span></Menu>
         </div>
       </div>
     </div>

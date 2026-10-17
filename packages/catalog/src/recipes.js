@@ -1,7 +1,7 @@
 import { WORKFLOWS, workflowCost } from './workflows.js'
 
 /**
- * Recettes : les workflows fal du studio, présentés comme des cartes. Chaque recette est un seul lancement (kind 'workflow') :
+ * Modèles : les workflows fal du studio, présentés comme des cartes. Chaque modèle est un seul lancement (kind 'workflow') :
  * une ou plusieurs photos et, selon le workflow, un texte ; le prix est celui du catalogue des workflows.
  */
 const lines = (text) => text.split('\n').map((l) => l.trim()).filter(Boolean)

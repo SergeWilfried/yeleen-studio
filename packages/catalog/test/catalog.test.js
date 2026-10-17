@@ -28,7 +28,7 @@ test('les voix ont des identifiants uniques et findVoice retombe sur la premièr
   assert.equal(findVoice('inconnue').id, VOICES[0].id)
 })
 
-test('recettes : une par workflow, au prix du catalogue, avec ce qui manque pour lancer', async () => {
+test('modèles : un par workflow, au prix du catalogue, avec ce qui manque pour lancer', async () => {
   const { RECIPES, recipeCost, recipeIssue } = await import('../src/recipes.js')
   const { WORKFLOWS, workflowCost } = await import('../src/workflows.js')
   assert.equal(RECIPES.length, WORKFLOWS.length)
