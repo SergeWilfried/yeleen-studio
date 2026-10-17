@@ -1,0 +1,13 @@
+/* Onglets des plans (Plan 1, 2, 3…) et bouton d'ajout : partagés par l'éditeur Vidéo et l'écran Cinéma */
+.ep-plans{display:flex;align-items:center;gap:8px}
+.ep-ptabs{display:flex;gap:4px;padding:3px;border:1px solid var(--line);border-radius:999px}
+.ep-ptab{display:flex;align-items:center;border-radius:999px}
+.ep-ptab.on{background:var(--fill)}
+.ep-ptab>button:first-child{min-width:28px;height:28px;padding:0 8px;border:0;border-radius:999px;background:none;color:var(--ink-3);font-size:13px;font-weight:700;cursor:pointer}
+.ep-ptab.on>button:first-child{color:#fff}
+.ep-rm{display:flex;align-items:center;justify-content:center;width:24px;height:24px;margin-right:2px;border:0;border-radius:50%;background:none;color:var(--ink-2);cursor:pointer}
+.ep-rm:hover{background:#34363a;color:#fff}
+.ep-plus{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:none;color:#e6e6e2;cursor:pointer;transition:background-color .15s}
+.ep-plus:hover:not(:disabled){background:var(--fill)}
+.ep-plus:disabled{opacity:.35;cursor:not-allowed}
+.ep-plans h2{margin:0;font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:100%;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}

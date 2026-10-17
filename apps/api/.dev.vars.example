@@ -1,0 +1,5 @@
+# Copiez ce fichier en .dev.vars (ignoré par git) et renseignez la clé. Ne la mettez jamais dans apps/web.
+FAL_KEY=
+ENV=dev
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+MAX_JOB_COST=150

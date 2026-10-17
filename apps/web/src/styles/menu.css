@@ -1,0 +1,48 @@
+.mn-btn{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid transparent;background:var(--surface);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer;text-align:left;transition:border-color .15s,background-color .15s}
+.mn-btn:hover{background:#1d1e21}
+.mn-btn.open{border-color:var(--line-strong)}
+.mn-btn>svg:last-child{margin-left:auto;flex:none;color:var(--ink-3);transition:transform .15s}
+.mn-btn.open>svg:last-child{transform:rotate(180deg)}
+.mn-list{position:fixed;z-index:var(--z-menu);box-sizing:border-box;overflow-y:auto;background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 6px 8px rgba(0,0,0,.35)}
+.mn-head{padding:8px 12px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.mn-opt{display:flex;gap:12px;align-items:flex-start;width:100%;padding:10px 12px;border:0;border-radius:10px;background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
+.mn-opt:hover,.mn-opt:focus-visible{background:#232427}
+.mn-opt.on{background:#2a2b2e}
+.mn-ic{flex:none;margin-top:1px;color:var(--ink-2)}
+.mn-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mn-tx b{font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center}
+.mn-tx em{font-style:normal;font-size:10px;font-weight:800;background:var(--lime);color:#111;border-radius:4px;padding:2px 6px}
+.mn-tx small{font-size:12.5px;line-height:1.45;color:var(--ink-3)}
+
+.mn-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.mn-tags i{font-style:normal;font-size:11px;font-weight:600;color:#d4d4d0;background:#2a2b2e;border-radius:6px;padding:2px 7px}
+.mn-aside{flex:none;align-self:flex-start;margin-left:auto;padding-left:8px;font-size:12px;font-weight:600;color:var(--lime);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Sélecteur de modèle : icône, nom + badge, puces de capacités, prix à droite */
+.mn-search{position:sticky;top:-6px;z-index:var(--z-raised);display:flex;align-items:center;gap:10px;margin:-6px -6px 6px;padding:12px 16px;background:var(--raised);border-bottom:1px solid #2a2b2e;color:var(--ink-3)}
+.mn-search input{flex:1;min-width:0;border:0;background:none;color:var(--ink);font:inherit;font-size:15px}
+.mn-search input:focus{outline:0}
+.mn-search:focus-within{outline:2px solid var(--lime);outline-offset:-2px;border-radius:12px 12px 0 0}
+.mn-search input::placeholder{color:var(--ink-4)}
+.mn-search:focus-within{color:var(--lime)}
+.mn-none{margin:0;padding:20px 12px;text-align:center;font-size:13px;color:var(--ink-3)}
+.mn-opt.model{align-items:center;gap:14px;padding:12px}
+.mn-opt.model .mn-ic{display:flex;align-items:center;justify-content:center;width:40px;height:40px;margin:0;border-radius:10px;background:var(--fill);color:var(--lime)}
+.mn-opt.model .mn-tx{flex:1;gap:6px}
+.mn-opt.model .mn-tx b{font-size:15px;flex-wrap:wrap}
+.mn-opt.model .mn-tags{margin:0}
+.mn-opt.model .mn-tags i{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;color:var(--ink-2)}
+.mn-price{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums}
+.mn-price b{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap}
+.mn-price b svg{color:var(--lime)}
+.mn-price small{font-size:11px;color:var(--ink-3)}
+
+/* Logos de modèles : monochromes en blanc cassé, en couleur tels quels */
+.ml{display:inline-block;flex:none;width:var(--s,20px);height:var(--s,20px)}
+.ml.color{background:var(--logo) center/contain no-repeat}
+.ml.mono{background:currentColor;-webkit-mask:var(--logo) center/contain no-repeat;mask:var(--logo) center/contain no-repeat}
+.mn-opt.model .mn-ic.logo{color:var(--ink)}
+
+/* Titres de groupes dans une liste (par ex. « Modèles cinéma ») */
+.mn-group{display:flex;align-items:center;gap:8px;padding:12px 12px 4px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.mn-group svg{color:var(--ink-4)}

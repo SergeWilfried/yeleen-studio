@@ -1,0 +1,19 @@
+{
+  "name": "@studio/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API Cloudflare Worker : auth, tarification côté serveur, jetons (Durable Object), appels et webhooks fal.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@studio/catalog": "workspace:*",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

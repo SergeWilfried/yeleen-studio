@@ -1,0 +1,15 @@
+{
+  "name": "@studio/montage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Worker de montage (Railway) : lit le plan d'un spot, assemble vidéo, voix, sous-titres et carte finale avec ffmpeg.",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@studio/spot": "workspace:*"
+  }
+}

@@ -1,0 +1,35 @@
+/*
+ * Jetons de design partagés. Une seule teinte d'accent (le vert-jaune) et une échelle de gris : tout le reste en découle.
+ * Interface sombre par choix : `color-scheme: dark` pour que barres de défilement et contrôles natifs suivent.
+ * Ne créez pas un jeton par valeur : seulement les valeurs qui reviennent avec la même fonction.
+ */
+:root {
+  color-scheme: dark;
+
+  --lime: #d6ff3f;        /* action principale, sélection, état actif */
+  --on-lime: #111111;     /* texte sur fond --lime */
+
+  --ink: #f2f2ee;         /* texte principal */
+  --ink-2: #c4c4c0;       /* texte secondaire */
+  --ink-3: #a0a1a4;       /* texte discret, étiquettes */
+  --ink-4: #8d8e91;       /* indications, éléments inactifs (≥ 4,5:1 sur --field) */
+
+  --bg: #0d0e10;          /* fond de page */
+  --field: #101113;       /* champs de saisie, zones en creux */
+  --surface: #16171a;     /* cartes, boutons, panneaux */
+  --raised: #1a1b1e;      /* menus et feuilles au-dessus du reste */
+  --fill: #26272b;        /* pastilles, puces, vignettes */
+
+  --line-soft: #1f2023;   /* séparateurs discrets */
+  --line: #2f3033;        /* bordures de champs */
+  --line-strong: #3a3b3e; /* bordures au survol */
+
+  --danger-ink: #ffb4a8;  /* texte d'erreur */
+
+  /* Échelle de superposition (du plus bas au plus haut) */
+  --z-raised: 1;
+  --z-sticky: 5;
+  --z-menu: 30;
+  --z-toast: 60;
+  --z-skip: 70;
+}

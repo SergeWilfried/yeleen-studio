@@ -1,0 +1,10 @@
+{
+  "name": "@studio/spot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Spot pub : script, estimation, plan de montage (manifeste) et commande ffmpeg. Lu par l'application et par le worker de montage.",
+  "exports": { ".": "./src/spot.js" },
+  "dependencies": { "@studio/catalog": "workspace:*" },
+  "scripts": { "test": "node --test" }
+}

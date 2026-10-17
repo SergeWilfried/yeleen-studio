@@ -1,0 +1,47 @@
+/* Chrome partagé : bandeau promo sombre, en-tête vert primaire (var(--lime)). */
+body .pg .promo{background:#050506;color:var(--ink);border-bottom:1px solid #1d1e21}
+body .pg .promo a{background:var(--lime);color:#111}
+body .pg .promo a:hover{filter:brightness(.92)}
+body .pg .promo .x,body .pg .promo .px{color:var(--ink)}
+body .pg .promo .px:hover{background:rgba(255,255,255,.1)}
+body .pg .tt{background:var(--fill);color:#fff}
+body .pg .pcta{background:var(--lime);color:#111}
+
+body .pg .nv{background:var(--lime);color:#111}
+body .pg .lg{background:none}
+body .pg .nl{color:rgba(17,17,17,.72)}
+body .pg .nl:hover{color:#111}
+body .pg .nl.on{color:#111;font-weight:700;box-shadow:inset 0 -2px 0 #111;border-radius:0}
+body .pg .bd{background:#111;color:var(--lime)}
+body .pg .rt{color:#111}
+body .pg .nv .pb{background:rgba(17,17,17,.08);border:1px solid rgba(17,17,17,.22);color:#111}
+body .pg .nv .pb:hover{background:rgba(17,17,17,.16)}
+body .pg .nv .lim{background:#111;color:var(--lime)}
+body .pg .nv .lim:hover{filter:none;background:var(--fill)}
+body .pg .nv :focus-visible{outline-color:#111}
+
+.skip{position:absolute;left:8px;top:-56px;z-index:var(--z-skip);padding:10px 16px;border-radius:10px;background:var(--lime);color:#111;font-weight:700;font-size:14px;transition:top .15s}
+.skip:focus{top:8px;outline:2px solid #111;outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.lp-panel{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+#main:focus{outline:none}
+
+.bal{display:flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:10px;border:1px solid rgba(17,17,17,.22);background:rgba(17,17,17,.08);color:#111;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bal b{font-weight:700}
+.bal-busy{display:flex;align-items:center;gap:6px;padding-left:8px;border-left:1px solid rgba(17,17,17,.25);font-weight:600}
+.bal-busy i{width:8px;height:8px;border-radius:50%;background:#111;animation:balpulse 1.2s ease-in-out infinite}
+@keyframes balpulse{50%{transform:scale(.55);opacity:.5}}
+
+/* Zones de clic de 44 px au moins, sans changer l'aspect : une zone invisible entoure le contrôle.
+   Sur écran tactile, les contrôles eux-mêmes prennent cette taille. */
+.shell .nl,.shell .pb,.shell .lg,.video .tabs button,.video .pl a,.video .pl button,.sp-back{position:relative}
+.shell .nl::after,.shell .pb::after,.shell .lg::after,.video .tabs button::after,.video .pl a::after,.video .pl button::after,.ep-lib::after,.sp-back::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}
+@media (pointer:coarse){
+  .shell .nl,.shell .pb,.video .pl a,.video .pl button{min-height:44px;display:inline-flex;align-items:center}
+  .video .tabs button{min-height:44px}
+  .ep-lib{width:44px;height:44px}
+}
+/* Barre de navigation qui défile : un fondu à droite signale qu'il y a une suite. */
+@media (max-width:820px){
+  .shell .nls{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+}

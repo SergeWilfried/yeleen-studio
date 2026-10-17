@@ -1,0 +1,53 @@
+.shell a{color:inherit;text-decoration:none}
+.shell button{font:inherit;color:inherit}
+.pg.shell{background:var(--bg);color:var(--ink);font-family:'Instrument Sans',Helvetica,sans-serif;font-size:14px;min-height:100%;display:flex;flex-direction:column}
+.shell h1,.shell h2,.shell h3,.shell .hd{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-weight:800;text-transform:uppercase;margin:0}
+.shell .promo{background:var(--lime);color:#111;display:flex;gap:14px;align-items:center;padding:0 16px;height:40px;font-weight:600;font-size:13px;box-sizing:border-box}
+.shell .tm{background:var(--badge-pink);color:#fff;border-radius:6px;padding:4px 8px;font-size:11px}
+.shell .tt{background:#111;color:#fff;border-radius:8px;padding:4px 8px;font-variant-numeric:tabular-nums}
+.shell .pcta{margin-left:auto;background:#111;color:#fff;border-radius:999px;padding:8px 16px;font-size:13px}
+.shell .nv{height:52px;display:flex;align-items:center;gap:14px;padding:0 16px;box-sizing:border-box}
+.shell .lg{height:30px;padding:0 2px;background:none;display:flex;align-items:center;flex:none}
+.shell .lg img{display:block;height:22px;width:auto}
+.shell .nls{display:flex;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;align-items:center}
+.shell .nls::-webkit-scrollbar{display:none}
+.shell .nl{color:var(--ink-4);padding:8px;font-size:14px;font-weight:500;display:flex;gap:5px;align-items:center;white-space:nowrap;flex:none}
+.shell .nl.on{color:var(--lime)}
+.shell .bd{font-style:normal;font-size:9px;font-weight:700;border-radius:4px;padding:2px 5px;background:#33430c;color:var(--lime);text-transform:uppercase}
+.shell .rt{display:flex;gap:8px;align-items:center;flex:none;color:var(--ink-2)}
+.shell .pb{background:var(--raised);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;position:relative}
+.shell .pb .of{position:absolute;right:-4px;top:-9px;background:var(--badge-pink);color:#fff;font-size:9px;border-radius:999px;padding:1px 6px;font-style:normal}
+.shell .av{width:28px;height:28px;border-radius:50%;background:conic-gradient(var(--lime),#4d8ad6,#e8307a,var(--lime))}
+
+/* polish: tabs, generate buttons, states */
+.shell .tabs button,.shell .seg button{background:none;border:0;font:inherit;cursor:pointer}
+.shell .tabs button:hover:not(.on),.shell .seg button:hover:not(.on){color:var(--ink)}
+.shell .gen,.shell .gen2{border:0;font-family:inherit;cursor:pointer;width:100%;transition:filter .15s,transform .1s}
+.shell .gen2{width:144px}
+.shell .gen:hover:not(:disabled),.shell .gen2:hover:not(:disabled){filter:brightness(.94)}
+.shell .gen:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #9fbf1f}
+.shell .gen2:active:not(:disabled){transform:translateY(1px)}
+.shell .gen:disabled,.shell .gen2:disabled{background:var(--fill);color:var(--ink-3);box-shadow:none;cursor:not-allowed}
+.shell .pl a,.shell .bar a,.shell .pb,.shell .pcta{transition:background-color .15s,border-color .15s}
+.shell .pl a:hover,.shell .bar a:hover{border-color:var(--line-strong);color:var(--ink)}
+.image .pbx:focus-within{border-color:var(--lime)}
+.audio .box:focus-within{outline:2px solid var(--lime);outline-offset:0}
+.shell .ctl button,.shell .row button{min-width:28px;min-height:28px;border-radius:8px}
+.shell .ctl button:hover,.shell .row button:hover{background:var(--fill)}
+@media (pointer:coarse){
+.shell .tabs button,.shell .seg button,.shell .pl a,.shell .bar a,.shell .pb,.shell .pcta,.shell .nl{min-height:44px}
+.shell .ctl button,.shell .row button{min-width:44px;min-height:44px}
+}
+
+@media (max-width:600px){
+.shell .promo{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px 10px;font-size:12px}
+.shell .pcta{margin-left:0}
+.shell .nv{gap:8px;padding:0 12px}
+.shell .rt .pb:not(:first-child){display:none}
+}
+
+.shell .px{background:none;border:0;cursor:pointer;color:inherit;font-size:14px;line-height:1;padding:8px;margin-left:8px;flex:none;border-radius:8px}
+.shell .px:hover{background:rgba(17,17,17,.12)}
+.shell .pcta{margin-left:auto}
+.shell .px{margin-left:0}
+@media (pointer:coarse){.shell .px{min-width:44px;min-height:44px}}

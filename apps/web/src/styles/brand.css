@@ -1,0 +1,29 @@
+/* Kit de marque : réutilise les panneaux de l'écran Vidéo et l'aperçu 9:16 du Spot pub. */
+.brand .br-color{display:flex;flex-direction:column;gap:10px}
+.brand .br-row{display:flex;gap:8px;align-items:center}
+.brand input[type=color]{flex:none;width:44px;height:40px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--field);cursor:pointer}
+.brand .br-hex{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--field);color:var(--ink);font:inherit;font-size:14px;font-variant-numeric:tabular-nums;text-transform:lowercase}
+.brand .br-hex:focus{border-color:var(--lime)}
+.brand .br-hex[aria-invalid=true]{border-color:#a8493f}
+.brand .br-sw{display:flex;flex-wrap:wrap;gap:8px}
+.brand .br-sw button{width:28px;height:28px;border:2px solid var(--field);border-radius:50%;box-shadow:0 0 0 1px var(--line-strong);cursor:pointer}
+.brand .br-sw button[aria-pressed=true]{box-shadow:0 0 0 2px var(--ink)}
+.brand .br-cr.bad{color:var(--danger-ink)}
+.brand .br-looks{display:flex;flex-wrap:wrap;gap:8px}
+.brand .br-looks .ep-chip{min-height:34px;padding:0 12px}
+.brand .br-looks .ep-chip[aria-pressed=true]{background:#26300f;border-color:var(--lime);color:var(--lime)}
+.brand .br-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:#d4d4d0;cursor:pointer}
+.brand .br-check input{flex:none;width:16px;height:16px;margin-top:2px;accent-color:var(--lime)}
+.brand .br-saved{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:12px;color:var(--ink-3)}
+.brand .ep-gen .gen{text-decoration:none}
+.spp-end.br-card{position:absolute}
+
+.brand .br-uses{width:min(100%,380px);list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.brand .br-uses li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-soft)}
+.brand .br-uses li>div{flex:1;min-width:0}
+.brand .br-uses b{font-size:13px}
+.brand .br-uses p{margin:2px 0 0;font-size:12px;line-height:1.4;color:var(--ink-3)}
+.brand .br-uses a{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.brand .br-uses a:hover{color:var(--ink)}
+.brand .br-dot{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--fill);color:#111}
+.brand .br-dot.on{background:var(--lime)}

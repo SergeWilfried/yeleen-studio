@@ -1,0 +1,23 @@
+/* Liste des assets proposée par « @ » et pastilles des références d'un plan */
+.mention{position:fixed;z-index:var(--z-menu);box-sizing:border-box;max-height:280px;overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--raised);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 8px rgba(0,0,0,.35)}
+.mention li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;cursor:pointer;color:var(--ink)}
+.mention li.on{background:#2a2b2e}
+.mention-none{cursor:default;padding:12px;font-size:13px;color:var(--ink-3)}
+.mention-th{flex:none;width:36px;height:36px;border-radius:8px;overflow:hidden;background:var(--fill)}
+.mention-th .at{width:100%;height:100%;min-height:0;aspect-ratio:auto;border-radius:0}
+.mention-tx{display:flex;flex-direction:column;min-width:0}
+.mention-tx b{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mention-tx small{font-size:12px;color:var(--ink-3)}
+
+/* Surlignage des références dans le texte : une couche identique derrière la zone de saisie, dont le texte est transparent */
+.mt-wrap{position:relative}
+.mt-back,textarea.mt-ta{margin:0;border:0;font:inherit;font-size:14px;line-height:1.5;padding:var(--mt-pad,12px 14px 4px);letter-spacing:normal;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4}
+.mt-back{position:absolute;inset:0;overflow:hidden;pointer-events:none;color:var(--ink)}
+.ep-prompt textarea.mt-ta,textarea.mt-ta{position:relative;display:block;width:100%;overflow:hidden;color:transparent;caret-color:var(--ink);background:none;outline:0;resize:none;min-height:var(--mt-min,104px)}
+.ep-prompt textarea.mt-ta::selection,textarea.mt-ta::selection{background:rgba(120,160,255,.38)}
+textarea.mt-ta{max-height:var(--mt-max,none);overflow-y:auto;scrollbar-width:none}
+textarea.mt-ta::-webkit-scrollbar{display:none}
+.mt-wrap[data-capped]::after{content:'';position:absolute;left:0;right:0;bottom:0;height:28px;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--mt-fade,var(--card)))}
+.mt-back mark{color:var(--lime);background:rgba(214,255,63,.16);border-radius:5px;box-shadow:0 0 0 2px rgba(214,255,63,.16)}
+.mt-back mark.off{color:var(--ink-3);background:rgba(255,255,255,.08);box-shadow:0 0 0 2px rgba(255,255,255,.08);text-decoration:line-through}
+.ep-refnote{margin:0;padding:0 14px 6px;font-size:12px;line-height:1.4;color:var(--ink-3)}

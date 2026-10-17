@@ -1,0 +1,10 @@
+node_modules
+dist
+.wrangler
+.dev.vars
+.env
+.DS_Store
+.vite
+
+# Originaux lourds (vidéos 4K, photos 8 000 px) : conservés en local, pas dans le dépôt public
+apps/web/source-media/

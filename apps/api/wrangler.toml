@@ -1,0 +1,29 @@
+name = "studio-api"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+
+# Compte : portefeuille de jetons et générations, un Durable Object par compte (un seul écrivain, pas de double débit).
+[[durable_objects.bindings]]
+name = "ACCOUNT"
+class_name = "Account"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Account"]
+
+# Fichiers générés. En local, `wrangler dev` simule le bucket. En production : `wrangler r2 bucket create studio-files`.
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "studio-files"
+
+# À activer quand les ressources existent :
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "studio"
+# database_id = "<id>"
+#
+# [[queues.producers]]
+# binding = "MONTAGE_QUEUE"
+# queue = "studio-montage"
+#
+# Secrets (wrangler secret put) : FAL_KEY, WEBHOOK_SECRET

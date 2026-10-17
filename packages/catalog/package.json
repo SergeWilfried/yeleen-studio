@@ -1,0 +1,17 @@
+{
+  "name": "@studio/catalog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Modèles, capacités et prix en jetons : une seule source pour l'application et les serveurs. Aucune dépendance, aucun accès au navigateur.",
+  "exports": {
+    ".": "./src/models.js",
+    "./chains": "./src/chainDefs.js",
+    "./voices": "./src/voices.js",
+    "./recipes": "./src/recipes.js",
+    "./workflows": "./src/workflows.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}

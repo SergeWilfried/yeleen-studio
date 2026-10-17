@@ -1,0 +1,12 @@
+{
+  "name": "studio",
+  "private": true,
+  "packageManager": "pnpm@10.24.0",
+  "scripts": {
+    "dev": "pnpm --filter @studio/web dev",
+    "build": "pnpm --filter @studio/web build",
+    "dev:api": "pnpm --filter @studio/api dev",
+    "dev:montage": "pnpm --filter @studio/montage dev",
+    "test": "pnpm -r --if-present test"
+  }
+}

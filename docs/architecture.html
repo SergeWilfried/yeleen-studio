@@ -1,0 +1,345 @@
+<meta charset="utf-8">
+<title>Studio Production Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one calm reading column, a wide diagram that scrolls on phones, then table and plan. Brand lime used only for step markers and the active state. */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --ink:#101412; --muted:#4b524d; --line:#d5dbd7;
+  --cf:#eaeee9; --ext:#ffffff; --arrow:#2c332f; --accent:#d6ff3f; --on-accent:#101412; --link:#4a6200; --warn:#8a3b12; --warn-bg:#f8e9df;
+  --display:'Bricolage Grotesque','Instrument Sans',system-ui,sans-serif; --body:'Instrument Sans',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d0f0e; --surface:#151816; --ink:#eef1ec; --muted:#a3aaa5; --line:#2a302c;
+  --cf:#121513; --ext:#171a18; --arrow:#c9d0cb; --accent:#d6ff3f; --on-accent:#101412; --link:#d6ff3f; --warn:#f0b690; --warn-bg:#2a1a10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d0f0e; --surface:#151816; --ink:#eef1ec; --muted:#a3aaa5; --line:#2a302c;
+  --cf:#121513; --ext:#171a18; --arrow:#c9d0cb; --accent:#d6ff3f; --on-accent:#101412; --link:#d6ff3f; --warn:#f0b690; --warn-bg:#2a1a10; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--body);padding-inline:16px;padding-block:40px 80px}
+main{max-width:1040px;margin-inline:auto;display:flex;flex-direction:column;gap:64px}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(2rem,5vw,3.25rem);font-weight:700;letter-spacing:-.02em}
+h2{font-size:clamp(1.4rem,3vw,1.9rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-radius:4px}
+.lede{max-width:62ch;font-size:1.125rem;color:var(--muted);margin-top:16px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:20px;font:400 13px var(--mono);color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:20px}
+.sec>p{max-width:68ch;color:var(--muted)}
+
+/* diagram */
+.dia-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+.dia-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px}
+.dia{display:block;min-width:820px;width:100%;height:auto}
+.dia text{font-family:var(--body);fill:var(--ink)}
+.dia .t1{font-size:14px;font-weight:600}
+.dia .t2{font-size:11.5px;fill:var(--muted)}
+.dia .grp{font:500 10.5px var(--mono);letter-spacing:.08em;fill:var(--muted)}
+.dia .cfbox{fill:var(--cf);stroke:var(--line);stroke-width:1.2}
+.dia .node rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.dia .node.ext rect{fill:var(--ext)}
+.dia .node.client rect{fill:var(--ext)}
+.dia .ln{fill:none;stroke:var(--arrow);stroke-width:1.5}
+.dia .dash{stroke-dasharray:5 4}
+.dia .bd circle{fill:var(--accent);stroke:var(--on-accent);stroke-width:1}
+.dia .bd text{fill:var(--on-accent);font:600 10.5px var(--mono);text-anchor:middle;dominant-baseline:central}
+.dia .lbl{font-size:11px;fill:var(--muted)}
+.dia .legend rect{fill:none;stroke:var(--line);stroke-dasharray:3 3}
+.dia .dim{opacity:.18}
+.dia .ed,.dia .node{transition:opacity .2s}
+.dia .ed.hit .ln,.dia .ed.hit.ln{stroke-width:2.4}
+
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.steps button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:28px 1fr;gap:12px;width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;transition:border-color .15s,background-color .15s}
+.steps button:hover{border-color:var(--muted)}
+.steps button[aria-pressed="true"]{border-color:var(--ink);background:var(--cf)}
+.steps button:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.steps .n{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:600 12px var(--mono)}
+.steps b{display:block;font-weight:600;font-size:.95rem}
+.steps span.d{display:block;margin-top:2px;font-size:.875rem;line-height:1.5;color:var(--muted)}
+.hint{font-size:.85rem;color:var(--muted)}
+
+/* table */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:.9rem}
+th,td{padding:12px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font:500 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--cf)}
+td:first-child{font-weight:600;white-space:nowrap}
+td .tool{font-weight:600}
+td.alt{color:var(--muted)}
+
+/* plan */
+.gantt{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:16px}
+.g-grid{display:grid;grid-template-columns:200px repeat(10,minmax(44px,1fr));min-width:720px;gap:6px 0;align-items:center}
+.g-h{font:500 11px var(--mono);color:var(--muted);text-align:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.g-h.first{text-align:left}
+.g-name{font-weight:600;font-size:.9rem;padding-right:12px}
+.g-bar{height:26px;border-radius:6px;background:var(--accent);color:var(--on-accent);font:500 11px/26px var(--mono);padding-inline:8px;white-space:nowrap;overflow:hidden}
+.g-bar.pilot{background:repeating-linear-gradient(135deg,var(--accent) 0 8px,color-mix(in srgb,var(--accent) 70%,var(--surface)) 8px 16px)}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.ph{padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.ph .wk{font:500 12px var(--mono);color:var(--muted)}
+.ph ul{margin:0;padding-left:1.1em;color:var(--muted);font-size:.9rem}
+.ph ul li+li{margin-top:4px}
+.ph .exit{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);font-size:.875rem}
+.ph .exit b{font-weight:600}
+
+/* callouts */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.box{padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.box.warn{background:var(--warn-bg);border-color:transparent}
+.box.warn h3{color:var(--warn)}
+.box ul{margin:0;padding-left:1.1em;color:var(--muted);font-size:.92rem}
+.box ul li+li{margin-top:6px}
+.box.warn ul{color:var(--ink)}
+.decision{padding:24px;border-radius:14px;background:var(--cf);border:1px solid var(--line);display:flex;flex-direction:column;gap:14px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.opt{padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:.92rem;color:var(--muted)}
+.opt b{display:block;color:var(--ink);margin-bottom:4px}
+.opt.rec{border-color:var(--ink)}
+.tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--accent);color:var(--on-accent);font:500 11px var(--mono);vertical-align:middle}
+code{font:400 .86em var(--mono);background:var(--cf);padding:1px 5px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.dia .ed,.dia .node,.steps button{transition:none}}
+</style>
+
+<main>
+  <header>
+    <h1>Studio production architecture</h1>
+    <p class="lede">How the current mock becomes a live product on fal.ai, Cloudflare and Railway for about $10 a month in fixed cost. The browser keeps the same job states, balance and refunds it has today. Only the engine behind them changes.</p>
+    <div class="meta"><span>Prepared 14 Oct 2026</span><span>Scope: image, video, audio, Spot pub, library, brand kit</span><span>Assumes 1–2 developers</span></div>
+  </header>
+
+  <section class="sec" aria-labelledby="h-arch">
+    <h2 id="h-arch">How a generation moves through the system</h2>
+    <p>The browser never talks to fal. Every paid action goes through one Worker, and only one Durable Object per account can change the jeton balance. Select a step to see which parts it touches.</p>
+    <div class="dia-wrap">
+      <div class="dia-scroll" tabindex="0" role="region" aria-label="Architecture diagram, scrolls sideways on small screens">
+      <svg class="dia" id="dia" viewBox="0 0 960 430" role="img" aria-labelledby="dia-t">
+        <title id="dia-t">Architecture: the app calls a Cloudflare Worker, which debits a wallet Durable Object, submits to fal.ai, receives webhooks, stores files in R2 and rows in D1, and queues montage jobs for a Railway ffmpeg worker.</title>
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9z" fill="var(--arrow)"/></marker>
+        </defs>
+
+        <text class="grp" x="10" y="58">CLIENT</text>
+        <text class="grp" x="760" y="58">OUTSIDE CLOUDFLARE</text>
+        <rect class="cfbox" x="250" y="30" width="450" height="390" rx="14"/>
+        <text class="grp" x="266" y="408">CLOUDFLARE</text>
+
+        <!-- nodes -->
+        <g class="node client" data-n="1 6"><rect x="10" y="70" width="150" height="110" rx="10"/>
+          <text class="t1" x="85" y="108" text-anchor="middle">Studio app</text>
+          <text class="t2" x="85" y="128" text-anchor="middle">React + Vite</text>
+          <text class="t2" x="85" y="146" text-anchor="middle">on Cloudflare Pages</text></g>
+
+        <g class="node" data-n="1 2 3 4 5 6 7"><rect x="270" y="70" width="190" height="70" rx="10"/>
+          <text class="t1" x="285" y="98">Worker API</text>
+          <text class="t2" x="285" y="118">Hono · auth · server pricing</text></g>
+        <g class="node" data-n="2 4"><rect x="490" y="70" width="190" height="70" rx="10"/>
+          <text class="t1" x="505" y="98">Wallet</text>
+          <text class="t2" x="505" y="118">Durable Object · ledger</text></g>
+        <g class="node" data-n="5"><rect x="270" y="200" width="190" height="70" rx="10"/>
+          <text class="t1" x="285" y="228">D1</text>
+          <text class="t2" x="285" y="248">accounts · jobs · assets</text></g>
+        <g class="node" data-n="5 7"><rect x="490" y="200" width="190" height="70" rx="10"/>
+          <text class="t1" x="505" y="228">R2</text>
+          <text class="t2" x="505" y="248">uploads · outputs · spots</text></g>
+        <g class="node" data-n="7"><rect x="270" y="330" width="190" height="60" rx="10"/>
+          <text class="t1" x="285" y="356">Queues</text>
+          <text class="t2" x="285" y="374">montage jobs · retries</text></g>
+
+        <g class="node ext" data-n="3 4"><rect x="760" y="70" width="190" height="70" rx="10"/>
+          <text class="t1" x="775" y="98">fal.ai</text>
+          <text class="t2" x="775" y="118">image · video · ElevenLabs</text></g>
+        <g class="node ext" data-n="4"><rect x="760" y="200" width="190" height="70" rx="10"/>
+          <text class="t1" x="775" y="228">Mobile Money</text>
+          <text class="t2" x="775" y="248">aggregator · top-ups</text></g>
+        <g class="node ext" data-n="7"><rect x="760" y="330" width="190" height="60" rx="10"/>
+          <text class="t1" x="775" y="356">Railway</text>
+          <text class="t2" x="775" y="374">ffmpeg montage worker</text></g>
+
+        <!-- legend -->
+        <g class="legend"><rect x="10" y="330" width="200" height="60" rx="8"/>
+          <line class="ln" x1="24" y1="350" x2="62" y2="350" marker-end="url(#ah)"/><text class="lbl" x="72" y="354">request</text>
+          <line class="ln dash" x1="24" y1="372" x2="62" y2="372" marker-end="url(#ah)"/><text class="lbl" x="72" y="376">callback or event</text></g>
+
+        <!-- 1 submit -->
+        <g class="ed" data-s="1"><path class="ln" d="M160 96H269" marker-end="url(#ah)"/><text class="lbl" x="204" y="88">submit</text>
+          <g class="bd" transform="translate(182 96)"><circle r="9"/><text>1</text></g></g>
+        <!-- 6 status -->
+        <g class="ed" data-s="6"><path class="ln dash" d="M270 122H161" marker-end="url(#ah)"/><text class="lbl" x="204" y="142">status</text>
+          <g class="bd" transform="translate(182 122)"><circle r="9"/><text>6</text></g></g>
+        <!-- 2 debit -->
+        <g class="ed" data-s="2"><path class="ln" d="M460 105H489" marker-end="url(#ah)"/>
+          <g class="bd" transform="translate(475 88)"><circle r="9"/><text>2</text></g></g>
+        <!-- 3 dispatch -->
+        <g class="ed" data-s="3"><path class="ln" d="M365 70V50H920V69" marker-end="url(#ah)"/><text class="lbl" x="580" y="44">submit to fal queue with a signed webhook URL</text>
+          <g class="bd" transform="translate(540 50)"><circle r="9"/><text>3</text></g></g>
+        <!-- 4 webhooks -->
+        <g class="ed" data-s="4"><path class="ln dash" d="M855 140V160H440V141" marker-end="url(#ah)"/><path class="ln dash" d="M855 200V160"/>
+          <text class="lbl" x="560" y="154">webhooks · generation done, payment confirmed</text>
+          <g class="bd" transform="translate(780 160)"><circle r="9"/><text>4</text></g></g>
+        <!-- 5 persist -->
+        <g class="ed" data-s="5"><path class="ln" d="M365 140V199" marker-end="url(#ah)"/><path class="ln" d="M365 182H585V199" marker-end="url(#ah)"/>
+          <g class="bd" transform="translate(365 160)"><circle r="9"/><text>5</text></g></g>
+        <!-- 7 montage -->
+        <g class="ed" data-s="7"><path class="ln" d="M270 132H257V360H269" marker-end="url(#ah)"/>
+          <path class="ln dash" d="M460 375H759" marker-end="url(#ah)"/><text class="lbl" x="520" y="400">montage job</text>
+          <path class="ln dash" d="M760 350H720V235H681" marker-end="url(#ah)"/><text class="lbl" x="728" y="300">inputs and result</text>
+          <g class="bd" transform="translate(620 375)"><circle r="9"/><text>7</text></g></g>
+      </svg>
+      </div>
+
+      <div>
+        <ol class="steps" id="steps">
+          <li><button type="button" data-n="1" aria-pressed="false"><span class="n">1</span><span><b>Submit</b><span class="d">The app sends the request to <code>POST /jobs</code>. The Worker checks the model and options against the shared catalog and works out the price itself.</span></span></button></li>
+          <li><button type="button" data-n="2" aria-pressed="false"><span class="n">2</span><span><b>Debit</b><span class="d">The account's wallet takes the jetons and writes a ledger line. If the balance is short, the call returns the missing amount, as the UI already expects.</span></span></button></li>
+          <li><button type="button" data-n="3" aria-pressed="false"><span class="n">3</span><span><b>Dispatch</b><span class="d">The Worker submits to the fal queue with a webhook URL that carries a signed job id.</span></span></button></li>
+          <li><button type="button" data-n="4" aria-pressed="false"><span class="n">4</span><span><b>Callbacks</b><span class="d">fal and the payment provider call the Worker. It checks the signature. A failed or refused job triggers an idempotent refund.</span></span></button></li>
+          <li><button type="button" data-n="5" aria-pressed="false"><span class="n">5</span><span><b>Persist</b><span class="d">The output is copied to R2 at once, because fal links expire. Asset and job rows go to D1.</span></span></button></li>
+          <li><button type="button" data-n="6" aria-pressed="false"><span class="n">6</span><span><b>Status</b><span class="d">A WebSocket pushes queued, in progress, done and failed to the open app. A reload restores the same state from D1.</span></span></button></li>
+          <li><button type="button" data-n="7" aria-pressed="false"><span class="n">7</span><span><b>Montage (Spot only)</b><span class="d">A queue message wakes the Railway worker. It pulls inputs from R2, runs ffmpeg, uploads the spot and calls back.</span></span></button></li>
+        </ol>
+        <p class="hint" style="margin-top:12px">Select a step again to clear it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-tools">
+    <h2 id="h-tools">Recommended tools</h2>
+    <p>Everything that can live on Cloudflare does, because it bills by use and the pieces sit on one network. Railway holds only what needs a real container. Prices are indicative and should be checked before committing.</p>
+    <div class="tbl" tabindex="0" role="region" aria-label="Recommended tools table">
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why</th><th>Cost shape</th><th>Considered instead</th></tr></thead>
+      <tbody>
+        <tr><td>Hosting</td><td class="tool">Cloudflare Pages</td><td>Serves the existing Vite build, global CDN, deploys from git.</td><td>Free tier</td><td class="alt">Vercel, Netlify: no benefit once the API is on Cloudflare</td></tr>
+        <tr><td>API</td><td class="tool">Workers with Hono</td><td>One entry point for auth, pricing, jobs and webhooks, next to the data.</td><td>About $5/month paid plan, then per request</td><td class="alt">Node API on Railway: one more service to run and scale</td></tr>
+        <tr><td>Wallet</td><td class="tool">Durable Objects</td><td>One writer per account, so no double spend. Also the WebSocket hub for job status.</td><td>Per request and storage, negligible at pilot scale</td><td class="alt">Postgres with row locks: adds a database to manage</td></tr>
+        <tr><td>Data</td><td class="tool">D1</td><td>Accounts, jobs, assets, brand kit and ledger history in SQL.</td><td>Free allowance, then per row</td><td class="alt">Neon or Supabase: fine, but a second vendor</td></tr>
+        <tr><td>Files</td><td class="tool">R2</td><td>Videos are heavy. No egress fees, so playback and downloads don't add to the bill.</td><td>Per GB stored</td><td class="alt">S3: egress costs grow with video</td></tr>
+        <tr><td>Async</td><td class="tool">Queues</td><td>Montage jobs, retries and dead-letter handling without polling.</td><td>Per message</td><td class="alt">Cron plus a jobs table: simpler, slower, more code</td></tr>
+        <tr><td>Generation</td><td class="tool">fal.ai queue and webhooks</td><td>One key and one bill for image, video and ElevenLabs voices. Webhooks remove polling.</td><td>Per output, the main variable cost</td><td class="alt">ElevenLabs or Replicate direct: more integrations</td></tr>
+        <tr><td>Montage</td><td class="tool">Railway, one ffmpeg service</td><td>The only step that needs a long-running container. Starts with one instance, one job at a time.</td><td>About $5/month plus usage</td><td class="alt">Cloudflare Containers: revisit once it fits the workload</td></tr>
+        <tr><td>Sign-in</td><td class="tool">WhatsApp OTP, Google</td><td>Matches how the target users already identify themselves.</td><td>Per message</td><td class="alt">Email-only: weaker fit for the market</td></tr>
+        <tr><td>Payments</td><td class="tool">Mobile Money aggregator</td><td>Top-ups in FCFA. A confirmed payment credits the wallet with the payment id as the idempotency key.</td><td>Percentage per top-up</td><td class="alt">Cards only: excludes most of the target market</td></tr>
+        <tr><td>Monitoring</td><td class="tool">Workers Logs, Sentry</td><td>Failed webhooks, refund mismatches and fal errors need to surface the same day.</td><td>Free tiers</td><td class="alt">Self-hosted logging: not worth the time</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-money">
+    <h2 id="h-money">Money and guardrails</h2>
+    <div class="two">
+      <div class="box">
+        <h3>Pricing and the ledger</h3>
+        <ul>
+          <li>Jeton price stays near 33 FCFA. Each model costs fal's price times two, with a floor, from one catalog file the app and the Worker both import.</li>
+          <li>Every debit, refund and top-up is a ledger line. A daily job compares the ledger to fal's invoice so margin is measured, not assumed.</li>
+          <li>Refunds and payment credits are idempotent per job or payment id, so a retried webhook cannot pay twice.</li>
+        </ul>
+      </div>
+      <div class="box warn">
+        <h3>Protect the budget</h3>
+        <ul>
+          <li>A small free credit that needs a verified phone number. Anything looser is the first abuse.</li>
+          <li>Per-account concurrency (the current limit of two) and a daily jeton cap.</li>
+          <li>A global monthly fal budget with a kill switch on the Worker.</li>
+          <li>Prompt moderation before the debit, so a refusal costs nothing.</li>
+          <li>The fal key lives only in Worker secrets.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-plan">
+    <h2 id="h-plan">Build plan</h2>
+    <p>Ten weeks to a public pilot with one or two developers. Each phase swaps one piece of the mock for the real thing behind the same interface, so the app keeps working throughout.</p>
+    <div class="gantt" tabindex="0" role="region" aria-label="Plan timeline, scrolls sideways on small screens">
+      <div class="g-grid">
+        <div class="g-h first">Phase</div>
+        <div class="g-h">W1</div><div class="g-h">W2</div><div class="g-h">W3</div><div class="g-h">W4</div><div class="g-h">W5</div><div class="g-h">W6</div><div class="g-h">W7</div><div class="g-h">W8</div><div class="g-h">W9</div><div class="g-h">W10</div>
+
+        <div class="g-name">0 · Foundations</div><div class="g-bar" style="grid-column:2 / span 1">W1</div><div style="grid-column:span 9"></div>
+        <div class="g-name">1 · Wallet and images</div><div style="grid-column:span 1"></div><div class="g-bar" style="grid-column:3 / span 2">W2–3</div><div style="grid-column:span 7"></div>
+        <div class="g-name">2 · Video, audio, library</div><div style="grid-column:span 3"></div><div class="g-bar" style="grid-column:5 / span 2">W4–5</div><div style="grid-column:span 5"></div>
+        <div class="g-name">3 · Spot and montage</div><div style="grid-column:span 5"></div><div class="g-bar" style="grid-column:7 / span 2">W6–7</div><div style="grid-column:span 3"></div>
+        <div class="g-name">4 · Accounts and money</div><div style="grid-column:span 7"></div><div class="g-bar" style="grid-column:9 / span 2">W8–9</div><div style="grid-column:span 1"></div>
+        <div class="g-name">5 · Pilot</div><div style="grid-column:span 9"></div><div class="g-bar pilot" style="grid-column:11 / span 1">W10+</div>
+      </div>
+    </div>
+
+    <div class="phases">
+      <div class="ph"><h3>0 · Foundations</h3><span class="wk">Week 1</span>
+        <ul><li>Workers and Pages deployed from the repo.</li><li>Shared catalog package for models and prices.</li><li>D1 schema for accounts, jobs, assets, ledger.</li><li>fal key in Worker secrets.</li></ul>
+        <p class="exit"><b>Done when</b> the app loads from Pages and calls a health route on the Worker.</p></div>
+      <div class="ph"><h3>1 · Wallet and images</h3><span class="wk">Weeks 2–3</span>
+        <ul><li>Wallet Durable Object with debit, refund and a ledger.</li><li><code>POST /jobs</code>, fal image submit and webhook.</li><li>Copy outputs to R2, WebSocket status.</li><li>Replace the mock <code>submit</code> behind the same interface.</li></ul>
+        <p class="exit"><b>Done when</b> an image generates, a forced failure refunds, and the ledger reconciles.</p></div>
+      <div class="ph"><h3>2 · Video, audio, library</h3><span class="wk">Weeks 4–5</span>
+        <ul><li>Video and voice models from the same catalog.</li><li>Library read from D1 and R2, uploads to R2.</li><li>Send-to and chain references use stored files.</li></ul>
+        <p class="exit"><b>Done when</b> the library shows the same assets on two devices.</p></div>
+      <div class="ph"><h3>3 · Spot and montage</h3><span class="wk">Weeks 6–7</span>
+        <ul><li>Spot run moves to the server, with the same stages and retries.</li><li>Queue and Railway ffmpeg worker from the manifest.</li><li>Brand kit stored per account, logo in R2.</li></ul>
+        <p class="exit"><b>Done when</b> a spot finishes after the tab is closed.</p></div>
+      <div class="ph"><h3>4 · Accounts and money</h3><span class="wk">Weeks 8–9</span>
+        <ul><li>WhatsApp OTP and Google sign-in.</li><li>Mobile Money top-up and payment webhook.</li><li>Free credit with phone check, spend caps, budget kill switch.</li></ul>
+        <p class="exit"><b>Done when</b> a stranger can sign up, top up and generate without help.</p></div>
+      <div class="ph"><h3>5 · Pilot</h3><span class="wk">Week 10 onward</span>
+        <ul><li>Invite around twenty studios.</li><li>Track margin per jeton from the ledger.</li><li>Then fal workflows for chains and a WhatsApp entry point.</li></ul>
+        <p class="exit"><b>Done when</b> margin per jeton holds across a week of real use.</p></div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-risk">
+    <h2 id="h-risk">Decide and start now</h2>
+    <div class="decision">
+      <h3>Where should a Spot run live in the first release?</h3>
+      <div class="opts">
+        <div class="opt rec"><b>On the server <span class="tag">Recommended</span></b>A spot survives a closed tab, can be retried by support and reads cleanly in the ledger. More work in phase 3.</div>
+        <div class="opt"><b>In the browser for the pilot</b>Reuses today's orchestration and ships sooner. A closed tab loses the run, and the server cannot see the stages.</div>
+      </div>
+    </div>
+    <div class="two">
+      <div class="box">
+        <h3>Long lead items to start in week 1</h3>
+        <ul>
+          <li>Merchant account and KYC with a Mobile Money aggregator.</li>
+          <li>WhatsApp Business sender and OTP template approval.</li>
+          <li>fal account limits and billing set up for the expected volume.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>Main risks and the response</h3>
+        <ul>
+          <li>fal cost spike: daily ledger-to-invoice check and the budget kill switch.</li>
+          <li>Forged callbacks: signed webhook URLs and signature checks.</li>
+          <li>Expiring fal links: copy to R2 before marking a job done.</li>
+          <li>Montage backlog: queue depth alert, scale Railway to two instances.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  var svg=document.getElementById('dia');
+  var edges=[].slice.call(svg.querySelectorAll('.ed'));
+  var nodes=[].slice.call(svg.querySelectorAll('.node'));
+  var btns=[].slice.call(document.querySelectorAll('#steps button'));
+  function has(el,attr,n){return (el.getAttribute(attr)||'').split(' ').indexOf(n)>-1}
+  function setStep(n){
+    btns.forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-n')===n))});
+    edges.forEach(function(e){var on=!n||has(e,'data-s',n);e.classList.toggle('dim',!on);e.classList.toggle('hit',!!n&&on)});
+    nodes.forEach(function(e){e.classList.toggle('dim',!!n&&!has(e,'data-n',n))});
+  }
+  var cur=null;
+  btns.forEach(function(b){b.addEventListener('click',function(){var n=b.getAttribute('data-n');cur=cur===n?null:n;setStep(cur)})});
+})();
+</script>
