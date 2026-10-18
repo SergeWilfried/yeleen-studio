@@ -1,4 +1,5 @@
 import useDocumentTitle from '../lib/useDocumentTitle.js'
+import { features } from '../lib/features.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
@@ -211,9 +212,10 @@ function AssetsView({ focusId }) {
             <h2>Votre bibliothèque est vide</h2>
             <p>Les images, vidéos et voix que vous générez s’y ajoutent automatiquement. Vous pouvez aussi y glisser vos propres fichiers.</p>
             <div className="lb-empty-go">
-              <Link to="/image" className="lb-btn">Générer une image</Link>
-              <Link to="/video" className="lb-btn">Créer une vidéo</Link>
-              <Link to="/audio" className="lb-btn">Écrire une voix</Link>
+              <Link to="/cinema" className="lb-btn">Créer dans le studio</Link>
+              {features.image && <Link to="/image" className="lb-btn">Générer une image</Link>}
+              {features.video && <Link to="/video" className="lb-btn">Créer une vidéo</Link>}
+              {features.audio && <Link to="/audio" className="lb-btn">Écrire une voix</Link>}
               <button type="button" className="lb-btn main" onClick={() => fileInput.current.click()}><Icon name="upload" size={16} />Importer des fichiers</button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import BalanceChip from './BalanceChip.jsx'
 import { AccountMenu, authEnabled, useAuthState } from '../lib/auth.jsx'
+import { features } from '../lib/features.js'
 import logo from '../assets/brand/yeelen-logo-on-lime.svg'
 import mark from '../assets/brand/yeelen-mark-on-lime.svg'
 import '../styles/chrome.css'
@@ -10,7 +11,8 @@ import '../styles/chrome.css'
 const ROUTES = { Explorer: '/', Image: '/image', Vidéo: '/video', Audio: '/audio', Bibliothèque: '/library', 'Spot pub': '/spot', Marque: '/brand', Cinéma: '/cinema' }
 
 // Seules les pages qui existent figurent dans la navigation.
-export const NAV = ['Explorer', 'Image', 'Vidéo', 'Cinéma', 'Audio', 'Spot pub', 'Marque', 'Bibliothèque']
+const FLAG_OF = { Image: 'image', Vidéo: 'video', Audio: 'audio', 'Spot pub': 'spot', Marque: 'brand' } // écrans éteints par drapeau : absents de la navigation
+export const NAV = ['Explorer', 'Image', 'Vidéo', 'Cinéma', 'Audio', 'Spot pub', 'Marque', 'Bibliothèque'].filter((l) => !FLAG_OF[l] || features[FLAG_OF[l]])
 
 export function Logo() {
   return (
