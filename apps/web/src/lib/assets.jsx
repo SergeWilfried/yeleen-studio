@@ -140,7 +140,12 @@ export function AssetsProvider({ children }) {
     return () => { alive = false; document.removeEventListener('visibilitychange', onShow) }
   }, [remote])
 
-  // Envoi d'un import au serveur (une seule fois par fichier, même si deux synchronisations se croisent).
+  // Fichiers retirés : id → remoteId (ou null s'il n'en a pas encore), supprimés côté serveur seulement au `purge`, après le délai d'annulation.
+  const doomed = useRef(new Map())
+  const gone = useRef(new Set()) // imports purgés pendant leur envoi : leur copie serveur est supprimée dès qu'elle arrive
+
+  // Envoi d'un import au serveur (une seule fois par fichier, même si deux synchronisations se croisent). La clé (`key`, l'identifiant local)
+  // rend l'envoi rejouable : si la réponse s'est perdue, le serveur rend le même asset au lieu d'en créer un second.
   const sending = useRef(new Set())
   const pushImport = useRef(null)
   pushImport.current = async (asset, file) => {
@@ -148,8 +153,13 @@ export function AssetsProvider({ children }) {
     sending.current.add(asset.id)
     try {
       const secs = asset.kind === 'image' ? null : asset.secs ?? await mediaSeconds(file)
-      const r = await api.importAsset(file, { name: asset.name, secs })
-      setAssets((xs) => xs.map((a) => (a.id === asset.id ? { ...a, remoteId: r.id, remoteUrl: r.url } : a)))
+      const r = await api.importAsset(file, { name: asset.name, secs, key: asset.id })
+      const linked = (a) => (a.id === asset.id ? { ...a, remoteId: r.id, remoteUrl: r.url } : a)
+      if (gone.current.delete(asset.id)) api.deleteAsset(r.id).catch(() => {}) // supprimé et purgé pendant l'envoi
+      else if (doomed.current.has(asset.id)) { // retiré pendant l'envoi, annulable encore : le purge (ou l'annulation) saura quoi faire
+        doomed.current.set(asset.id, r.id)
+        trash.current = trash.current.map(linked)
+      } else setAssets((xs) => xs.map(linked))
     } catch (e) {
       // Refus définitif (format, taille) : le fichier reste dans ce navigateur seulement. Autre erreur : nouvel essai à la prochaine synchronisation.
       if (e instanceof ApiError && [413, 415].includes(e.status)) setAssets((xs) => xs.map((a) => (a.id === asset.id ? { ...a, remoteSkip: true } : a)))
@@ -180,11 +190,10 @@ export function AssetsProvider({ children }) {
     setAssets((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)))
   }, [remote])
 
-  const doomed = useRef(new Map()) // id → remoteId des fichiers retirés, supprimés côté serveur seulement au `purge` (après le délai d'annulation)
   const remove = useCallback((ids) => {
     setAssets((xs) => {
       trash.current = xs.filter((a) => ids.includes(a.id))
-      for (const a of trash.current) if (a.remoteId) doomed.current.set(a.id, a.remoteId)
+      for (const a of trash.current) doomed.current.set(a.id, a.remoteId ?? null)
       return xs.filter((a) => !ids.includes(a.id))
     })
   }, [])
@@ -200,6 +209,7 @@ export function AssetsProvider({ children }) {
     const remoteId = doomed.current.get(id)
     doomed.current.delete(id)
     if (remote && remoteId) api.deleteAsset(remoteId).catch(() => {}) // déjà supprimé ailleurs (404) : rien à faire
+    else if (sending.current.has(id)) gone.current.add(id) // encore en route : supprimé côté serveur à son arrivée
   }), [remote])
 
   /** Le fichier réel d'un asset (ou l'une de ses images clés pour une vidéo), prêt à remplir une entrée. */

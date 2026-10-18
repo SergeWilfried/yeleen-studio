@@ -25,6 +25,10 @@ export async function listAssets(db, account, { origin, kind, limit, before } = 
   return results.map((a) => assetView(a, origin))
 }
 
+/** Une ligne `assets` du compte (supprimée ou non), ou null. */
+export const getAsset = (db, account, id) =>
+  db.prepare('SELECT id, kind, source, name, r2_key, content_type, bytes, width, height, secs, prompt, model, job_id, idx, created_at FROM assets WHERE id = ?1 AND user_id = ?2').bind(id, account).first()
+
 /** Enregistre un fichier importé (déjà écrit dans R2 sous `key`) et rend sa ligne. */
 export async function insertUpload(db, account, { id, kind, name, key, contentType, bytes, secs = null, width = null, height = null }, now = Date.now()) {
   const row = { id, user_id: account, kind, source: 'upload', name, r2_key: key, content_type: contentType, bytes, width, height, secs, prompt: null, model: null, job_id: null, idx: null, created_at: now }

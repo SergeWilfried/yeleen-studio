@@ -168,6 +168,7 @@ test('import : le fichier va dans R2 sous uploads/, une ligne `assets` (source u
     const served = await app.fetch(new Request(a.url), t.env)
     assert.equal(served.status, 200)
     assert.equal(served.headers.get('content-type'), 'image/png')
+    assert.equal(served.headers.get('x-content-type-options'), 'nosniff') // jamais lu comme une page
     assert.deepEqual(new Uint8Array(await served.arrayBuffer()), png)
     // Supprimé : retiré de la bibliothèque (le fichier reste dans R2 jusqu'au nettoyage).
     assert.equal((await t.json(`/assets/${a.id}`, { method: 'DELETE' })).status, 200)
@@ -198,4 +199,23 @@ test('import refusé : type, taille, longueur absente, sans R2 ; D1 en panne →
   } finally { t.restore() }
   const off = setup({ files: false })
   try { assert.equal((await send(off, new Uint8Array(4), 'image/png')).status, 503) } finally { off.restore() }
+})
+
+test('import rejoué avec la même clé (réponse perdue) : le même asset, pas de doublon', async () => {
+  const t = setup()
+  try {
+    const png = new Uint8Array([137, 80, 78, 71, 9])
+    const first = await send(t, png, 'image/png', '?name=logo&key=a-lz3k9-abcde')
+    assert.equal(first.status, 201)
+    assert.match(first.body.asset.id, /^up-[0-9a-f]{32}$/)
+    const again = await send(t, png, 'image/png', '?name=logo&key=a-lz3k9-abcde')
+    assert.equal(again.status, 200)
+    assert.equal(again.body.replay, true)
+    assert.equal(again.body.asset.id, first.body.asset.id)
+    assert.equal(t.rows('SELECT * FROM assets').length, 1)
+    assert.equal([...t.objects.keys()].filter((k) => k.startsWith('uploads/')).length, 1)
+    const other = await send(t, png, 'image/png', '?name=logo&key=a-lz3k9-fghij')
+    assert.notEqual(other.body.asset.id, first.body.asset.id)
+    assert.equal((await send(t, png, 'image/png', '?key=x')).status, 400) // clé trop courte
+  } finally { t.restore() }
 })

@@ -52,6 +52,7 @@ export async function serveFile(bucket, key, headers) {
 
   const out = new Headers()
   out.set('content-type', obj.httpMetadata?.contentType ?? 'application/octet-stream')
+  out.set('x-content-type-options', 'nosniff') // un import contient ce que l'utilisateur a envoyé : jamais lu comme une page
   out.set('accept-ranges', 'bytes')
   out.set('cache-control', 'public, max-age=31536000, immutable') // la clé ne change jamais de contenu
   if (obj.etag) out.set('etag', obj.etag)
