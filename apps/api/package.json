@@ -5,8 +5,9 @@
   "type": "module",
   "description": "API Cloudflare Worker : auth, tarification côté serveur, jetons (Durable Object), appels et webhooks fal.",
   "scripts": {
-    "dev": "wrangler dev -c wrangler.toml",
-    "deploy": "wrangler deploy -c wrangler.toml",
+    "dev": "wrangler dev -c wrangler.jsonc",
+    "build": "wrangler deploy --dry-run --outdir .wrangler/build -c wrangler.jsonc",
+    "deploy": "wrangler deploy -c wrangler.jsonc",
     "test": "node --test"
   },
   "dependencies": {

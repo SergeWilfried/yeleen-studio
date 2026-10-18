@@ -1,0 +1,29 @@
+{
+  // API du studio (Worker + Durable Object + R2). Déploiement : `pnpm deploy:api` (racine), ou la construction Git de Cloudflare
+  // avec ce dossier comme racine (commande de build : `pnpm run build`, de déploiement : `npx wrangler deploy`).
+  // Ce fichier est en .jsonc comme celui de la racine (le site) : wrangler 4 prend le fichier .jsonc le plus proche, et un
+  // wrangler.toml ici serait ignoré au profit de celui de la racine, qui publierait le site à la place de l'API.
+  "name": "studio-api",
+  "main": "src/index.js",
+  "compatibility_date": "2024-10-01",
+
+  // Valeurs de production. En local, `.dev.vars` les remplace (ENV=dev offre des jetons de test).
+  // ALLOWED_ORIGINS (origines du site) et CLERK_ISSUER (adresse de l'instance Clerk) se règlent dans Cloudflare (Variables et secrets)
+  // ou à la commande (`scripts/deploy.mjs`) ; `keep_vars` empêche un déploiement d'effacer ce qui est réglé dans le tableau de bord.
+  // FAL_KEY est un secret : `wrangler secret put FAL_KEY` ou le tableau de bord, jamais ici.
+  "vars": { "ENV": "production" },
+  "keep_vars": true,
+
+  // Compte : portefeuille de jetons et générations, un Durable Object par compte (un seul écrivain, pas de double débit).
+  "durable_objects": { "bindings": [{ "name": "ACCOUNT", "class_name": "Account" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Account"] }],
+
+  // Fichiers générés. En local, `wrangler dev` simule le bucket. En production, le bucket doit exister :
+  // `wrangler r2 bucket create studio-files` (scripts/deploy.mjs le crée).
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "studio-files" }]
+
+  // À activer quand les ressources existent :
+  // "d1_databases": [{ "binding": "DB", "database_name": "studio", "database_id": "<id>" }],
+  // "queues": { "producers": [{ "binding": "MONTAGE_QUEUE", "queue": "studio-montage" }] },
+  // Secrets : FAL_KEY, WEBHOOK_SECRET
+}

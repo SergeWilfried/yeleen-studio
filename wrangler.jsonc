@@ -1,7 +1,7 @@
 {
   // Déploiement de l'application web (apps/web) sur Cloudflare Workers, en fichiers statiques.
   // `wrangler deploy` construit le site lui-même (champ « build ») : aucune commande de build n'est nécessaire dans Cloudflare.
-  // L'API (apps/api) a son propre `wrangler.toml` et se déploie à part : `pnpm deploy:api`.
+  // L'API (apps/api) a son propre `wrangler.jsonc` et se déploie à part : `pnpm deploy:api`.
   "name": "yeleen-studio",
   "build": { "command": "pnpm build" },
   "compatibility_date": "2026-10-01",
