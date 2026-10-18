@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { api, apiEnabled } from './api.js'
+import { api, ApiError, apiEnabled } from './api.js'
 import { useAuthState } from './auth.jsx'
 import { useJobs } from './jobs.jsx'
-import { favoriteSets, hash, mergeRemote, remoteAssetId } from './librarySync.js'
+import { favoriteSets, hash, mergeRemote, pendingImports, remoteAssetId } from './librarySync.js'
 import { blobDelete, blobGet, blobPut, clipFor, grabFrame, gradientPng, synthWav, vividIndex } from './media.js'
 
 /**
@@ -10,8 +10,9 @@ import { blobDelete, blobGet, blobPut, clipFor, grabFrame, gradientPng, synthWav
  * - Les générations terminées y entrent automatiquement (une entrée par sortie).
  * - Les fichiers importés sont conservés (métadonnées en localStorage, fichier en IndexedDB).
  * - Les générations simulées sont décrites par une graine ; leur média est fabriqué à la demande (voir media.js).
- * - Avec l'API (mode réel, compte connecté), Ma bibliothèque vient aussi du serveur (GET /assets) : les fichiers générés gardés dans R2
- *   se retrouvent sur tout appareil, les favoris et les suppressions sont enregistrés côté serveur (voir librarySync.js).
+ * - Avec l'API (mode réel, compte connecté), Ma bibliothèque vient aussi du serveur (GET /assets) : les fichiers générés et importés,
+ *   gardés dans R2, se retrouvent sur tout appareil ; favoris et suppressions sont enregistrés côté serveur (voir librarySync.js).
+ *   Un import est envoyé au serveur (POST /assets) dès qu'il est fait, ou à la synchronisation suivante s'il a été fait hors connexion.
  */
 const KEY = 'studio.assets.v1'
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] } }
@@ -126,6 +127,11 @@ export function AssetsProvider({ children }) {
         const opts = { complete: list.length < REMOTE_PAGE }
         setAssets((xs) => mergeRemote(xs, list, favs, opts).list)
         for (const id of mergeRemote(latest.current, list, favs, opts).push) api.setFavorite('mine', id, true).catch(() => {}) // étoiles posées avant la connexion
+        for (const a of pendingImports(latest.current)) { // imports faits avant la connexion : envoyés un par un
+          if (!alive) break
+          const file = files.current.get(a.id) ?? await blobGet(a.id).then((b) => b && new File([b], a.fileName ?? a.name, { type: a.type }))
+          if (file) await pushImport.current(a, file)
+        }
       } catch { /* API ou base indisponible : la liste locale reste */ }
     }
     sync()
@@ -133,6 +139,34 @@ export function AssetsProvider({ children }) {
     document.addEventListener('visibilitychange', onShow)
     return () => { alive = false; document.removeEventListener('visibilitychange', onShow) }
   }, [remote])
+
+  // Fichiers retirés : id → remoteId (ou null s'il n'en a pas encore), supprimés côté serveur seulement au `purge`, après le délai d'annulation.
+  const doomed = useRef(new Map())
+  const gone = useRef(new Set()) // imports purgés pendant leur envoi : leur copie serveur est supprimée dès qu'elle arrive
+
+  // Envoi d'un import au serveur (une seule fois par fichier, même si deux synchronisations se croisent). La clé (`key`, l'identifiant local)
+  // rend l'envoi rejouable : si la réponse s'est perdue, le serveur rend le même asset au lieu d'en créer un second.
+  const sending = useRef(new Set())
+  const pushImport = useRef(null)
+  pushImport.current = async (asset, file) => {
+    if (!remote || sending.current.has(asset.id)) return
+    sending.current.add(asset.id)
+    try {
+      const secs = asset.kind === 'image' ? null : asset.secs ?? await mediaSeconds(file)
+      const r = await api.importAsset(file, { name: asset.name, secs, key: asset.id })
+      const linked = (a) => (a.id === asset.id ? { ...a, remoteId: r.id, remoteUrl: r.url } : a)
+      if (gone.current.delete(asset.id)) api.deleteAsset(r.id).catch(() => {}) // supprimé et purgé pendant l'envoi
+      else if (doomed.current.has(asset.id)) { // retiré pendant l'envoi, annulable encore : le purge (ou l'annulation) saura quoi faire
+        doomed.current.set(asset.id, r.id)
+        trash.current = trash.current.map(linked)
+      } else setAssets((xs) => xs.map(linked))
+    } catch (e) {
+      // Refus définitif (format, taille) : le fichier reste dans ce navigateur seulement. Autre erreur : nouvel essai à la prochaine synchronisation.
+      if (e instanceof ApiError && [413, 415].includes(e.status)) setAssets((xs) => xs.map((a) => (a.id === asset.id ? { ...a, remoteSkip: true } : a)))
+    } finally {
+      sending.current.delete(asset.id)
+    }
+  }
 
   const addUpload = useCallback(async (file) => {
     const kind = kindOfFile(file)
@@ -146,6 +180,7 @@ export function AssetsProvider({ children }) {
     const asset = { id, kind, source: 'upload', name: file.name.replace(/\.[^.]+$/, ''), fileName: file.name, type: file.type, size: file.size, fingerprint, createdAt: Date.now(), starred: false, secs: null }
     setAssets((xs) => [asset, ...xs])
     if (kind !== 'image') mediaSeconds(file).then((secs) => secs && setAssets((xs) => xs.map((a) => (a.id === id ? { ...a, secs } : a))))
+    pushImport.current(asset, file) // en arrière-plan : l'import est utilisable tout de suite
     return asset
   }, [])
 
@@ -155,11 +190,10 @@ export function AssetsProvider({ children }) {
     setAssets((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)))
   }, [remote])
 
-  const doomed = useRef(new Map()) // id → remoteId des fichiers retirés, supprimés côté serveur seulement au `purge` (après le délai d'annulation)
   const remove = useCallback((ids) => {
     setAssets((xs) => {
       trash.current = xs.filter((a) => ids.includes(a.id))
-      for (const a of trash.current) if (a.remoteId) doomed.current.set(a.id, a.remoteId)
+      for (const a of trash.current) doomed.current.set(a.id, a.remoteId ?? null)
       return xs.filter((a) => !ids.includes(a.id))
     })
   }, [])
@@ -175,6 +209,7 @@ export function AssetsProvider({ children }) {
     const remoteId = doomed.current.get(id)
     doomed.current.delete(id)
     if (remote && remoteId) api.deleteAsset(remoteId).catch(() => {}) // déjà supprimé ailleurs (404) : rien à faire
+    else if (sending.current.has(id)) gone.current.add(id) // encore en route : supprimé côté serveur à son arrivée
   }), [remote])
 
   /** Le fichier réel d'un asset (ou l'une de ses images clés pour une vidéo), prêt à remplir une entrée. */
@@ -182,9 +217,14 @@ export function AssetsProvider({ children }) {
     if (asset.source === 'upload') {
       let f = files.current.get(asset.id)
       if (!f) {
-        const blob = await blobGet(asset.id)
+        let blob = await blobGet(asset.id)
+        const remoteUrl = asset.remoteUrl ?? asset.url
+        if (!blob && remoteUrl) { // pas dans ce navigateur : la copie du serveur
+          const res = await fetch(remoteUrl)
+          if (res.ok) blob = await res.blob()
+        }
         if (!blob) throw new Error('Fichier introuvable : réimportez-le.')
-        f = new File([blob], asset.fileName ?? asset.name, { type: asset.type })
+        f = new File([blob], asset.fileName ?? `${slug(asset.name)}.${EXT[asset.type ?? blob.type] ?? 'bin'}`, { type: asset.type ?? blob.type })
         files.current.set(asset.id, f)
       }
       if (asset.kind === 'video' && frame) {

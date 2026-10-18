@@ -47,22 +47,26 @@ export const api = {
   createTopup: (spec) => request('/topups', { method: 'POST', body: JSON.stringify(spec) }),
   topup: (reference) => request(`/topups/${encodeURIComponent(reference)}`),
   topups: () => request('/topups'),
-  /** Ma bibliothèque (fichiers générés gardés par l'API), favoris des deux bibliothèques, historique des jetons. */
+  /** Ma bibliothèque (fichiers générés et importés, gardés par l'API), favoris des deux bibliothèques, historique des jetons. */
   assets: (q = {}) => request(`/assets?${new URLSearchParams(q)}`),
   deleteAsset: (id) => request(`/assets/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   favorites: () => request('/favorites'),
   setFavorite: (scope, id, on) => request(`/favorites/${scope}/${encodeURIComponent(id)}`, { method: on ? 'PUT' : 'DELETE' }),
   ledger: (q = {}) => request(`/ledger?${new URLSearchParams(q)}`),
   /** Dépose un fichier d'entrée (image, audio) chez le fournisseur ; renvoie son adresse. */
-  async upload(file) {
-    let res
-    try {
-      res = await fetch(`${BASE}/uploads?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': file.type, ...(await authHeader()) }, body: file })
-    } catch {
-      throw new ApiError(0, { error: 'unreachable' })
-    }
-    const body = await res.json().catch(() => ({}))
-    if (!res.ok) throw new ApiError(res.status, body)
-    return body.url
-  },
+  upload: async (file) => (await sendFile(`/uploads?name=${encodeURIComponent(file.name)}`, file)).url,
+  /** Importe un fichier dans Ma bibliothèque (gardé dans R2, retrouvé sur tous les appareils) ; renvoie l'asset du serveur. */
+  importAsset: async (file, meta = {}) => (await sendFile(`/assets?${new URLSearchParams(Object.entries(meta).filter(([, v]) => v != null))}`, file)).asset,
+}
+
+async function sendFile(path, file) {
+  let res
+  try {
+    res = await fetch(`${BASE}${path}`, { method: 'POST', headers: { 'content-type': file.type, ...(await authHeader()) }, body: file })
+  } catch {
+    throw new ApiError(0, { error: 'unreachable' })
+  }
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) throw new ApiError(res.status, body)
+  return body
 }

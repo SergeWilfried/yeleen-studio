@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { favoriteSets, fromRemote, mergeRemote, remoteAssetId } from '../src/lib/librarySync.js'
+import { favoriteSets, fromRemote, mergeRemote, pendingImports, remoteAssetId } from '../src/lib/librarySync.js'
 
 const NOW = 1_800_000_000_000
 const server = (id, at, extra = {}) => ({ id, kind: 'image', source: 'generated', name: `fichier ${id}`, url: `https://api/files/outputs/u/${id}.png`, contentType: 'image/png', createdAt: at, index: 0, jobId: id.split(':')[0], ...extra })
@@ -49,4 +49,26 @@ test('favoriteSets : par portée, portée inconnue ignorée', () => {
   const s = favoriteSets([{ scope: 'mine', id: 'a:0' }, { scope: 'yeleen', id: 'perso-1' }, { scope: 'autre', id: 'x' }])
   assert.deepEqual([...s.mine], ['a:0'])
   assert.deepEqual([...s.yeleen], ['perso-1'])
+})
+
+test('imports : celui d’un autre appareil arrive comme import, lu depuis le serveur ; le local garde son fichier', () => {
+  const remoteUp = { id: 'up-1', kind: 'image', source: 'upload', name: 'logo', url: 'https://api/files/uploads/u/up-1.png', contentType: 'image/png', bytes: 7, createdAt: NOW }
+  const a = fromRemote(remoteUp)
+  assert.deepEqual([a.source, a.url, a.type, a.size], ['upload', remoteUp.url, 'image/png', 7])
+  const local = [{ id: 'a-x', source: 'upload', remoteId: 'up-2', createdAt: NOW }]
+  const { list } = mergeRemote(local, [remoteUp, { ...remoteUp, id: 'up-2', url: 'https://api/files/uploads/u/up-2.png' }], new Set(), { now: NOW })
+  const mine = list.find((x) => x.id === 'a-x')
+  assert.equal(mine.url, undefined) // fichier local (IndexedDB) d'abord
+  assert.equal(mine.remoteUrl, 'https://api/files/uploads/u/up-2.png')
+  assert.equal(list.length, 2)
+})
+
+test('pendingImports : imports sans copie serveur, sauf ceux qu’il a refusés', () => {
+  const xs = [
+    { id: 'a', source: 'upload' },
+    { id: 'b', source: 'upload', remoteId: 'up-b' },
+    { id: 'c', source: 'upload', remoteSkip: true },
+    { id: 'd', source: 'generated' },
+  ]
+  assert.deepEqual(pendingImports(xs).map((x) => x.id), ['a'])
 })

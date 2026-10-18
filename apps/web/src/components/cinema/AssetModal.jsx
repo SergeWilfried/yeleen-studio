@@ -99,7 +99,7 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
     const added = (await Promise.all([...files].map(addUpload))).filter(Boolean)
     if (!added.length) return toast('Format non pris en charge : image, vidéo ou audio.')
     setTab('library')
-    setPicked((s) => new Set([...s, ...added.map((a) => a.id)]))
+    if (!browse) setPicked((s) => new Set([...s, ...added.map((a) => a.id)])) // en consultation, rien à cocher : l'import garde son menu
   }
   const add = () => { onAdd([...picked].map((id) => byId.get(id)).filter(Boolean)); onClose() } // dans l'ordre où on les a cochés
 

@@ -1,5 +1,5 @@
 /**
- * Lectures de D1 pour l'application : « Ma bibliothèque » (fichiers générés gardés dans R2), favoris des deux bibliothèques,
+ * Lectures de D1 pour l'application : « Ma bibliothèque » (fichiers générés et importés, gardés dans R2), favoris des deux bibliothèques,
  * et Bibliothèque Yeleen (`catalog_items`), rendue au format de `public/catalog/yeleen.json` pour que le site n'ait qu'une adresse à changer.
  */
 const page = (limit, max = 200) => Math.min(Math.max(Number(limit) || 50, 1), max)
@@ -7,19 +7,34 @@ const KINDS = ['image', 'video', 'audio']
 export const SCOPES = ['mine', 'yeleen']
 export const ITEM_ID = /^[\w:.-]{1,120}$/
 
-/** Fichiers d'un compte, du plus récent au plus ancien ; `url` est l'adresse servie par l'API (`/files/…`). */
+/** Une ligne `assets` telle que l'application la reçoit ; `url` est l'adresse servie par l'API (`/files/…`). */
+export const assetView = (a, origin) => ({
+  id: a.id, kind: a.kind, source: a.source, name: a.name, url: `${origin}/files/${a.r2_key}`, contentType: a.content_type, bytes: a.bytes ?? null,
+  width: a.width, height: a.height, secs: a.secs, prompt: a.prompt, model: a.model, jobId: a.job_id, index: a.idx, createdAt: a.created_at,
+})
+
+/** Fichiers d'un compte, du plus récent au plus ancien. */
 export async function listAssets(db, account, { origin, kind, limit, before } = {}) {
   const where = ['user_id = ?1', 'deleted_at IS NULL']
   const args = [account]
   if (KINDS.includes(kind)) { args.push(kind); where.push(`kind = ?${args.length}`) }
   if (before) { args.push(Number(before)); where.push(`created_at < ?${args.length}`) }
   args.push(page(limit))
-  const { results } = await db.prepare(`SELECT id, kind, source, name, r2_key, content_type, width, height, secs, prompt, model, job_id, idx, created_at
+  const { results } = await db.prepare(`SELECT id, kind, source, name, r2_key, content_type, bytes, width, height, secs, prompt, model, job_id, idx, created_at
     FROM assets WHERE ${where.join(' AND ')} ORDER BY created_at DESC LIMIT ?${args.length}`).bind(...args).all()
-  return results.map((a) => ({
-    id: a.id, kind: a.kind, source: a.source, name: a.name, url: `${origin}/files/${a.r2_key}`, contentType: a.content_type,
-    width: a.width, height: a.height, secs: a.secs, prompt: a.prompt, model: a.model, jobId: a.job_id, index: a.idx, createdAt: a.created_at,
-  }))
+  return results.map((a) => assetView(a, origin))
+}
+
+/** Une ligne `assets` du compte (supprimée ou non), ou null. */
+export const getAsset = (db, account, id) =>
+  db.prepare('SELECT id, kind, source, name, r2_key, content_type, bytes, width, height, secs, prompt, model, job_id, idx, created_at FROM assets WHERE id = ?1 AND user_id = ?2').bind(id, account).first()
+
+/** Enregistre un fichier importé (déjà écrit dans R2 sous `key`) et rend sa ligne. */
+export async function insertUpload(db, account, { id, kind, name, key, contentType, bytes, secs = null, width = null, height = null }, now = Date.now()) {
+  const row = { id, user_id: account, kind, source: 'upload', name, r2_key: key, content_type: contentType, bytes, width, height, secs, prompt: null, model: null, job_id: null, idx: null, created_at: now }
+  await db.prepare(`INSERT INTO assets (id, user_id, kind, source, name, r2_key, content_type, bytes, width, height, secs, created_at)
+    VALUES (?1, ?2, ?3, 'upload', ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`).bind(id, account, kind, name, key, contentType, bytes, width, height, secs, now).run()
+  return row
 }
 
 /** Suppression douce : le fichier reste dans R2 jusqu'au nettoyage. Vrai si le fichier existait et n'était pas déjà supprimé. */
