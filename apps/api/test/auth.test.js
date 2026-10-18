@@ -50,6 +50,19 @@ test('refus : expiré, pas encore valide, mauvais émetteur, mauvaise origine, m
   assert.equal(await reason(verifyClerkToken(await k.sign(), { ...opts(k.jwks), issuer: '' })), 'not_configured')
 })
 
+test('clés introuvables (émetteur mal réglé, réseau, page HTML) : jwks_unavailable, jamais une autre erreur', async () => {
+  const k = await keys()
+  const token = await k.sign()
+  for (const fetch of [
+    async () => new Response('nope', { status: 404 }),
+    async () => new Response('<html>pas des clés</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
+    async () => { throw new TypeError('fetch failed') },
+  ]) {
+    resetAuthCache()
+    assert.equal(await reason(verifyClerkToken(token, { ...opts(k.jwks), fetch })), 'jwks_unavailable')
+  }
+})
+
 test('une clé qui change (rotation) est rechargée une fois', async () => {
   resetAuthCache()
   const a = await keys('ka')
