@@ -8,3 +8,11 @@ MAX_JOB_COST=150
 CLERK_ISSUER=
 # Jetons offerts une seule fois à chaque nouvel utilisateur (0 = aucun). Décision de produit : de l'argent réel part avec.
 WELCOME_JETONS=
+# Recharges Mobile Money (paygate). Utilisez le tenant « sandbox » de paygate, jamais le tenant de production ici.
+# Sans PAYGATE_URL et PAYGATE_KEY, /topups répond 503. Le secret du webhook vérifie la signature de /webhooks/payments.
+PAYGATE_URL=
+PAYGATE_KEY=
+PAYGATE_WEBHOOK_SECRET=
+# Pays ouverts à la recharge (BF, CI, SN), et adresse https de retour pour Wave (sinon la première origine https + /recharge/retour).
+TOPUP_COUNTRIES=BF
+TOPUP_RETURN_URL=

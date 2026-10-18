@@ -3,9 +3,12 @@ import { cors } from 'hono/cors'
 import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
+import { TOPUP_COUNTRIES, findPack, toE164 } from '@studio/catalog/packs'
 import { isBlocked } from './moderation.js'
+import { PaygateError, paygateClient, verifySignature } from './paygate.js'
 import { priceJob } from './pricing.js'
 import { serveFile, storeOutputs } from './storage.js'
+import { newReference, topupView } from './topups.js'
 import { ensureUser, getUser, markWelcomed } from './users.js'
 
 export { Account } from './account-do.js'
@@ -16,6 +19,7 @@ export { Account } from './account-do.js'
  * (ENV=dev) sans CLERK_ISSUER, un compte `demo` unique sert à développer sans connexion. Les fichiers restent chez fal
  * (adresses temporaires) tant que R2 n'est pas branché ; le suivi se fait par interrogation, le webhook viendra ensuite.
  * Quand le bucket R2 (`FILES`) existe, chaque sortie y est copiée à la fin de la génération et servie par `/files/…`.
+ * Les jetons s'achètent en FCFA par Mobile Money via paygate (`/topups`) ; paygate confirme par `/webhooks/payments` (signé).
  */
 const app = new Hono()
 
@@ -203,6 +207,153 @@ app.post('/jobs/:id/cancel', async (c) => {
 
 // Retours de fal par webhook : à écrire pour la production (signature, copie dans R2) ; en local le suivi par interrogation suffit.
 app.post('/webhooks/fal', (c) => c.json({ error: 'not_implemented' }, 501))
-app.post('/webhooks/payments', (c) => c.json({ error: 'not_implemented' }, 501))
+
+// ── Recharges Mobile Money (paygate) ──────────────────────────────────────────
+// Le prix vient du catalogue (packs), jamais du navigateur. La recharge est enregistrée dans le compte avant l'appel à paygate,
+// avec la référence et le compte dans `metadata` : le webhook sait ainsi quel compte créditer, même s'il arrive avant notre réponse.
+
+const paygate = (c) => (c.env.PAYGATE_URL && c.env.PAYGATE_KEY ? paygateClient({ url: c.env.PAYGATE_URL, key: c.env.PAYGATE_KEY }) : null)
+const topupCountries = (env) => (env.TOPUP_COUNTRIES ?? 'BF').split(',').map((s) => s.trim()).filter((k) => TOPUP_COUNTRIES[k])
+const getTopup = (c, ref) => account(c).fetch(`https://account/topup/get?ref=${encodeURIComponent(ref)}`).then((r) => r.json())
+const PRE_AUTH_CODE = /^[A-Za-z0-9]{3,16}$/
+
+/** Pays, opérateur et numéro (E.164) d'une demande, ou l'erreur à renvoyer. */
+function payer(c, { country = 'BF', operator, phone }) {
+  if (!topupCountries(c.env).includes(country)) return { error: 'unsupported_country' }
+  if (!TOPUP_COUNTRIES[country].operators.includes(operator)) return { error: 'invalid_operator' }
+  const e164 = toE164(phone, country)
+  return e164 ? { country, operator, phone: e164 } : { error: 'invalid_phone' }
+}
+
+/** Retour de Wave (https seulement) : TOPUP_RETURN_URL, sinon la première origine https du site + /recharge/retour. */
+function returnUrls(env, reference) {
+  const base = env.TOPUP_RETURN_URL ?? (() => { const o = allowedOrigins(env).find((x) => x.startsWith('https://')); return o && `${o}/recharge/retour` })()
+  if (!base?.startsWith('https://')) return {}
+  const u = (result) => `${base}${base.includes('?') ? '&' : '?'}ref=${reference}&result=${result}`
+  return { successUrl: u('success'), failedUrl: u('failed') }
+}
+
+// Erreur paygate → réponse : sa clé ou une adresse fausse sont nos pannes (502) ; le reste (montant, numéro…) est renvoyé tel quel.
+const ours = (e) => !(e instanceof PaygateError) || e.status >= 500 || e.status === 401 || e.status === 404
+
+// Avant d'afficher le bouton de paiement : ce moyen marche-t-il pour ce numéro, avec quelles limites et quelle validation (`authType`).
+app.get('/topups/options', async (c) => {
+  const pg = paygate(c)
+  if (!pg) return c.json({ error: 'payments_not_configured' }, 503)
+  const q = c.req.query()
+  const who = payer(c, q)
+  if (who.error) return c.json({ error: who.error }, 400)
+  const amount = q.pack ? findPack(q.pack)?.fcfa : q.amount ? Number(q.amount) : undefined
+  if (amount !== undefined && !(Number.isInteger(amount) && amount > 0)) return c.json({ error: 'invalid_amount' }, 400)
+  try {
+    return c.json({ ...(await pg.methods({ operator: who.operator, phone: who.phone, amount })), country: who.country, operator: who.operator, phone: who.phone })
+  } catch (e) {
+    if (ours(e)) { console.error('moyens paygate', e.message); return c.json({ error: 'provider' }, 502) }
+    return c.json({ error: e.code }, e.status)
+  }
+})
+
+app.get('/topups', async (c) => c.json({ topups: (await account(c).fetch('https://account/topup/list').then((r) => r.json())).map(topupView) }))
+
+// Recharge : pack du catalogue → enregistrement → encaissement paygate. Orange Burkina exige d'abord un code à usage unique :
+// paygate répond 422 sans rien créer, la recharge passe en `awaiting_code`, et on renvoie la même demande avec `reference` et `preAuthCode`.
+app.post('/topups', async (c) => {
+  const pg = paygate(c)
+  if (!pg) return c.json({ error: 'payments_not_configured' }, 503)
+  const req = await c.req.json().catch(() => ({}))
+  const pack = findPack(req.pack)
+  if (!pack) return c.json({ error: 'unknown_pack' }, 400)
+  const who = payer(c, req)
+  if (who.error) return c.json({ error: who.error }, 400)
+  const code = typeof req.preAuthCode === 'string' && req.preAuthCode.trim() ? req.preAuthCode.trim() : null
+  if (code && !PRE_AUTH_CODE.test(code)) return c.json({ error: 'invalid_pre_auth_code' }, 400)
+
+  let topup
+  if (req.reference) {
+    // Nouvel essai (code reçu, ou coupure réseau) : mêmes détails, sinon paygate refuserait ; une recharge déjà lancée ne se relance pas.
+    topup = typeof req.reference === 'string' ? await getTopup(c, req.reference) : null
+    if (!topup) return c.json({ error: 'not_found' }, 404)
+    const same = topup.pack === pack.id && topup.phone === who.phone && topup.operator === who.operator
+    if (!same || (topup.status !== 'pending' && topup.status !== 'awaiting_code')) return c.json({ error: 'cannot_retry', topup: topupView(topup) }, 409)
+  } else {
+    const now = Date.now()
+    topup = { reference: newReference(now), pack: pack.id, amountFcfa: pack.fcfa, jetons: pack.jetons, operator: who.operator, phone: who.phone, country: who.country, status: 'pending', createdAt: now, updatedAt: now }
+    const opened = await call(c, '/topup/open', { topup, max: Number(c.env.MAX_OPEN_TOPUPS ?? 3) })
+    if (!opened.ok) return c.json(opened, 429) // { error: 'too_many_open', max }
+  }
+
+  const patch = (fields) => call(c, '/topup/patch', { reference: topup.reference, from: ['pending', 'awaiting_code'], ...fields })
+  let payment
+  try {
+    payment = await pg.collect({
+      reference: topup.reference, amount: topup.amountFcfa, rail: 'mobile_money', operator: topup.operator, phone: topup.phone,
+      metadata: { account: accountId(c), pack: topup.pack }, ...(code ? { preAuthCode: code } : {}), ...returnUrls(c.env, topup.reference),
+    })
+  } catch (e) {
+    if (ours(e)) {
+      // Rien ne dit que paygate n'a pas enregistré le paiement : on garde `pending`, un nouvel essai avec la même référence est sans risque.
+      console.error('encaissement paygate', e.message)
+      return c.json({ error: 'provider', topup: topupView(topup) }, 502)
+    }
+    if (e.code === 'pre_auth_code_required') {
+      const r = await patch({ status: 'awaiting_code', codeInstructions: e.detail.codeInstructions ?? null })
+      return c.json({ topup: topupView(r.topup ?? topup) })
+    }
+    if (e.code === 'invalid_pre_auth_code') return c.json({ error: e.code, topup: topupView(topup) }, 400) // rien n'est créé : on peut retaper le code
+    if (e.status === 409) return c.json({ error: e.code, topup: topupView(topup) }, 409) // déjà créé chez paygate avec d'autres détails : le webhook dira la suite
+    const r = await patch({ status: 'failed', failure: e.code })
+    return c.json({ error: e.code, min: e.detail.min, max: e.detail.max, topup: topupView(r.topup ?? topup) }, e.status)
+  }
+  const out = await call(c, '/topup/apply', { reference: topup.reference, payment })
+  return c.json({ topup: topupView(out.topup), balance: out.balance }, 201)
+})
+
+// Suivi par l'interface. Le webhook fait foi ; s'il tarde (plus de 30 s), on lit le paiement chez paygate, au plus toutes les 10 s.
+app.get('/topups/:reference', async (c) => {
+  let t = await getTopup(c, c.req.param('reference'))
+  if (!t) return c.json({ error: 'not_found' }, 404)
+  const pg = paygate(c)
+  const now = Date.now()
+  if (pg && (t.status === 'processing' || t.status === 'pending') && now - t.createdAt > 30_000 && now - (t.checkedAt ?? 0) > 10_000) {
+    const from = ['pending', 'processing']
+    try {
+      t = (await call(c, '/topup/apply', { reference: t.reference, payment: await pg.collection(t.reference) })).topup
+      await call(c, '/topup/patch', { reference: t.reference, from, checkedAt: now })
+    } catch (e) {
+      // Inconnue chez paygate après 2 min : l'encaissement n'a jamais été créé.
+      if (e instanceof PaygateError && e.status === 404 && t.status === 'pending' && now - t.createdAt > 120_000) t = (await call(c, '/topup/patch', { reference: t.reference, from: ['pending'], status: 'failed', failure: 'not_created' })).topup ?? t
+      else { console.error('lecture paygate', e.message); await call(c, '/topup/patch', { reference: t.reference, from, checkedAt: now }) }
+    }
+  }
+  return c.json({ topup: topupView(t), balance: (await call(c, '/balance')).balance })
+})
+
+// Confirmations de paygate. Signature vérifiée sur le corps brut ; au moins une fois et dans le désordre : tout est idempotent
+// (crédit par référence), et un 2xx rapide évite les nouvelles tentatives. Les jetons crédités sont ceux enregistrés, jamais recalculés.
+const PAYMENT_EVENTS = ['payment.completed', 'payment.failed', 'payment.expired']
+app.post('/webhooks/payments', async (c) => {
+  const secret = c.env.PAYGATE_WEBHOOK_SECRET
+  if (!secret) return c.json({ error: 'payments_not_configured' }, 503)
+  const raw = await c.req.text()
+  if (!(await verifySignature(secret, raw, c.req.header('paygate-signature') ?? null))) return c.json({ error: 'bad_signature' }, 401)
+  let event
+  try { event = JSON.parse(raw) } catch { return c.json({ error: 'invalid_json' }, 400) }
+  const p = event?.data
+  if (event?.type === 'payment.mismatch') console.error('paygate : paiement non conforme, rien n’est crédité', event.id, p?.reference)
+  if (!PAYMENT_EVENTS.includes(event?.type)) return c.json({ ok: true, ignored: event?.type ?? null }) // ping, payment.unknown (versements), types futurs
+
+  const uid = p?.metadata?.account
+  if (typeof uid !== 'string' || !/^[\w-]{3,100}$/.test(uid) || typeof p.reference !== 'string') {
+    console.error('webhook paygate sans compte', event.id)
+    return c.json({ ok: true, ignored: 'no_account' })
+  }
+  const stub = c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(uid))
+  const res = await stub.fetch('https://account/topup/apply', { method: 'POST', body: JSON.stringify({ reference: p.reference, payment: p, late: event.late === true }) })
+  if (res.status === 404) { console.error('webhook paygate : recharge inconnue', p.reference); return c.json({ ok: true, ignored: 'unknown_reference' }) }
+  const out = await res.json()
+  if (out.mismatch) console.error('paygate : montant différent de la recharge, rien n’est crédité', p.reference, p.amount)
+  if (out.credited && out.topup.late) console.warn('paygate : paiement tardif crédité', p.reference)
+  return c.json({ ok: true })
+})
 
 export default app

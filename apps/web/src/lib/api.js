@@ -42,6 +42,11 @@ export const api = {
   createJob: (spec) => request('/jobs', { method: 'POST', body: JSON.stringify(spec) }),
   job: (id) => request(`/jobs/${id}`),
   cancelJob: (id) => request(`/jobs/${id}/cancel`, { method: 'POST' }),
+  /** Recharges Mobile Money : moyen disponible pour ce numéro, lancement (ou nouvel essai avec `reference` et `preAuthCode`), suivi, historique. */
+  topupOptions: (q) => request(`/topups/options?${new URLSearchParams(q)}`),
+  createTopup: (spec) => request('/topups', { method: 'POST', body: JSON.stringify(spec) }),
+  topup: (reference) => request(`/topups/${encodeURIComponent(reference)}`),
+  topups: () => request('/topups'),
   /** Dépose un fichier d'entrée (image, audio) chez le fournisseur ; renvoie son adresse. */
   async upload(file) {
     let res

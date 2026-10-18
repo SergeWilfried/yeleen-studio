@@ -3,7 +3,7 @@
  * Déploiement Cloudflare : l'API (Worker + Durable Object + R2) puis l'application web (fichiers statiques).
  *
  *   node scripts/deploy.mjs check              vérifie l'environnement (outils, connexion Cloudflare, tests)
- *   node scripts/deploy.mjs api                crée le bucket R2 si besoin, vérifie le secret FAL_KEY, déploie l'API
+ *   node scripts/deploy.mjs api                crée le bucket R2 si besoin, vérifie les secrets (FAL_KEY, paygate), déploie l'API
  *   node scripts/deploy.mjs web                construit le site avec l'adresse de l'API et le déploie
  *   node scripts/deploy.mjs all                api, puis web, puis autorise l'adresse du site dans l'API (CORS) et vérifie
  *
@@ -11,6 +11,8 @@
  *           --api-url=URL, --web-origin=URL (sinon variables API_URL / WEB_ORIGIN, sinon dernières adresses connues).
  * Connexion des utilisateurs (Clerk) : CLERK_ISSUER (adresse de l'instance, ex. https://xxx.clerk.accounts.dev) pour l'API et
  *           VITE_CLERK_PUBLISHABLE_KEY (pk_…) pour le site, dans l'environnement ; `check` refuse un déploiement sans eux (sauf --no-auth).
+ * Recharges Mobile Money (paygate) : PAYGATE_URL (adresse de paygate, variable), PAYGATE_KEY (pgk_…) et PAYGATE_WEBHOOK_SECRET (whsec_…),
+ *           secrets ; facultatifs : sans eux, /topups répond 503. Tenant « sandbox » de paygate hors production.
  * Premier déploiement : CLERK_ISSUER=… VITE_CLERK_PUBLISHABLE_KEY=… FAL_KEY=… node scripts/deploy.mjs all   (la clé n'est lue que de l'environnement, jamais affichée).
  * Connexion : `pnpm exec wrangler login`, ou CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID pour l'intégration continue.
  */
@@ -63,6 +65,7 @@ async function confirm(question) {
 }
 
 const clerkIssuer = () => (process.env.CLERK_ISSUER ?? readState().clerkIssuer ?? '').replace(/\/+$/, '') || null
+const paygateUrl = () => (process.env.PAYGATE_URL ?? readState().paygateUrl ?? '').replace(/\/+$/, '') || null
 const normalize = (url) => (url ? url.replace(/\/+$/, '') : null)
 const origins = () => [...new Set([opt('web-origin') ?? process.env.WEB_ORIGIN ?? readState().webOrigin].filter(Boolean).map(normalize))]
 const apiUrl = () => normalize(opt('api-url') ?? process.env.API_URL ?? readState().apiUrl)
@@ -118,20 +121,32 @@ function ensureBucket() {
   ok(`bucket R2 « ${BUCKET} » créé`)
 }
 
-function ensureSecret() {
-  if (dry && !process.env.CLOUDFLARE_API_TOKEN && !/logged in/i.test(wrangler(['whoami'], { quiet: true }).out)) return warn('secret FAL_KEY non vérifié (non connecté)')
+function secretNames() {
   const list = wrangler(['secret', 'list', '-c', API_CONFIG, '--format', 'json'], { quiet: true })
-  const names = list.code === 0 ? (() => { try { return JSON.parse(list.out.slice(list.out.indexOf('['))).map((s) => s.name) } catch { return [] } })() : []
-  const key = process.env.FAL_KEY
-  if (names.includes('FAL_KEY') && !key) return ok('secret FAL_KEY déjà défini (pour le changer : FAL_KEY=… node scripts/deploy.mjs api)')
+  return list.code === 0 ? (() => { try { return JSON.parse(list.out.slice(list.out.indexOf('['))).map((s) => s.name) } catch { return [] } })() : []
+}
+
+/** Secret de l'API, lu seulement dans l'environnement. `required` : FAL_KEY ; les secrets paygate sont facultatifs (recharges coupées sans eux). */
+function ensureSecret(name, names, { required = true } = {}) {
+  const key = process.env[name]
+  if (names.includes(name) && !key) return ok(`secret ${name} déjà défini (pour le changer : ${name}=… node scripts/deploy.mjs api)`)
   if (!key) {
-    if (dry) return warn('secret FAL_KEY absent : il faudra le fournir (FAL_KEY=… node scripts/deploy.mjs api)')
-    fail('Le secret FAL_KEY n’existe pas encore. Relancez avec la clé dans l’environnement :  FAL_KEY=… node scripts/deploy.mjs api')
+    if (!required) return warn(`secret ${name} absent : les recharges Mobile Money restent coupées (${name}=… node scripts/deploy.mjs api)`)
+    if (dry) return warn(`secret ${name} absent : il faudra le fournir (${name}=… node scripts/deploy.mjs api)`)
+    fail(`Le secret ${name} n’existe pas encore. Relancez avec la clé dans l’environnement :  ${name}=… node scripts/deploy.mjs api`)
   }
-  if (dry) return ok('secret FAL_KEY fourni : il serait enregistré')
-  const put = wrangler(['secret', 'put', 'FAL_KEY', '-c', API_CONFIG], { input: key })
-  if (put.code !== 0) fail('Enregistrement du secret FAL_KEY impossible.')
-  ok('secret FAL_KEY enregistré')
+  if (dry) return ok(`secret ${name} fourni : il serait enregistré`)
+  const put = wrangler(['secret', 'put', name, '-c', API_CONFIG], { input: key })
+  if (put.code !== 0) fail(`Enregistrement du secret ${name} impossible.`)
+  ok(`secret ${name} enregistré`)
+}
+
+function ensureSecrets() {
+  if (dry && !process.env.CLOUDFLARE_API_TOKEN && !/logged in/i.test(wrangler(['whoami'], { quiet: true }).out)) return warn('secrets non vérifiés (non connecté)')
+  const names = secretNames()
+  ensureSecret('FAL_KEY', names)
+  ensureSecret('PAYGATE_KEY', names, { required: false })
+  ensureSecret('PAYGATE_WEBHOOK_SECRET', names, { required: false })
 }
 
 /** Base D1 : la crée si besoin et écrit son identifiant dans apps/api/wrangler.jsonc (à valider dans git : la construction Git de Cloudflare le lit). */
@@ -163,15 +178,15 @@ function migrateD1() {
 
 function deployApi({ firstPass = true } = {}) {
   step(firstPass ? 'API (Worker, Durable Object, R2)' : 'API : autorisation du site (CORS)')
-  if (firstPass) { ensureBucket(); ensureSecret(); ensureD1(); migrateD1() }
+  if (firstPass) { ensureBucket(); ensureSecrets(); ensureD1(); migrateD1() }
   const allowed = origins().join(',')
   if (!allowed) warn('adresse du site inconnue : ALLOWED_ORIGINS reste vide pour l’instant (corrigé automatiquement par « all »)')
-  const d = wrangler(['deploy', '-c', API_CONFIG, ...(dry ? ['--dry-run'] : []), ...(allowed ? ['--var', `ALLOWED_ORIGINS:${allowed}`] : []), ...(clerkIssuer() ? ['--var', `CLERK_ISSUER:${clerkIssuer()}`] : [])])
+  const d = wrangler(['deploy', '-c', API_CONFIG, ...(dry ? ['--dry-run'] : []), ...(allowed ? ['--var', `ALLOWED_ORIGINS:${allowed}`] : []), ...(clerkIssuer() ? ['--var', `CLERK_ISSUER:${clerkIssuer()}`] : []), ...(paygateUrl() ? ['--var', `PAYGATE_URL:${paygateUrl()}`] : [])])
   if (d.code !== 0) fail('Le déploiement de l’API a échoué.')
   const url = urlIn(d.out)
   if (dry) return ok('configuration de l’API valide (simulation)')
   if (!url) warn('adresse de l’API introuvable dans la sortie de wrangler : passez --api-url=… à la commande web')
-  else { saveState({ apiUrl: url, apiOrigins: allowed, ...(clerkIssuer() ? { clerkIssuer: clerkIssuer() } : {}) }); ok(`API déployée : ${url}`) }
+  else { saveState({ apiUrl: url, apiOrigins: allowed, ...(clerkIssuer() ? { clerkIssuer: clerkIssuer() } : {}), ...(paygateUrl() ? { paygateUrl: paygateUrl() } : {}) }); ok(`API déployée : ${url}`) }
   return url
 }
 

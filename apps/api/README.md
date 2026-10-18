@@ -7,8 +7,10 @@ Cloudflare Worker (Hono). Point d'entrée unique pour tout ce qui coûte de l'ar
 - `src/fal.js` : client de la file fal (submit, status, result, cancel), sans dépendance.
 - `src/wallet.js` : règles des jetons (débit, remboursement, crédit), idempotentes. Sans dépendance, testées.
 - `src/storage.js` : copie des sorties dans R2 et lecture par plage.
-- `src/account-do.js` : Durable Object, un compte = portefeuille + générations.
-- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`. À écrire : `/webhooks/fal`, `/webhooks/payments`.
+- `src/paygate.js` : client de paygate (moyens, encaissement, lecture) et vérification de la signature des webhooks.
+- `src/topups.js` : règles des recharges (statuts, crédit au montant enregistré, paiements tardifs), sans dépendance, testées.
+- `src/account-do.js` : Durable Object, un compte = portefeuille + générations + recharges.
+- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`, `GET /topups/options`, `GET|POST /topups`, `GET /topups/:reference`, `POST /webhooks/payments`. À écrire : `/webhooks/fal`.
 - `wrangler.jsonc` : liaisons (D1, R2, Queues en commentaire jusqu'à création des ressources).
 
 ## Générations réelles
@@ -20,6 +22,16 @@ Seedance 2.5 (un modèle, trois points d'accès fal choisis selon les entrées :
 3. En développement, un compte neuf reçoit 240 jetons.
 
 Chaque génération réelle est facturée par fal. `MAX_JOB_COST` (150 jetons par défaut) refuse une demande unique trop chère tant qu'il n'y a pas de plafond par compte. Le suivi se fait par interrogation (toutes les 1,5 s).
+
+## Recharges Mobile Money (paygate)
+
+Les jetons s'achètent par packs en FCFA (`@studio/catalog/packs`), par Orange, Moov ou Wave, via paygate (`PAYGATE_URL`, `PAYGATE_KEY`, `PAYGATE_WEBHOOK_SECRET`).
+
+1. `GET /topups/options?country=BF&operator=orange&phone=…&pack=…` : disponibilité, limites et `authType` (à demander avant d'afficher le bouton).
+2. `POST /topups { pack, country, operator, phone }` : le prix vient du catalogue. Selon `authType` : `PROVIDER_AUTH` (valider sur le téléphone, `instructions`), `REDIRECT_AUTH` (Wave : aller sur `authUrl`), `PREAUTH` (Orange Burkina : la recharge revient en `awaiting_code` avec `codeInstructions` ; renvoyer la même demande avec `reference` et `preAuthCode`).
+3. `GET /topups/:reference` toutes les 3–4 s jusqu'à `completed`, `failed` ou `expired` (un paiement échoué ou expiré peut encore aboutir en retard : il est crédité).
+
+paygate confirme par `POST /webhooks/payments` (signature HMAC sur le corps brut, 5 min de tolérance). Le crédit se fait dans le Durable Object, une seule fois par référence, du nombre de jetons enregistré à la création ; un montant différent n'est pas crédité. Si le webhook tarde plus de 30 s, `GET /topups/:reference` lit le paiement chez paygate. Au plus 3 recharges ouvertes par compte (`MAX_OPEN_TOPUPS`).
 
 ## Fichiers (R2)
 
