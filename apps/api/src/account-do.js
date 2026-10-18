@@ -62,6 +62,8 @@ export class Account {
 
     const w = await this.wallet()
     if (pathname === '/balance') return Response.json({ balance: w.balance })
+    // Solde et liste des opérations (débits, remboursements, crédits) : de quoi contrôler le journal D1 (lecture seule).
+    if (pathname === '/ops') return Response.json({ balance: w.balance, ops: w.ops })
     const body = await request.json()
     const run = { '/debit': debit, '/refund': refund, '/credit': credit }[pathname]
     if (!run) return new Response('not found', { status: 404 })

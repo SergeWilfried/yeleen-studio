@@ -54,7 +54,7 @@ export async function makeApi(vars = {}) {
   const k = await keys()
   const db = testD1()
   const bucket = fakeR2()
-  const phase = { v: 'queue' }
+  const phase = { v: 'queue', submit: 'ok', empty: false } // submit = 'fail' : fal refuse l'envoi ; empty : la génération se termine sans sortie
   const accounts = new Map()
   const env = {
     FAL_KEY: 'test', ENV: 'dev', CLERK_ISSUER: ISSUER, ALLOWED_ORIGINS: ORIGIN, DB: db, FILES: bucket, ...vars,
@@ -71,9 +71,9 @@ export async function makeApi(vars = {}) {
   globalThis.fetch = async (url, init) => {
     const u = String(url)
     if (u.endsWith('/.well-known/jwks.json')) return Response.json(k.jwks)
-    if (u.endsWith('/nano-banana-pro')) return Response.json(queued)
+    if (u.endsWith('/nano-banana-pro')) return phase.submit === 'fail' ? new Response(JSON.stringify({ detail: 'boom' }), { status: 500 }) : Response.json(queued)
     if (u.includes('/status')) return Response.json({ status: phase.v === 'done' ? 'COMPLETED' : 'IN_QUEUE', queue_position: 1 })
-    if (u.includes('/requests/')) return Response.json({ images: [{ url: 'https://v3.fal.media/files/out.png', content_type: 'image/png', width: 1024, height: 1024 }] })
+    if (u.includes('/requests/')) return Response.json(phase.empty ? { images: [] } : { images: [{ url: 'https://v3.fal.media/files/out.png', content_type: 'image/png', width: 1024, height: 1024 }] })
     if (u === 'https://v3.fal.media/files/out.png') return new Response(PNG, { headers: { 'content-type': 'image/png' } })
     return new Response('nope', { status: 404 })
   }

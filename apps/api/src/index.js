@@ -4,6 +4,7 @@ import { AuthError, verifyClerkToken } from './auth.js'
 import { library, catalogRoutes } from './library-routes.js'
 import { addGenerated, purgeDeleted, toAsset } from './library.js'
 import { listJobs, mirrorJob, paramsOf, promptOf } from './jobs-store.js'
+import { listLedger, reconcile, reconcileRecent, recordMovement } from './ledger.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { isBlocked } from './moderation.js'
@@ -63,7 +64,7 @@ async function provision(c, claims = {}) {
     const user = await ensureUser(db, id, { email: short(claims.email), name: short(claims.name ?? claims.full_name), country: short(c.req.raw.cf?.country) })
     const welcome = Number(c.env.WELCOME_JETONS ?? 0)
     if (welcome > 0 && !user.welcomedAt) {
-      const credited = await call(c, '/credit', { paymentId: 'welcome', amount: welcome }) // idempotent : rejoué, il ne crédite pas deux fois
+      const credited = await creditUser(c, 'welcome', welcome, 'welcome') // idempotent : rejoué, il ne crédite pas deux fois
       if (credited.ok) await markWelcomed(db, id)
     }
   } catch (e) {
@@ -82,6 +83,30 @@ async function later(c, promise, what) {
   const task = Promise.resolve(promise).catch((e) => console.error(`${what} (D1)`, e.message))
   try { c.executionCtx.waitUntil(task) } catch { await task }
 }
+/**
+ * Mouvements de jetons : toujours dans le Durable Object d'abord (l'autorité), puis une copie dans le journal D1 (credit_ledger) pour l'historique
+ * de l'utilisateur. Une copie manquée (D1 en panne) est complétée par le contrôle (ledger.js), jamais par un second mouvement.
+ */
+const R1 = (n) => Math.round(n * 10) / 10
+async function journal(c, movement) {
+  if (c.env.DB) await later(c, recordMovement(c.env.DB, accountId(c), { ...movement, at: Date.now() }), 'journal des jetons')
+}
+async function debitJob(c, jobId, amount) {
+  const r = await call(c, '/debit', { jobId, amount })
+  if (r.ok && !r.replay) await journal(c, { ref: `debit:${jobId}`, kind: 'debit', amount: R1(-amount), balanceAfter: r.balance, jobId })
+  return r
+}
+async function refundJob(c, jobId) {
+  const r = await call(c, '/refund', { jobId })
+  if (r.ok && !r.replay && r.refunded > 0) await journal(c, { ref: `refund:${jobId}`, kind: 'refund', amount: r.refunded, balanceAfter: r.balance, jobId })
+  return r
+}
+async function creditUser(c, paymentId, amount, reason) {
+  const r = await call(c, '/credit', { paymentId, amount })
+  if (r.ok && !r.replay) await journal(c, { ref: `credit:${paymentId}`, kind: 'credit', reason, amount: R1(amount), balanceAfter: r.balance, paymentId })
+  return r
+}
+
 /** Enregistre une génération dans le Durable Object (l'autorité) puis en copie dans D1 pour l'historique. */
 async function saveJob(c, job) {
   await call(c, '/job/put', job)
@@ -118,6 +143,18 @@ app.get('/me', async (c) => {
   return c.json({ ...user, balance: (await call(c, '/balance')).balance })
 })
 
+// Mon historique de jetons (journal D1) : ?limit=30&before=<identifiant de la dernière ligne reçue>.
+app.get('/me/ledger', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  const q = c.req.query()
+  return c.json(await listLedger(c.env.DB, accountId(c), { limit: q.limit, before: q.before ? Number(q.before) : null }))
+})
+// Contrôle de mon journal contre mon portefeuille : complète ce qui manque et dit s'il reste un écart.
+app.get('/me/ledger/audit', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  return c.json(await reconcile(c.env.DB, accountId(c), await account(c).fetch('https://account/ops').then((r) => r.json())))
+})
+
 // Soumission : contrôle du texte et prix serveur → débit → envoi à fal. Si l'envoi échoue, remboursement immédiat.
 app.post('/jobs', async (c) => {
   const req = await c.req.json()
@@ -137,7 +174,7 @@ app.post('/jobs', async (c) => {
     return c.json({ jobId: claim.existing, status: prev?.status ?? 'IN_QUEUE', cost: prev?.cost ?? price.cost, balance: (await call(c, '/balance')).balance, deduped: true }, 202)
   }
   if (!claim.ok) return c.json(claim, 429) // { error: 'too_many_active', max }
-  const debit = await call(c, '/debit', { jobId: id, amount: price.cost })
+  const debit = await debitJob(c, id, price.cost)
   if (!debit.ok) { await call(c, '/job/release', { jobId: id }); return c.json(debit, 402) } // { error: 'insufficient', missing } : le message que l'interface affiche déjà
 
   let sub
@@ -146,7 +183,7 @@ app.post('/jobs', async (c) => {
     const input = buildInput(req.kind, price.model, { ...req, count: price.count, endUserId: accountId(c) })
     sub = await fal(c).submit(endpoint, input)
   } catch (e) {
-    const back = await call(c, '/refund', { jobId: id })
+    const back = await refundJob(c, id)
     await call(c, '/job/release', { jobId: id })
     console.error('submit fal', e.message)
     const policy = e instanceof FalError && e.isContentPolicy
@@ -175,7 +212,7 @@ app.get('/jobs/:id', async (c) => {
 
   const client = fal(c)
   const fail = async (failure) => {
-    const back = await call(c, '/refund', { jobId: job.id })
+    const back = await refundJob(c, job.id)
     const next = { ...job, status: 'FAILED', failure, refund: back.refunded ?? job.cost, finishedAt: Date.now() }
     await saveJob(c, next)
     return c.json(view(next, { balance: back.balance }))
@@ -225,7 +262,7 @@ app.post('/jobs/:id/cancel', async (c) => {
   if (!job) return c.json({ error: 'not_found' }, 404)
   if (job.status !== 'IN_QUEUE' && job.status !== 'IN_PROGRESS') return c.json(view(job))
   try { await fal(c).cancel(job.cancelUrl) } catch (e) { console.error('annulation fal', e.message) }
-  const back = job.status === 'IN_QUEUE' ? await call(c, '/refund', { jobId: job.id }) : { refunded: 0, balance: (await call(c, '/balance')).balance }
+  const back = job.status === 'IN_QUEUE' ? await refundJob(c, job.id) : { refunded: 0, balance: (await call(c, '/balance')).balance }
   const next = { ...job, status: 'CANCELED', refund: back.refunded ?? 0, finishedAt: Date.now() }
   await saveJob(c, next)
   return c.json(view(next, { balance: back.balance }))
@@ -235,9 +272,11 @@ app.post('/jobs/:id/cancel', async (c) => {
 app.post('/webhooks/fal', (c) => c.json({ error: 'not_implemented' }, 501))
 app.post('/webhooks/payments', (c) => c.json({ error: 'not_implemented' }, 501))
 
-/** Tâche planifiée (voir `triggers.crons` de wrangler.jsonc) : efface pour de bon les fichiers supprimés depuis plus d'un jour. */
+/** Tâche planifiée (voir `triggers.crons` de wrangler.jsonc) : efface pour de bon les fichiers supprimés depuis plus d'un jour, et contrôle le journal des jetons. */
 async function scheduled(_event, env, ctx) {
-  if (env.DB) ctx.waitUntil(purgeDeleted(env.DB, env.FILES).then((n) => console.log(`purge : ${n} fichier(s) effacé(s)`)))
+  if (!env.DB) return
+  ctx.waitUntil(purgeDeleted(env.DB, env.FILES).then((n) => console.log(`purge : ${n} fichier(s) effacé(s)`)))
+  ctx.waitUntil(reconcileRecent(env).then((r) => console.log(`journal des jetons : ${r.users} compte(s) contrôlé(s), ${r.backfilled} ligne(s) complétée(s), ${r.anomalies} anomalie(s)`)))
 }
 
 export default { fetch: (request, env, ctx) => app.fetch(request, env, ctx), scheduled }

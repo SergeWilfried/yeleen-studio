@@ -109,8 +109,9 @@ D1 tient le profil, l'historique et la bibliothèque. **Le portefeuille et l'ét
 | `assets` | « Ma bibliothèque » : fichiers importés et générés (clé R2, type, taille, durée, texte, génération d'origine), suppression douce | `0003` |
 | `favorites` | favoris des deux bibliothèques : `(utilisateur, mine ou yeleen, élément)` | `0003` |
 | `catalog_items` | la Bibliothèque Yeleen (personnages, objets, vidéos), modifiable sans déploiement ; 15 exemples au départ | `0004` |
+| `credit_ledger` | journal des jetons, en ajout seulement : un débit, un remboursement ou un crédit par ligne, avec montant signé, solde après et clé d'idempotence (`debit:<génération>`, `refund:<génération>`, `credit:<paiement>`) | `0005` |
 
-**Routes** (toutes derrière la garde Clerk) : `GET /me`, `GET /jobs?limit&before` (historique, page suivante par la date de la dernière reçue), `GET /library?kind&source&limit&before`, `POST /library/uploads` (le corps est le fichier : image, audio 25 Mo au plus, vidéo 100 Mo ; quota `MAX_LIBRARY_BYTES`, 2 Gio par défaut), `PATCH /library/:id` (renommer), `POST /library/delete` et `/library/restore` (suppression douce annulable), `GET /library/favorites?scope=`, `PUT|DELETE /library/favorites/:scope/:id`, `GET /catalog`.
+**Routes** (toutes derrière la garde Clerk) : `GET /me`, `GET /jobs?limit&before` (historique, page suivante par la date de la dernière reçue), `GET /library?kind&source&limit&before`, `POST /library/uploads` (le corps est le fichier : image, audio 25 Mo au plus, vidéo 100 Mo ; quota `MAX_LIBRARY_BYTES`, 2 Gio par défaut), `PATCH /library/:id` (renommer), `POST /library/delete` et `/library/restore` (suppression douce annulable), `GET /library/favorites?scope=`, `PUT|DELETE /library/favorites/:scope/:id`, `GET /catalog`, `GET /me/ledger?limit&before` (mon historique de jetons) et `GET /me/ledger/audit` (contrôle de mon journal).
 
 - **Génération terminée** : ses sorties copiées dans R2 entrent dans `assets` (une seule fois par sortie) et la réponse du suivi les contient : l'interface les affiche tout de suite.
 - **Suppression** : un fichier supprimé est masqué aussitôt et reste annulable ; une tâche planifiée (tous les jours à 3 h 17 UTC) efface pour de bon, dans R2 et dans D1, ce qui est supprimé depuis plus d'un jour.
@@ -121,7 +122,8 @@ D1 tient le profil, l'historique et la bibliothèque. **Le portefeuille et l'ét
 - **Local** : `pnpm dev:api` applique les migrations à la base locale (simulée) avant de démarrer ; `pnpm --filter @studio/api db:migrate:local` le fait seul.
 - **Déploiement** : `scripts/deploy.mjs` crée la base `studio` si besoin, écrit son identifiant dans `apps/api/wrangler.jsonc` (à valider dans git), applique les migrations (`migrations/*.sql`), puis déploie l'API. Les tests exécutent les vraies migrations sur SQLite (le moteur de D1) : Node 22.13 ou plus.
 - Nouvelle table ou colonne : `apps/api/migrations/0005_….sql` (jamais modifier une migration déjà appliquée).
-- Pas encore dans D1 : journal des mouvements de jetons (`credit_ledger`), paiements, marque et spots.
+- **Journal des jetons** : chaque mouvement est d'abord appliqué dans le Durable Object (l'autorité), puis copié dans `credit_ledger`. Une copie manquée (D1 en panne) n'est jamais refaite en double : le **contrôle** rejoue les opérations du Durable Object (qui garde toute la liste de ses opérations), complète les lignes absentes, et signale tout écart de solde, montant divergent ou ligne en trop, sans jamais modifier une ligne existante. Il tourne chaque nuit pour les comptes actifs ces 26 dernières heures (200 au plus par passage), et à la demande par `GET /me/ledger/audit`. Une anomalie est journalisée (`journal des jetons : anomalie`) : c'est le signal à surveiller.
+- Pas encore dans D1 : paiements, marque et spots.
 
 ### Construction Git de l'API dans Cloudflare
 
