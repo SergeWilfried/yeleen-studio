@@ -36,6 +36,7 @@ export function AssetsProvider({ children }) {
   const { jobs } = useJobs()
   const [assets, setAssets] = useState(read)
   const files = useRef(new Map()) // id → File importé, pour la session en cours
+  const [adopted, setAdopted] = useState([]) // éléments de la Bibliothèque Yeleen utilisés comme références : hors « Ma bibliothèque », mais retrouvables par id
   const ingested = useRef(new Set())
   const trash = useRef([])
 
@@ -170,8 +171,13 @@ export function AssetsProvider({ children }) {
     return new File([blob], `${base}.mp4`, { type: 'video/mp4' })
   }, [])
 
+  /** Retient des éléments de la Bibliothèque Yeleen (session en cours) pour qu'ils se comportent comme n'importe quelle référence jointe. */
+  const adopt = useCallback((items) => setAdopted((xs) => [...xs, ...items.filter((i) => !xs.some((x) => x.id === i.id))]), [])
+  /** Ma bibliothèque + éléments Yeleen adoptés : de quoi résoudre une pièce jointe par son identifiant. */
+  const pool = useMemo(() => [...assets, ...adopted], [assets, adopted])
+
   const byJob = useCallback((jobKey) => assets.filter((a) => a.origin?.jobKey === jobKey).sort((a, b) => a.origin.index - b.origin.index), [assets])
 
-  const value = useMemo(() => ({ assets, addUpload, update, remove, restore, purge, getFile, byJob, files }), [assets, addUpload, update, remove, restore, purge, getFile, byJob])
+  const value = useMemo(() => ({ assets, pool, adopt, addUpload, update, remove, restore, purge, getFile, byJob, files }), [assets, pool, adopt, addUpload, update, remove, restore, purge, getFile, byJob])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

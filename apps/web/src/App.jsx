@@ -3,6 +3,7 @@ import { Navigate, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import { JobsProvider } from './lib/jobs.jsx'
 import { AssetsProvider } from './lib/assets.jsx'
+import { CatalogProvider } from './lib/catalog.jsx'
 import { ChainsProvider } from './lib/chains.jsx'
 import { HandoffProvider } from './lib/handoff.jsx'
 import { SpotsProvider } from './lib/spots.jsx'
@@ -34,6 +35,7 @@ export default function App() {
     <ToastProvider>
     <JobsProvider>
     <AssetsProvider>
+    <CatalogProvider>
     <BrandProvider>
     <ChainsProvider>
     <SpotsProvider>
@@ -57,6 +59,7 @@ export default function App() {
     </SpotsProvider>
     </ChainsProvider>
     </BrandProvider>
+    </CatalogProvider>
     </AssetsProvider>
     </JobsProvider>
     </ToastProvider>

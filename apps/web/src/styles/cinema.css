@@ -117,12 +117,12 @@ dialog.am-dlg{width:min(980px,94vw);height:min(640px,88vh);padding:0;border:0;bo
 dialog.am-dlg[open]{display:flex;flex-direction:row}
 dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 /* Barre latérale : Imports, Générations, Favoris */
-.am-side{flex:none;width:208px;padding:16px 8px 16px 16px;overflow-y:auto}
+.am-side{flex:none;width:256px;padding:16px 8px 16px 16px;overflow-y:auto}
 .am-side [role="tablist"]{display:flex;flex-direction:column;gap:4px}
 .am-side button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:0 12px;border:0;border-radius:14px;background:none;color:var(--ink-3);font:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer}
 .am-side button:hover{color:var(--ink);background:#2a2b2e}
 .am-side button.on{background:#fff;color:#111}
-.am-side .am-lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.am-side .am-lb{flex:1;min-width:0;line-height:1.2;overflow-wrap:anywhere}
 .am-side small{flex:none;min-width:22px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px;font-weight:700;line-height:20px;text-align:center;font-variant-numeric:tabular-nums}
 .am-side button.on small{background:rgba(0,0,0,.12)}
 .am-subs button{flex:none;height:44px;padding:0 18px;border:0;border-radius:999px;background:none;color:var(--ink-3);font-size:15px;font-weight:600;cursor:pointer}
@@ -142,12 +142,21 @@ dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 .am-up:has(input:focus-visible){outline:2px solid var(--lime);outline-offset:2px}
 .am-up input{position:absolute;opacity:0;width:1px;height:1px}
 .am-cloud{display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:#3a3b3e}
+.am-cell{position:relative;min-width:0}
+.am-cell .am-it{display:block;width:100%}
 .am-it{position:relative;aspect-ratio:1;padding:0;border:2px solid transparent;border-radius:14px;overflow:hidden;background:#212224;cursor:pointer}
 .am-it .at{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0}
 .am-it.on{border-color:var(--lime)}
 .am-it:disabled{opacity:.5;cursor:default}
 .am-nm{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;background:linear-gradient(transparent,rgba(0,0,0,.72));font-size:12px;font-weight:600;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .am-ck{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--lime);color:#111}
+.am-fav{position:absolute;top:8px;left:8px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:var(--ink);cursor:pointer;opacity:0;transition:opacity .15s}
+.am-cell:hover .am-fav,.am-fav:focus-visible,.am-fav.on{opacity:1}
+.am-fav.on{color:var(--lime)}
+.am-fav:hover{background:rgba(0,0,0,.75)}
+@media (hover:none){.am-fav{opacity:1}}
+.am-tag{position:absolute;left:8px;bottom:30px;padding:0 7px;border-radius:999px;background:rgba(0,0,0,.6);color:var(--ink);font-size:11px;font-weight:700;line-height:18px;pointer-events:none}
+.am-retry{margin-left:6px;padding:0;border:0;background:none;color:var(--lime);font:inherit;text-decoration:underline;cursor:pointer}
 .am-empty{margin:0;padding:0 24px 24px;color:var(--ink-3);font-size:14px;text-align:center}
 .am-bar{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;pointer-events:none}
 .am-add{pointer-events:auto;height:46px;padding:0 24px;border:0;border-radius:999px;background:var(--lime);color:#111;font:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45)}

@@ -78,7 +78,7 @@ export default function Cinema() {
   useDocumentTitle('Studio cinéma')
   const toast = useToast()
   const { jobs, submit, balance } = useJobs()
-  const { assets, getFile } = useAssets()
+  const { assets, pool, adopt, getFile } = useAssets()
   const { sendTo, take } = useHandoff()
   const { brand: kit, style } = useBrand()
   const area = useRef(null)
@@ -125,7 +125,7 @@ export default function Cinema() {
   const model = video ? vmodel : imodel
   const caps = vmodel.caps
   const styled = features.brand && kit.apply && Boolean(style) // sans l'écran Marque, personne ne peut régler (ni retirer) un style de marque
-  const attached = useMemo(() => labelAttachments(att, assets), [att, assets])
+  const attached = useMemo(() => labelAttachments(att, pool), [att, pool])
   const ref = useMemo(() => resolveAttachments({ attached, texts: video ? s.plans.map((p) => p.text) : [itext], caps }), [attached, s.plans, itext, video, caps])
   const roles = Object.fromEntries(ref.items.map((i) => [i.token, i.role]))
   const items = attached.map((x) => ({ key: x.id, token: x.token, label: x.token, sub: x.asset.name, asset: x.asset }))
@@ -148,7 +148,10 @@ export default function Cinema() {
   const blocked = emptyPlan >= 0 || needsStart || needsClip
   const long = text.length > 600 ? `${text.length.toLocaleString('fr-FR')} caractères` : null // information : les modèles coupent ou ignorent les prompts très longs
 
-  const attach = (list) => setAtt((x) => [...x, ...list.filter((a) => !x.some((y) => y.assetId === a.id)).map((a) => ({ id: crypto.randomUUID(), assetId: a.id }))])
+  const attach = (list) => {
+    adopt(list.filter((a) => a.source === 'yeleen')) // les éléments de la Bibliothèque Yeleen se joignent comme les autres références
+    return setAtt((x) => [...x, ...list.filter((a) => !x.some((y) => y.assetId === a.id)).map((a) => ({ id: crypto.randomUUID(), assetId: a.id }))])
+  }
   const detach = (id) => {
     const gone = attached.find((x) => x.id === id)
     setAtt((x) => x.filter((y) => y.id !== id))
