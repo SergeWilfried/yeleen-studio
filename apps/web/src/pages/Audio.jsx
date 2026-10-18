@@ -156,7 +156,7 @@ export default function Audio() {
                       <Icon name={previewing ? 'pause' : 'play'} size={16} fill="currentColor" />{previewing ? 'Arrêter' : 'Écouter'}
                     </button>
                   </div>
-                  <ThumbCarousel items={VOICES.map((v, i) => ({ id: v.id, label: v.label, poster: `${flagFor(v.country) ? `url(${flagFor(v.country).src}) right 1px bottom 1px / 46% auto no-repeat, ` : ''}${avatar(i)}` }))} value={voiceId} onChange={pickVoice} size={34} loop label="Voix" />
+                  <ThumbCarousel items={VOICES.map((v, i) => ({ id: v.id, label: v.label, poster: `${flagFor(v.country) ? `url("${flagFor(v.country).src}") right 1px bottom 1px / 46% auto no-repeat, ` : ''}${avatar(i)}` }))} value={voiceId} onChange={pickVoice} size={34} loop label="Voix" />
                 </div>
               </div>
 
