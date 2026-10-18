@@ -115,4 +115,4 @@ Projet Workers Builds distinct de celui du site : dossier racine `apps/api`, com
 
 - le bucket R2 `studio-files` (`pnpm exec wrangler r2 bucket create studio-files`) : sans lui, le déploiement échoue sur la liaison ;
 - la base D1 : `pnpm exec wrangler d1 create yeleen`, puis son identifiant à la place du modèle `00000000-…` dans `apps/api/wrangler.jsonc`, validé dans git ;
-- les variables (Paramètres → Variables et secrets) : `ALLOWED_ORIGINS` (adresse du site) et `CLERK_ISSUER`, et le secret `FAL_KEY`. Elles sont conservées d'un déploiement à l'autre (`keep_vars`).
+- les variables (Paramètres → Variables et secrets) : `CLERK_ISSUER`, et le secret `FAL_KEY`. Elles sont conservées d'un déploiement à l'autre (`keep_vars`). `ALLOWED_ORIGINS` (adresse du site) est dans `apps/api/wrangler.jsonc` : une valeur du tableau de bord serait écrasée au déploiement suivant, donc un nouveau domaine du site s'ajoute dans ce fichier.
