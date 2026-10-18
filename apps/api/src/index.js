@@ -4,6 +4,7 @@ import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { TOPUP_COUNTRIES, findPack, toE164 } from '@studio/catalog/packs'
+import { addFavorite, catalog, deleteAsset, ITEM_ID, listAssets, listFavorites, removeFavorite, SCOPES } from './library.js'
 import { ledgerOf } from './mirror.js'
 import { isBlocked } from './moderation.js'
 import { PaygateError, paygateClient, verifySignature } from './paygate.js'
@@ -28,11 +29,11 @@ const allowedOrigins = (env) => (env.ALLOWED_ORIGINS ?? '').split(',').map((s) =
 
 app.use('*', async (c, next) => {
   const allowed = allowedOrigins(c.env)
-  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: ['content-type', 'range', 'authorization'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
+  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowHeaders: ['content-type', 'range', 'authorization'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
 })
 
-// Garde : tout passe par ici sauf la santé, les fichiers (adresses non devinables, lus par <img> et <video> sans en-tête) et les webhooks.
-const OPEN = (p) => p === '/health' || p.startsWith('/files/') || p.startsWith('/webhooks/')
+// Garde : tout passe par ici sauf la santé, la Bibliothèque Yeleen (publique), les fichiers (adresses non devinables, lus par <img> et <video> sans en-tête) et les webhooks.
+const OPEN = (p) => p === '/health' || p === '/catalog' || p.startsWith('/files/') || p.startsWith('/webhooks/')
 app.use('*', async (c, next) => {
   if (c.req.method === 'OPTIONS' || OPEN(c.req.path)) return next()
   if (c.env.ENV === 'dev' && !c.env.CLERK_ISSUER) { c.set('uid', 'demo'); await provision(c); return next() } // développement local seulement
@@ -114,6 +115,39 @@ app.get('/me', async (c) => {
   return c.json({ ...user, balance: (await call(c, '/balance')).balance })
 })
 
+// Ma bibliothèque (D1) : fichiers générés gardés dans R2, du plus récent au plus ancien ; `kind`, `before` et `limit` en option.
+const withDb = (handler) => async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  try {
+    return await handler(c, c.env.DB)
+  } catch (e) {
+    console.error('bibliothèque (D1)', e.message)
+    return c.json({ error: 'db_unavailable' }, 503)
+  }
+}
+app.get('/assets', withDb(async (c, db) => {
+  const { kind, limit, before } = c.req.query()
+  return c.json({ assets: await listAssets(db, accountId(c), { origin: new URL(c.req.url).origin, kind, limit, before }) })
+}))
+app.delete('/assets/:id', withDb(async (c, db) => (await deleteAsset(db, accountId(c), c.req.param('id')) ? c.json({ ok: true }) : c.json({ error: 'not_found' }, 404))))
+
+// Favoris, dans Ma bibliothèque (`mine`, identifiant d'un fichier) et dans la Bibliothèque Yeleen (`yeleen`, identifiant du catalogue).
+app.get('/favorites', withDb(async (c, db) => c.json({ favorites: await listFavorites(db, accountId(c)) })))
+const favorite = (add) => withDb(async (c, db) => {
+  const { scope, id } = c.req.param()
+  if (!SCOPES.includes(scope) || !ITEM_ID.test(id)) return c.json({ error: 'invalid_favorite' }, 400)
+  await (add ? addFavorite(db, accountId(c), scope, id) : removeFavorite(db, accountId(c), scope, id))
+  return c.json({ ok: true })
+})
+app.put('/favorites/:scope/:id', favorite(true))
+app.delete('/favorites/:scope/:id', favorite(false))
+
+// Bibliothèque Yeleen (D1, publique), au format de `public/catalog/yeleen.json` : le site la lit en réglant VITE_CATALOG_URL sur cette adresse.
+app.get('/catalog', withDb(async (c, db) => {
+  c.header('cache-control', 'public, max-age=300')
+  return c.json(await catalog(db))
+}))
+
 // Mon historique de jetons (D1) : débits, remboursements, recharges, du plus récent au plus ancien ; `before` pour la page suivante.
 app.get('/ledger', async (c) => {
   if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
@@ -126,12 +160,23 @@ app.get('/ledger', async (c) => {
   }
 })
 
+/**
+ * Ce que la génération garde de sa demande, pour l'historique (copié dans D1, table `jobs`) : le texte (plans d'une vidéo séparés par « / »),
+ * 2 000 caractères au plus, et les réglages (résolution, format, durée…) en JSON, sans les textes ni la clé de demande.
+ */
+function requestOf(req, texts) {
+  const { prompt, plans, requestId, kind, modelId, inputs, ...rest } = req
+  const params = JSON.stringify({ ...rest, ...(plans ? { durations: plans.map((p) => p.dur) } : {}) })
+  return { prompt: texts.map((t) => t.trim()).filter(Boolean).join(' / ').slice(0, 2000) || null, params: params.length <= 4000 ? params : null, secs: typeof req.secs === 'number' ? req.secs : null }
+}
+
 // Soumission : contrôle du texte et prix serveur → débit → envoi à fal. Si l'envoi échoue, remboursement immédiat.
 app.post('/jobs', async (c) => {
   const req = await c.req.json()
   const price = priceJob(req)
   if (!price.ok) return c.json({ error: price.error }, 400)
-  if (isBlocked(req.kind === 'video' ? req.plans.map((p) => p.text).join(' ') : req.kind === 'workflow' ? Object.values(req.inputs ?? {}).filter((v) => typeof v === 'string').join(' ') : req.prompt ?? '')) return c.json({ error: 'moderation' }, 422)
+  const texts = req.kind === 'video' ? req.plans.map((p) => p.text) : req.kind === 'workflow' ? Object.values(req.inputs ?? {}).filter((v) => typeof v === 'string') : [req.prompt ?? '']
+  if (isBlocked(texts.join(' '))) return c.json({ error: 'moderation' }, 422)
   // Garde-fou tant qu'il n'y a ni connexion ni plafond par compte : on refuse une seule demande très coûteuse.
   const cap = Number(c.env.MAX_JOB_COST ?? 250)
   if (price.cost > cap) return c.json({ error: 'too_expensive', max: cap }, 400)
@@ -161,7 +206,7 @@ app.post('/jobs', async (c) => {
     return c.json({ error: policy ? 'moderation' : 'provider', refunded: back.refunded ?? price.cost, balance: back.balance }, policy ? 422 : 502)
   }
 
-  const job = { id, kind: req.kind, modelId: price.model.id, endpoint, cost: price.cost, count: price.count, status: 'IN_QUEUE', createdAt: Date.now(), ...sub }
+  const job = { id, kind: req.kind, modelId: price.model.id, endpoint, cost: price.cost, count: price.count, status: 'IN_QUEUE', createdAt: Date.now(), ...sub, ...requestOf(req, texts) }
   await call(c, '/job/put', job)
   return c.json({ jobId: id, status: job.status, cost: price.cost, balance: debit.balance }, 202)
 })
@@ -184,7 +229,7 @@ app.get('/jobs/:id', async (c) => {
   try {
     const st = await client.status(job.statusUrl)
     if (st.status !== 'COMPLETED') {
-      const next = { ...job, status: st.status }
+      const next = { ...job, status: st.status, ...(st.status === 'IN_PROGRESS' && !job.startedAt ? { startedAt: Date.now() } : {}) }
       if (next.status !== job.status) await call(c, '/job/put', next)
       return c.json(view(next, { queuePosition: st.queuePosition, logs: st.logs.slice(-3), balance: (await call(c, '/balance')).balance }))
     }

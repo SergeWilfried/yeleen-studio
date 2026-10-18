@@ -9,9 +9,10 @@ Cloudflare Worker (Hono). Point d'entrée unique pour tout ce qui coûte de l'ar
 - `src/storage.js` : copie des sorties dans R2 et lecture par plage.
 - `src/paygate.js` : client de paygate (moyens, encaissement, lecture) et vérification de la signature des webhooks.
 - `src/topups.js` : règles des recharges (statuts, crédit au montant enregistré, paiements tardifs), sans dépendance, testées.
-- `src/mirror.js` : copie dans D1 du grand livre des jetons (`ledger`) et des recharges (`topups`), idempotente.
+- `src/mirror.js` : copie dans D1 du grand livre des jetons (`ledger`), des recharges (`topups`), des générations (`jobs`) et des fichiers générés (`assets`), idempotente.
+- `src/library.js` : lectures de D1 pour Ma bibliothèque, les favoris et la Bibliothèque Yeleen (`catalog_items`).
 - `src/account-do.js` : Durable Object, un compte = portefeuille + générations + recharges.
-- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`, `GET /topups/options`, `GET|POST /topups`, `GET /topups/:reference`, `POST /webhooks/payments`, `GET /ledger`. À écrire : `/webhooks/fal`.
+- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`, `GET /topups/options`, `GET|POST /topups`, `GET /topups/:reference`, `POST /webhooks/payments`, `GET /ledger`, `GET /assets`, `DELETE /assets/:id`, `GET|PUT|DELETE /favorites`, `GET /catalog` (publique). À écrire : `/webhooks/fal`.
 - `wrangler.jsonc` : liaisons (D1, R2, Queues en commentaire jusqu'à création des ressources).
 
 ## Générations réelles
@@ -46,3 +47,7 @@ pnpm --filter @studio/api dev
 ## Grand livre (D1)
 
 Le Durable Object du compte reste le seul juge du solde. Chaque débit, remboursement et crédit (recharge, bienvenue) est copié dans la table `ledger` de D1 avec le solde qui en résulte, et chaque recharge dans `topups` (migrations `0002` et `0003`). La copie passe par une file gardée dans le Durable Object : si D1 ne répond pas, la requête du client réussit quand même et la file est réécrite à la requête suivante. Au premier passage d'un compte, son historique antérieur est repris (lignes sans solde). Chaque écriture est idempotente. `GET /ledger?limit=&before=` rend l'historique du compte connecté.
+
+## Bibliothèques (D1)
+
+Chaque génération est aussi copiée dans `jobs` (texte, réglages, état, sorties), et chaque sortie gardée dans R2 dans `assets` (migration `0004`), par la même file que le grand livre. `GET /assets?kind=&before=&limit=` rend Ma bibliothèque (adresses `/files/…`), `DELETE /assets/:id` la retire (suppression douce). Les favoris (`favorites`, portées `mine` et `yeleen`) se lisent par `GET /favorites` et se règlent par `PUT|DELETE /favorites/:portée/:id`. La Bibliothèque Yeleen vient de `catalog_items` (migration `0005`) : `GET /catalog`, sans connexion, au format de `public/catalog/yeleen.json` ; le site la lit en réglant `VITE_CATALOG_URL` sur `<API>/catalog`. Les fichiers importés (`POST /uploads`) restent chez fal le temps de la génération et n'entrent pas encore dans `assets`.
