@@ -9,6 +9,7 @@ import { PaygateError, paygateClient, verifySignature } from './paygate.js'
 import { priceJob } from './pricing.js'
 import { serveFile, storeOutputs } from './storage.js'
 import { newReference, topupView } from './topups.js'
+import { ensureUser, getUser, markWelcomed } from './users.js'
 
 export { Account } from './account-do.js'
 
@@ -33,21 +34,44 @@ app.use('*', async (c, next) => {
 const OPEN = (p) => p === '/health' || p.startsWith('/files/') || p.startsWith('/webhooks/')
 app.use('*', async (c, next) => {
   if (c.req.method === 'OPTIONS' || OPEN(c.req.path)) return next()
-  if (c.env.ENV === 'dev' && !c.env.CLERK_ISSUER) { c.set('uid', 'demo'); return next() } // développement local seulement
+  if (c.env.ENV === 'dev' && !c.env.CLERK_ISSUER) { c.set('uid', 'demo'); await provision(c); return next() } // développement local seulement
   if (!c.env.CLERK_ISSUER) return c.json({ error: 'auth_not_configured' }, 503) // en production, sans configuration : tout est refusé
   try {
     const token = (c.req.header('authorization') ?? '').replace(/^Bearer\s+/i, '')
-    const { sub } = await verifyClerkToken(token, { issuer: c.env.CLERK_ISSUER, authorizedParties: allowedOrigins(c.env) })
+    const { sub, claims } = await verifyClerkToken(token, { issuer: c.env.CLERK_ISSUER, authorizedParties: allowedOrigins(c.env) })
     c.set('uid', sub)
+    c.set('claims', claims)
   } catch (e) {
     if (!(e instanceof AuthError)) throw e
     return c.json({ error: e.reason === 'jwks_unavailable' ? 'auth_unavailable' : 'unauthorized', reason: e.reason }, e.reason === 'jwks_unavailable' ? 503 : 401)
   }
+  await provision(c, c.get('claims'))
   return next()
 })
 
 const accountId = (c) => c.get('uid')
 const account = (c) => c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(accountId(c)))
+const short = (v) => (typeof v === 'string' && v.length > 0 && v.length <= 200 ? v : null)
+/**
+ * Profil dans D1 à chaque utilisateur authentifié (voir users.js), et crédit de bienvenue unique s'il est configuré (WELCOME_JETONS, 0 par défaut :
+ * l'argent offert est une décision de produit). Une panne de D1 est journalisée mais ne bloque jamais la requête.
+ */
+async function provision(c, claims = {}) {
+  const db = c.env.DB
+  if (!db) return
+  const id = accountId(c)
+  try {
+    const user = await ensureUser(db, id, { email: short(claims.email), name: short(claims.name ?? claims.full_name), country: short(c.req.raw.cf?.country) })
+    const welcome = Number(c.env.WELCOME_JETONS ?? 0)
+    if (welcome > 0 && !user.welcomedAt) {
+      const credited = await call(c, '/credit', { paymentId: 'welcome', amount: welcome }) // idempotent : rejoué, il ne crédite pas deux fois
+      if (credited.ok) await markWelcomed(db, id)
+    }
+  } catch (e) {
+    console.error('utilisateurs (D1)', e.message)
+  }
+}
+
 const call = async (c, path, body) => {
   const res = await account(c).fetch(`https://account${path}`, body === undefined ? undefined : { method: 'POST', body: JSON.stringify(body) })
   return res.json()
@@ -76,6 +100,13 @@ app.post('/uploads', async (c) => {
   }
 })
 app.get('/wallet', async (c) => c.json(await call(c, '/balance')))
+// Mon profil (D1) et mon solde (Durable Object).
+app.get('/me', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  const user = await getUser(c.env.DB, accountId(c))
+  if (!user) return c.json({ error: 'not_found' }, 404)
+  return c.json({ ...user, balance: (await call(c, '/balance')).balance })
+})
 
 // Soumission : contrôle du texte et prix serveur → débit → envoi à fal. Si l'envoi échoue, remboursement immédiat.
 app.post('/jobs', async (c) => {

@@ -5,10 +5,12 @@
   "type": "module",
   "description": "API Cloudflare Worker : auth, tarification côté serveur, jetons (Durable Object), appels et webhooks fal.",
   "scripts": {
-    "dev": "wrangler dev -c wrangler.jsonc",
+    "dev": "wrangler d1 migrations apply DB --local -c wrangler.jsonc && wrangler dev -c wrangler.jsonc",
     "build": "wrangler deploy --dry-run --outdir .wrangler/build -c wrangler.jsonc",
     "deploy": "wrangler deploy -c wrangler.jsonc",
-    "test": "node --test"
+    "test": "node --test",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local -c wrangler.jsonc",
+    "db:migrate": "wrangler d1 migrations apply DB --remote -c wrangler.jsonc"
   },
   "dependencies": {
     "@studio/catalog": "workspace:*",

@@ -26,6 +26,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const API_CONFIG = 'apps/api/wrangler.jsonc'
 const WEB_CONFIG = 'wrangler.jsonc'
 const BUCKET = 'studio-files'
+const D1_NAME = 'studio'
+const D1_PLACEHOLDER = '00000000-0000-0000-0000-000000000000' // database_id du modèle dans apps/api/wrangler.jsonc, remplacé à la création
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
 const STATE = join(ROOT, '.deploy-state.json') // dernières adresses déployées (ignoré par git)
 
 const args = process.argv.slice(2)
@@ -146,9 +149,36 @@ function ensureSecrets() {
   ensureSecret('PAYGATE_WEBHOOK_SECRET', names, { required: false })
 }
 
+/** Base D1 : la crée si besoin et écrit son identifiant dans apps/api/wrangler.jsonc (à valider dans git : la construction Git de Cloudflare le lit). */
+function ensureD1() {
+  const file = join(ROOT, API_CONFIG)
+  const text = readFileSync(file, 'utf8')
+  if (!text.includes(D1_PLACEHOLDER)) return ok(`base D1 « ${D1_NAME} » déjà configurée`)
+  if (dry) return warn(`base D1 « ${D1_NAME} » pas encore créée : elle le serait, et son identifiant écrit dans ${API_CONFIG}`)
+  let id
+  const list = wrangler(['d1', 'list', '--json'], { quiet: true })
+  try { id = JSON.parse(list.out.slice(list.out.indexOf('['))).find((d) => d.name === D1_NAME)?.uuid } catch { /* liste illisible : on tente la création */ }
+  if (!id) {
+    const c = wrangler(['d1', 'create', D1_NAME])
+    id = c.out.match(UUID)?.[0]
+    if (c.code !== 0 || !id) fail(`Création de la base D1 « ${D1_NAME} » impossible (D1 est-il disponible sur ce compte ?).`)
+    ok(`base D1 « ${D1_NAME} » créée`)
+  } else ok(`base D1 « ${D1_NAME} » trouvée sur le compte`)
+  writeFileSync(file, text.replace(D1_PLACEHOLDER, id))
+  warn(`identifiant écrit dans ${API_CONFIG} : validez-le dans git (la construction Git de Cloudflare en a besoin)`)
+}
+
+/** Migrations D1 (dossier apps/api/migrations), avant le code : les tables existent quand la nouvelle version démarre. */
+function migrateD1() {
+  if (dry) return warn('migrations D1 non appliquées (simulation)')
+  const m = wrangler(['d1', 'migrations', 'apply', 'DB', '--remote', '-c', API_CONFIG])
+  if (m.code !== 0) fail('Les migrations D1 ont échoué : l’API n’est pas déployée.')
+  ok('migrations D1 appliquées')
+}
+
 function deployApi({ firstPass = true } = {}) {
   step(firstPass ? 'API (Worker, Durable Object, R2)' : 'API : autorisation du site (CORS)')
-  if (firstPass) { ensureBucket(); ensureSecrets() }
+  if (firstPass) { ensureBucket(); ensureSecrets(); ensureD1(); migrateD1() }
   const allowed = origins().join(',')
   if (!allowed) warn('adresse du site inconnue : ALLOWED_ORIGINS reste vide pour l’instant (corrigé automatiquement par « all »)')
   const d = wrangler(['deploy', '-c', API_CONFIG, ...(dry ? ['--dry-run'] : []), ...(allowed ? ['--var', `ALLOWED_ORIGINS:${allowed}`] : []), ...(clerkIssuer() ? ['--var', `CLERK_ISSUER:${clerkIssuer()}`] : []), ...(paygateUrl() ? ['--var', `PAYGATE_URL:${paygateUrl()}`] : [])])

@@ -98,9 +98,21 @@ pnpm deploy                         # ensuite : tests, API, site, autorisation d
 - Le site peut aussi se déployer depuis Git (Workers Builds) : la commande de déploiement `npx wrangler deploy` suffit, car `wrangler.jsonc` construit le site lui-même (`pnpm build`). Pour que le site appelle l'API, définissez la variable de build `VITE_API_URL` dans Cloudflare ; sans elle, il garde le moteur simulé.
 
 
+## Base de données (D1)
+
+D1 tient les **utilisateurs** : une ligne par compte Clerk (`users` : identifiant `sub`, date d'arrivée, dernière activité, pays d'après Cloudflare, e-mail et nom si le jeton les porte). Elle est créée à la première requête authentifiée ; la date d'activité n'est écrite qu'au plus toutes les 10 minutes. Le **portefeuille et les générations restent dans le Durable Object** du compte (un seul écrivain pour l'argent) : D1 sert au profil, à l'analyse et aux rapports. Une panne de D1 n'empêche jamais une requête.
+
+- `GET /me` : profil (D1) et solde (Durable Object) de l'utilisateur connecté.
+- `WELCOME_JETONS` (variable de l'API, 0 par défaut) : crédit offert une seule fois à chaque nouvel utilisateur, enregistré dans `users.welcomed_at`.
+- E-mail et nom : Clerk ne les met pas dans le jeton de session par défaut ; pour les enregistrer, ajoutez `{"email": "{{user.primary_email_address}}", "name": "{{user.full_name}}"}` dans « Customize session token » (tableau de bord Clerk). Sans cela, ces colonnes restent vides.
+- **Local** : `pnpm dev:api` applique les migrations à la base locale (simulée) avant de démarrer ; `pnpm --filter @studio/api db:migrate:local` le fait seul.
+- **Déploiement** : `scripts/deploy.mjs` crée la base `studio` si besoin, écrit son identifiant dans `apps/api/wrangler.jsonc` (à valider dans git), applique les migrations (`migrations/*.sql`), puis déploie l'API. Les tests exécutent les vraies migrations sur SQLite (le moteur de D1) : Node 22.13 ou plus.
+- Pour une nouvelle table : ajouter `apps/api/migrations/0002_….sql` (jamais modifier une migration déjà appliquée).
+
 ### Construction Git de l'API dans Cloudflare
 
-Projet Workers Builds distinct de celui du site : dossier racine `apps/api`, commande de build `pnpm run build` (valide la configuration et regroupe le code), commande de déploiement `npx wrangler deploy`. À préparer dans Cloudflare avant le premier déploiement :
+Projet Workers Builds distinct de celui du site : dossier racine `apps/api`, commande de build `pnpm run build` (valide la configuration et regroupe le code), commande de déploiement `npx wrangler d1 migrations apply DB --remote && npx wrangler deploy` (les migrations D1 avant le code). À préparer dans Cloudflare avant le premier déploiement :
 
 - le bucket R2 `studio-files` (`pnpm exec wrangler r2 bucket create studio-files`) : sans lui, le déploiement échoue sur la liaison ;
+- la base D1 : `pnpm exec wrangler d1 create studio`, puis son identifiant à la place du modèle `00000000-…` dans `apps/api/wrangler.jsonc`, validé dans git ;
 - les variables (Paramètres → Variables et secrets) : `ALLOWED_ORIGINS` (adresse du site) et `CLERK_ISSUER`, et le secret `FAL_KEY`. Elles sont conservées d'un déploiement à l'autre (`keep_vars`).

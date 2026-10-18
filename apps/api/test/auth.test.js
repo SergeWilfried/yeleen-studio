@@ -135,3 +135,85 @@ test('API : chaque utilisateur a son portefeuille et ses générations', async (
     assert.equal((await t.req(`/jobs/${jobId}/cancel`, withToken(bob, { method: 'POST' }))).status, 404)
   } finally { t.restore() }
 })
+
+// ── Authentification et D1 ───────────────────────────────────────────────────
+
+import { resetUserCache } from '../src/users.js'
+import { testD1 } from './d1.js'
+
+test('D1 : le premier appel authentifié crée l’utilisateur ; /me rend son profil et son solde', async () => {
+  resetUserCache()
+  const k = await keys()
+  const db = testD1()
+  const t = setup({ ENV: 'dev', DB: db }, k.jwks)
+  try {
+    const token = await k.sign({ sub: 'user_awa', email: 'awa@example.com', name: 'Awa' })
+    const me = await t.req('/me', withToken(token))
+    assert.equal(me.status, 200)
+    const body = await me.json()
+    assert.equal(body.id, 'user_awa')
+    assert.equal(body.email, 'awa@example.com')
+    assert.equal(body.name, 'Awa')
+    assert.ok(body.balance > 0)
+    assert.equal(db.raw.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1)
+    assert.equal((await t.req('/me')).status, 401) // sans jeton : refus, et aucune ligne créée
+    assert.equal(db.raw.prepare('SELECT COUNT(*) AS n FROM users').get().n, 1)
+  } finally { t.restore() }
+})
+
+test('D1 : un jeton refusé ne crée personne', async () => {
+  resetUserCache()
+  const k = await keys()
+  const other = await keys()
+  const db = testD1()
+  const t = setup({ DB: db }, k.jwks)
+  try {
+    assert.equal((await t.req('/wallet', withToken(await other.sign({ sub: 'user_evil' })))).status, 401)
+    assert.equal((await t.req('/wallet', withToken(await k.sign({ azp: 'https://evil.example', sub: 'user_evil' })))).status, 401)
+    assert.equal(db.raw.prepare('SELECT COUNT(*) AS n FROM users').get().n, 0)
+  } finally { t.restore() }
+})
+
+test('D1 : le crédit de bienvenue est accordé une seule fois, même après plusieurs visites', async () => {
+  resetUserCache()
+  const k = await keys()
+  const db = testD1()
+  const t = setup({ ENV: 'dev', DB: db, WELCOME_JETONS: '5' }, k.jwks)
+  try {
+    const token = await k.sign({ sub: 'user_new' })
+    const first = (await (await t.req('/wallet', withToken(token))).json()).balance
+    resetUserCache() // une autre instance du Worker : D1 est interrogé de nouveau
+    const second = (await (await t.req('/wallet', withToken(token))).json()).balance
+    const other = (await (await t.req('/wallet', withToken(await k.sign({ sub: 'user_other' })))).json()).balance
+    assert.equal(first, second) // pas de second crédit
+    assert.equal(first - 5, other - 5) // les deux comptes ont reçu le même montant de départ
+    assert.ok(db.raw.prepare('SELECT welcomed_at FROM users WHERE id = ?').get('user_new').welcomed_at > 0)
+    // le solde de départ des comptes de test est 240 (ENV=dev) : 5 jetons de bienvenue en plus
+    assert.equal(first, 245)
+  } finally { t.restore() }
+})
+
+test('D1 : une panne de la base ne bloque pas les requêtes (mais /me répond clairement)', async () => {
+  resetUserCache()
+  const k = await keys()
+  const db = testD1()
+  db.failing = true
+  const t = setup({ ENV: 'dev', DB: db }, k.jwks)
+  try {
+    const token = await k.sign({ sub: 'user_x' })
+    assert.equal((await t.req('/wallet', withToken(token))).status, 200) // l'accès à l'API ne dépend pas de D1
+    assert.equal((await t.req('/me', withToken(token))).status, 500) // /me lit D1 : l'erreur est franche
+  } finally { t.restore() }
+})
+
+test('sans base D1 liée, tout fonctionne et /me répond 503', async () => {
+  const k = await keys()
+  const t = setup({ ENV: 'dev' }, k.jwks)
+  try {
+    const token = await k.sign({ sub: 'user_x' })
+    assert.equal((await t.req('/wallet', withToken(token))).status, 200)
+    const me = await t.req('/me', withToken(token))
+    assert.equal(me.status, 503)
+    assert.equal((await me.json()).error, 'db_unavailable')
+  } finally { t.restore() }
+})
