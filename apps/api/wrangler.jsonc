@@ -3,7 +3,7 @@
   // avec ce dossier comme racine (commande de build : `pnpm run build`, de déploiement : `npx wrangler deploy`).
   // Ce fichier est en .jsonc comme celui de la racine (le site) : wrangler 4 prend le fichier .jsonc le plus proche, et un
   // wrangler.toml ici serait ignoré au profit de celui de la racine, qui publierait le site à la place de l'API.
-  "name": "studio-api",
+  "name": "yeleen-studio-backend"
   "main": "src/index.js",
   "compatibility_date": "2024-10-01",
 
