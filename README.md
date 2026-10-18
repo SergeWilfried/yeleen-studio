@@ -56,7 +56,16 @@ Le MVP est le studio Cinéma, avec la bibliothèque. Image, Vidéo, Audio, Spot 
 
 - Pour en allumer, construire avec `VITE_FEATURES` (liste séparée par des virgules, ou `all`) : `VITE_FEATURES=image,video pnpm build`. Dans Cloudflare : variable de **build**, comme `VITE_CLERK_PUBLISHABLE_KEY`.
 - En développement, `apps/web/.env.development` allume tout. Pour voir ce que voient les utilisateurs : `VITE_FEATURES= pnpm dev`.
-- Drapeaux : `image`, `video`, `audio`, `spot`, `brand` (voir `apps/web/src/lib/features.js`). C'est de la présentation, pas une protection : l'API accepte toujours les mêmes demandes (la garde d'accès, c'est Clerk).
+- Drapeaux : `image`, `video`, `audio`, `spot`, `brand`, et `catalog` (la Bibliothèque Yeleen, voir plus bas), dans `apps/web/src/lib/features.js`. C'est de la présentation, pas une protection : l'API accepte toujours les mêmes demandes (la garde d'accès, c'est Clerk).
+
+## Fenêtre de choix des références (Cinéma)
+
+Trois entrées dans la barre latérale : **Ma bibliothèque** (tout ce qui est à moi, importé ou généré ; filtre par origine et par type), **Bibliothèque Yeleen** (personnages, objets et vidéos proposés à tous) et **Favoris** (les éléments marqués d'une étoile, de l'une ou l'autre bibliothèque).
+
+- La Bibliothèque Yeleen est derrière le drapeau `catalog` (éteint par défaut en production). Son contenu est `apps/web/public/catalog/yeleen.json` (ou l'adresse `VITE_CATALOG_URL` : un bucket R2 derrière le CDN). Les entrées actuelles sont des **exemples** fabriqués par l'application (`placeholder: true`, étiquetés « Exemple ») : pour de vrais contenus, ajoutez `url` (png, jpg, webp ou mp4) et, pour une vidéo, `secs`, puis retirez `placeholder`.
+- Les **objets 3D** sont des images (rendus sur fond transparent) ou de courtes vidéos : aucun de nos modèles n'accepte un fichier 3D.
+- Jointe à un prompt, une entrée Yeleen se comporte comme n'importe quelle référence (`@`, rôles par modèle) mais n'entre pas dans Ma bibliothèque. Les favoris Yeleen sont gardés dans le navigateur (`studio.catalog.favs.v1`), comme le reste de la bibliothèque.
+- Avant d'y mettre de vrais contenus : droits d'utilisation et de redistribution, et pas de photos de personnes réelles sans autorisation écrite.
 
 ## Connexion (Clerk)
 

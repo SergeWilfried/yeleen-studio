@@ -1,0 +1,177 @@
+{
+  "_comment": "Bibliothèque Yeleen. Exemples fabriqués par l'application (placeholder: true) : remplacez-les par de vrais fichiers en ajoutant `url` (image : png, jpg ou webp ; vidéo : mp4) et, pour une vidéo, `secs`. Catégories : character (personnages), object (objets, vus en image : rendu 3D sur fond transparent), video. Les objets 3D se présentent en images, pas en fichiers 3D.",
+  "version": 1,
+  "items": [
+    {
+      "id": "perso-1",
+      "kind": "image",
+      "category": "character",
+      "name": "Exploratrice",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 1
+      }
+    },
+    {
+      "id": "perso-2",
+      "kind": "image",
+      "category": "character",
+      "name": "Commerçant du marché",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 2
+      }
+    },
+    {
+      "id": "perso-3",
+      "kind": "image",
+      "category": "character",
+      "name": "Étudiante",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 3
+      }
+    },
+    {
+      "id": "perso-4",
+      "kind": "image",
+      "category": "character",
+      "name": "Cheffe cuisinière",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 4
+      }
+    },
+    {
+      "id": "perso-5",
+      "kind": "image",
+      "category": "character",
+      "name": "Musicien",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 5
+      }
+    },
+    {
+      "id": "perso-6",
+      "kind": "image",
+      "category": "character",
+      "name": "Aînée du village",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 6
+      }
+    },
+    {
+      "id": "objet-1",
+      "kind": "image",
+      "category": "object",
+      "name": "Lanterne",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 7
+      }
+    },
+    {
+      "id": "objet-2",
+      "kind": "image",
+      "category": "object",
+      "name": "Valise en cuir",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 8
+      }
+    },
+    {
+      "id": "objet-3",
+      "kind": "image",
+      "category": "object",
+      "name": "Théière",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 9
+      }
+    },
+    {
+      "id": "objet-4",
+      "kind": "image",
+      "category": "object",
+      "name": "Mobylette",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 10
+      }
+    },
+    {
+      "id": "objet-5",
+      "kind": "image",
+      "category": "object",
+      "name": "Radio à lampes",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 11
+      }
+    },
+    {
+      "id": "objet-6",
+      "kind": "image",
+      "category": "object",
+      "name": "Ballon de football",
+      "placeholder": true,
+      "art": {
+        "palette": "image",
+        "index": 12
+      }
+    },
+    {
+      "id": "video-1",
+      "kind": "video",
+      "category": "video",
+      "name": "Village à l’aube",
+      "secs": 8,
+      "placeholder": true,
+      "seed": 100,
+      "art": {
+        "palette": "video",
+        "index": 2
+      }
+    },
+    {
+      "id": "video-2",
+      "kind": "video",
+      "category": "video",
+      "name": "Marché animé",
+      "secs": 6,
+      "placeholder": true,
+      "seed": 137,
+      "art": {
+        "palette": "video",
+        "index": 3
+      }
+    },
+    {
+      "id": "video-3",
+      "kind": "video",
+      "category": "video",
+      "name": "Pluie sur la ville",
+      "secs": 10,
+      "placeholder": true,
+      "seed": 174,
+      "art": {
+        "palette": "video",
+        "index": 4
+      }
+    }
+  ]
+}

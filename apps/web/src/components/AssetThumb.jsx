@@ -40,6 +40,7 @@ const bars = (asset) => Array.from({ length: 28 }, (_, k) => 18 + ((Math.abs(ass
 export default function AssetThumb({ asset, large = false }) {
   const url = useAssetUrl(asset)
   const art = asset.art ? gradient(asset.art.index, asset.art.palette) : null
+  const synthetic = (asset.source === 'generated' || asset.source === 'yeleen') && !asset.url // média fabriqué : dégradé tant qu'il n'y a pas de fichier
 
   if (asset.kind === 'audio') {
     return (
@@ -52,7 +53,7 @@ export default function AssetThumb({ asset, large = false }) {
   if (asset.kind === 'video' && asset.spot && large) return <div className="at-spot"><SpotPlayer manifest={asset.spot} /></div>
   if (asset.kind === 'video') {
     return (
-      <div className={`at at-video${large ? ' large' : ''}`} style={asset.source === 'generated' && !asset.url ? { background: art } : undefined}>
+      <div className={`at at-video${large ? ' large' : ''}`} style={synthetic ? { background: art } : undefined}>
         {large && url ? <video controls muted playsInline preload="metadata" src={url} aria-label={`Lire : ${asset.name}`} /> : (
           <>
             {(asset.source === 'upload' || asset.url) && url && <video muted preload="metadata" src={`${url}#t=0.1`} tabIndex={-1} aria-hidden="true" />}
@@ -65,7 +66,7 @@ export default function AssetThumb({ asset, large = false }) {
     )
   }
   return (
-    <div className={`at at-image${large ? ' large' : ''}`} style={asset.source === 'generated' && !asset.url ? { background: art } : undefined}>
+    <div className={`at at-image${large ? ' large' : ''}`} style={synthetic ? { background: art } : undefined}>
       {(asset.source === 'upload' || asset.url) && url && <img src={url} alt={large ? asset.name : ''} loading={large ? 'eager' : 'lazy'} />}
     </div>
   )
