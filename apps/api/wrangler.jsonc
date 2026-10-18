@@ -8,11 +8,14 @@
   "compatibility_date": "2024-10-01",
 
   // Valeurs de production. En local, `.dev.vars` les remplace (ENV=dev offre des jetons de test).
-  // ALLOWED_ORIGINS (origines du site) et CLERK_ISSUER (adresse de l'instance Clerk) se règlent dans Cloudflare (Variables et secrets)
-  // ou à la commande (`scripts/deploy.mjs`) ; `keep_vars` empêche un déploiement d'effacer ce qui est réglé dans le tableau de bord.
+  // ALLOWED_ORIGINS (origines du site, séparées par des virgules) est écrit ici : la construction Git de Cloudflare lance un simple
+  // `wrangler deploy`, sans `--var`, et sans cette valeur le navigateur refuse toutes les réponses de l'API (CORS). Ajouter ici un
+  // domaine personnalisé du site ; `scripts/deploy.mjs` la remplace à la commande.
+  // CLERK_ISSUER (adresse de l'instance Clerk) se règle dans Cloudflare (Variables et secrets) ou à la commande ; `keep_vars` empêche
+  // un déploiement d'effacer ce qui est réglé dans le tableau de bord (sauf les variables écrites ici, qui l'emportent).
   // FAL_KEY est un secret : `wrangler secret put FAL_KEY` ou le tableau de bord, jamais ici.
   // Recharges (paygate) : PAYGATE_URL (variable), PAYGATE_KEY et PAYGATE_WEBHOOK_SECRET (secrets), TOPUP_COUNTRIES (« BF » par défaut).
-  "vars": { "ENV": "production" },
+  "vars": { "ENV": "production", "ALLOWED_ORIGINS": "https://yeleen-studio.labsprogiciel.workers.dev" },
   "keep_vars": true,
 
   // Compte : portefeuille de jetons et générations, un Durable Object par compte (un seul écrivain, pas de double débit).
