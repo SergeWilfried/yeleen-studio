@@ -55,7 +55,7 @@ Ordre de construction conseillé : voir `docs/architecture.html`.
 Les écrans de création et toute l'API exigent une session Clerk ; un compte = un portefeuille de jetons et ses générations (`sub` du jeton).
 
 - **Créer l'application Clerk** (tableau de bord Clerk) : notez la *clé publique* (`pk_…`) et l'*adresse de l'instance* (« Frontend API URL », `https://xxx.clerk.accounts.dev`). La clé secrète (`sk_…`) n'est pas utilisée : l'API vérifie les jetons avec les clés publiques de l'instance.
-- **Site** : variable de build `VITE_CLERK_PUBLISHABLE_KEY`. Sans elle (développement local), pas de garde.
+- **Site** : variable de build `VITE_CLERK_PUBLISHABLE_KEY`. Sans elle, le site se construit sans connexion (pas de garde) : en local c'est permis (avertissement), mais en intégration continue (Cloudflare, `CI`) la construction échoue avec la marche à suivre ; `VITE_ALLOW_NO_AUTH=1` pour le vouloir. Dans Cloudflare, c'est une variable de **build** (Paramètres → Build → Variables et secrets), pas une variable d'exécution du Worker : celle-ci n'est pas visible à la construction.
 - **API** : variable `CLERK_ISSUER` (l'adresse de l'instance) et `ALLOWED_ORIGINS` (les origines du site : le champ `azp` du jeton doit en faire partie). En production sans `CLERK_ISSUER`, l'API refuse tout (503) : elle ne retombe jamais sur un compte par défaut.
 - **Développement** : avec `ENV=dev` et sans `CLERK_ISSUER` dans `.dev.vars`, l'API sert un compte `demo` unique ; avec les deux sites configurés, toute la chaîne est testée pour de vrai.
 - Ouvert sans connexion : `/health`, `/files/*` (adresses non devinables, lues par `<img>` et `<video>`) et les webhooks.
@@ -76,7 +76,14 @@ pnpm deploy                         # ensuite : tests, API, site, autorisation d
 - `pnpm deploy:check` vérifie l'environnement et lance les tests ; `pnpm deploy:api` et `pnpm deploy:web` déploient une moitié seulement.
 - Le site est construit avec l'adresse de l'API (`VITE_API_URL`) ; sans elle, il garde le moteur de génération simulé. Les dernières adresses déployées sont retenues dans `.deploy-state.json` (ignoré par git) ; `--api-url=…` et `--web-origin=…` les remplacent (domaines personnalisés).
 - La clé fal n'est lue que dans la variable d'environnement `FAL_KEY` au moment de l'enregistrer comme secret Cloudflare ; elle n'est ni affichée ni écrite sur disque.
-- Les configurations : `wrangler.jsonc` (site, à la racine) et `apps/api/wrangler.toml` (API). Les scripts passent toujours `-c` : sans lui, wrangler 4 prend le fichier de la racine même depuis `apps/api`.
+- Les configurations : `wrangler.jsonc` (site, à la racine) et `apps/api/wrangler.jsonc` (API). Les deux sont en `.jsonc` à dessein : wrangler 4 prend le fichier `.jsonc` le plus proche et ignorerait un `wrangler.toml` dans `apps/api` au profit de celui de la racine (le site serait alors publié à la place de l'API). Les scripts passent aussi `-c` explicitement.
 - Le script refuse de déployer sans les réglages Clerk (`--no-auth` pour passer outre, à vos risques : l'API refusera tout).
 - Le site peut aussi se déployer depuis Git (Workers Builds) : la commande de déploiement `npx wrangler deploy` suffit, car `wrangler.jsonc` construit le site lui-même (`pnpm build`). Pour que le site appelle l'API, définissez la variable de build `VITE_API_URL` dans Cloudflare ; sans elle, il garde le moteur simulé.
 
+
+### Construction Git de l'API dans Cloudflare
+
+Projet Workers Builds distinct de celui du site : dossier racine `apps/api`, commande de build `pnpm run build` (valide la configuration et regroupe le code), commande de déploiement `npx wrangler deploy`. À préparer dans Cloudflare avant le premier déploiement :
+
+- le bucket R2 `studio-files` (`pnpm exec wrangler r2 bucket create studio-files`) : sans lui, le déploiement échoue sur la liaison ;
+- les variables (Paramètres → Variables et secrets) : `ALLOWED_ORIGINS` (adresse du site) et `CLERK_ISSUER`, et le secret `FAL_KEY`. Elles sont conservées d'un déploiement à l'autre (`keep_vars`).

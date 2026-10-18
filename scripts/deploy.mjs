@@ -21,7 +21,7 @@ import { createInterface } from 'node:readline/promises'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const API_CONFIG = 'apps/api/wrangler.toml'
+const API_CONFIG = 'apps/api/wrangler.jsonc'
 const WEB_CONFIG = 'wrangler.jsonc'
 const BUCKET = 'studio-files'
 const STATE = join(ROOT, '.deploy-state.json') // dernières adresses déployées (ignoré par git)
@@ -153,7 +153,7 @@ function deployWeb() {
   if (!api) warn('adresse de l’API inconnue : le site utilisera le moteur de génération simulé (VITE_API_URL absente)')
   else ok(`le site appellera l’API : ${api}`)
   // `wrangler deploy` construit le site lui-même (champ « build » de wrangler.jsonc) : l'adresse de l'API doit donc lui être transmise aussi.
-  const d = wrangler(['deploy', '-c', WEB_CONFIG, ...(dry ? ['--dry-run'] : [])], { env: { VITE_API_URL: api ?? '' } })
+  const d = wrangler(['deploy', '-c', WEB_CONFIG, ...(dry ? ['--dry-run'] : [])], { env: { VITE_API_URL: api ?? '', ...(needAuth ? {} : { VITE_ALLOW_NO_AUTH: '1' }) } })
   if (d.code !== 0) fail('La construction ou le déploiement du site a échoué.')
   if (!existsSync(join(ROOT, 'apps/web/dist/index.html'))) fail('apps/web/dist est introuvable après la construction.')
   ok('site construit')
