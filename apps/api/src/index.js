@@ -4,6 +4,7 @@ import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { TOPUP_COUNTRIES, findPack, toE164 } from '@studio/catalog/packs'
+import { ledgerOf } from './mirror.js'
 import { isBlocked } from './moderation.js'
 import { PaygateError, paygateClient, verifySignature } from './paygate.js'
 import { priceJob } from './pricing.js'
@@ -50,7 +51,12 @@ app.use('*', async (c, next) => {
 })
 
 const accountId = (c) => c.get('uid')
-const account = (c) => c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(accountId(c)))
+// Le Durable Object d'un compte. Son nom (le `sub` Clerk) lui est passé dans `x-account` : il en a besoin pour ses copies dans D1.
+const accountStub = (env, uid) => {
+  const stub = env.ACCOUNT.get(env.ACCOUNT.idFromName(uid))
+  return { fetch: (url, init = {}) => stub.fetch(url, { ...init, headers: { ...init.headers, 'x-account': uid } }) }
+}
+const account = (c) => accountStub(c.env, accountId(c))
 const short = (v) => (typeof v === 'string' && v.length > 0 && v.length <= 200 ? v : null)
 /**
  * Profil dans D1 à chaque utilisateur authentifié (voir users.js), et crédit de bienvenue unique s'il est configuré (WELCOME_JETONS, 0 par défaut :
@@ -106,6 +112,18 @@ app.get('/me', async (c) => {
   const user = await getUser(c.env.DB, accountId(c))
   if (!user) return c.json({ error: 'not_found' }, 404)
   return c.json({ ...user, balance: (await call(c, '/balance')).balance })
+})
+
+// Mon historique de jetons (D1) : débits, remboursements, recharges, du plus récent au plus ancien ; `before` pour la page suivante.
+app.get('/ledger', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  const { limit, before } = c.req.query()
+  try {
+    return c.json({ entries: await ledgerOf(c.env.DB, accountId(c), { limit, before }) })
+  } catch (e) {
+    console.error('grand livre (D1)', e.message)
+    return c.json({ error: 'db_unavailable' }, 503)
+  }
 })
 
 // Soumission : contrôle du texte et prix serveur → débit → envoi à fal. Si l'envoi échoue, remboursement immédiat.
@@ -347,7 +365,7 @@ app.post('/webhooks/payments', async (c) => {
     console.error('webhook paygate sans compte', event.id)
     return c.json({ ok: true, ignored: 'no_account' })
   }
-  const stub = c.env.ACCOUNT.get(c.env.ACCOUNT.idFromName(uid))
+  const stub = accountStub(c.env, uid)
   const res = await stub.fetch('https://account/topup/apply', { method: 'POST', body: JSON.stringify({ reference: p.reference, payment: p, late: event.late === true }) })
   if (res.status === 404) { console.error('webhook paygate : recharge inconnue', p.reference); return c.json({ ok: true, ignored: 'unknown_reference' }) }
   const out = await res.json()

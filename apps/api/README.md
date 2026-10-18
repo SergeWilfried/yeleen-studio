@@ -9,8 +9,9 @@ Cloudflare Worker (Hono). Point d'entrée unique pour tout ce qui coûte de l'ar
 - `src/storage.js` : copie des sorties dans R2 et lecture par plage.
 - `src/paygate.js` : client de paygate (moyens, encaissement, lecture) et vérification de la signature des webhooks.
 - `src/topups.js` : règles des recharges (statuts, crédit au montant enregistré, paiements tardifs), sans dépendance, testées.
+- `src/mirror.js` : copie dans D1 du grand livre des jetons (`ledger`) et des recharges (`topups`), idempotente.
 - `src/account-do.js` : Durable Object, un compte = portefeuille + générations + recharges.
-- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`, `GET /topups/options`, `GET|POST /topups`, `GET /topups/:reference`, `POST /webhooks/payments`. À écrire : `/webhooks/fal`.
+- `src/index.js` : routes `GET /wallet`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/cancel`, `GET /topups/options`, `GET|POST /topups`, `GET /topups/:reference`, `POST /webhooks/payments`, `GET /ledger`. À écrire : `/webhooks/fal`.
 - `wrangler.jsonc` : liaisons (D1, R2, Queues en commentaire jusqu'à création des ressources).
 
 ## Générations réelles
@@ -41,3 +42,7 @@ paygate confirme par `POST /webhooks/payments` (signature HMAC sur le corps brut
 pnpm --filter @studio/api test
 pnpm --filter @studio/api dev
 ```
+
+## Grand livre (D1)
+
+Le Durable Object du compte reste le seul juge du solde. Chaque débit, remboursement et crédit (recharge, bienvenue) est copié dans la table `ledger` de D1 avec le solde qui en résulte, et chaque recharge dans `topups` (migrations `0002` et `0003`). La copie passe par une file gardée dans le Durable Object : si D1 ne répond pas, la requête du client réussit quand même et la file est réécrite à la requête suivante. Au premier passage d'un compte, son historique antérieur est repris (lignes sans solde). Chaque écriture est idempotente. `GET /ledger?limit=&before=` rend l'historique du compte connecté.
