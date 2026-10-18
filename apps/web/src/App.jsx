@@ -6,6 +6,7 @@ import { AssetsProvider } from './lib/assets.jsx'
 import { CatalogProvider } from './lib/catalog.jsx'
 import { ChainsProvider } from './lib/chains.jsx'
 import { HandoffProvider } from './lib/handoff.jsx'
+import { LibraryDialogProvider } from './lib/libraryDialog.jsx'
 import { SpotsProvider } from './lib/spots.jsx'
 import { BrandProvider } from './lib/brand.jsx'
 import { ToastProvider } from './lib/toasts.jsx'
@@ -15,7 +16,6 @@ import { features } from './lib/features.js'
 const Video = lazy(() => import('./pages/Video.jsx'))
 const ImageGen = lazy(() => import('./pages/ImageGen.jsx'))
 const Audio = lazy(() => import('./pages/Audio.jsx'))
-const Library = lazy(() => import('./pages/Library.jsx'))
 const Spot = lazy(() => import('./pages/Spot.jsx'))
 const Brand = lazy(() => import('./pages/Brand.jsx'))
 const Cinema = lazy(() => import('./pages/Cinema.jsx'))
@@ -40,13 +40,13 @@ export default function App() {
     <ChainsProvider>
     <SpotsProvider>
     <HandoffProvider>
+    <LibraryDialogProvider>
     <Suspense fallback={<div className="route-fallback" />}>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/video" element={features.video ? <Protected><Video /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/image" element={features.image ? <Protected><ImageGen /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/audio" element={features.audio ? <Protected><Audio /></Protected> : <Navigate to="/cinema" replace />} />
-      <Route path="/library" element={<Protected><Library /></Protected>} />
       <Route path="/spot" element={features.spot ? <Protected><Spot /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/brand" element={features.brand ? <Protected><Brand /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/cinema" element={<Protected><Cinema /></Protected>} />
@@ -55,6 +55,7 @@ export default function App() {
       <Route path="*" element={<Home />} />
     </Routes>
     </Suspense>
+    </LibraryDialogProvider>
     </HandoffProvider>
     </SpotsProvider>
     </ChainsProvider>

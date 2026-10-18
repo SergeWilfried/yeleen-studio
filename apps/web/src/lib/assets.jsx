@@ -1,5 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { api, apiEnabled } from './api.js'
+import { useAuthState } from './auth.jsx'
 import { useJobs } from './jobs.jsx'
+import { favoriteSets, hash, mergeRemote, remoteAssetId } from './librarySync.js'
 import { blobDelete, blobGet, blobPut, clipFor, grabFrame, gradientPng, synthWav, vividIndex } from './media.js'
 
 /**
@@ -7,6 +10,8 @@ import { blobDelete, blobGet, blobPut, clipFor, grabFrame, gradientPng, synthWav
  * - Les générations terminées y entrent automatiquement (une entrée par sortie).
  * - Les fichiers importés sont conservés (métadonnées en localStorage, fichier en IndexedDB).
  * - Les générations simulées sont décrites par une graine ; leur média est fabriqué à la demande (voir media.js).
+ * - Avec l'API (mode réel, compte connecté), Ma bibliothèque vient aussi du serveur (GET /assets) : les fichiers générés gardés dans R2
+ *   se retrouvent sur tout appareil, les favoris et les suppressions sont enregistrés côté serveur (voir librarySync.js).
  */
 const KEY = 'studio.assets.v1'
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]') } catch { return [] } }
@@ -18,7 +23,6 @@ export const useAssets = () => useContext(Ctx)
 export const KINDS = { image: 'Image', video: 'Vidéo', audio: 'Audio' }
 const kindOfFile = (f) => (f.type.startsWith('image') ? 'image' : f.type.startsWith('video') ? 'video' : f.type.startsWith('audio') ? 'audio' : null)
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'asset'
-const hash = (str) => [...str].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7) // graine stable pour la forme d'onde d'un fichier réel
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'video/mp4': 'mp4' }
 const uid = () => `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 
@@ -32,8 +36,12 @@ const mediaSeconds = (file) => new Promise((resolve) => {
   el.src = url
 })
 
+const REMOTE_PAGE = 200
+
 export function AssetsProvider({ children }) {
   const { jobs } = useJobs()
+  const { ready, signedIn } = useAuthState()
+  const remote = apiEnabled && ready && signedIn
   const [assets, setAssets] = useState(read)
   const files = useRef(new Map()) // id → File importé, pour la session en cours
   const [adopted, setAdopted] = useState([]) // éléments de la Bibliothèque Yeleen utilisés comme références : hors « Ma bibliothèque », mais retrouvables par id
@@ -78,7 +86,7 @@ export function AssetsProvider({ children }) {
             id: `${j.key}-${i}`, kind: j.kind, source: 'generated', name: `${j.title}${outs.length > 1 ? ` · ${i + 1}/${outs.length}` : ''}`,
             prompt: j.prompt, model: j.title, meta: j.meta, cost: Math.round((j.cost / outs.length) * 10) / 10, secs: j.spec.secs ?? null,
             seed: hash(o.url), url: o.url, contentType: o.contentType, art: null, createdAt: j.finishedAt ?? Date.now(), starred: false,
-            origin: { jobKey: j.key, index: i, runId: null, step: null },
+            remoteId: remoteAssetId(j.remoteId, i, o), origin: { jobKey: j.key, index: i, runId: null, step: null },
           })
         })
         continue
@@ -106,6 +114,26 @@ export function AssetsProvider({ children }) {
     if (fresh.length) setAssets((xs) => [...fresh.reverse(), ...xs.filter((x) => !fresh.some((f) => f.id === x.id))])
   }, [jobs])
 
+  // Ma bibliothèque côté serveur : chargée à la connexion et à chaque retour sur l'onglet, fusionnée avec la liste locale.
+  useEffect(() => {
+    if (!remote) return
+    let alive = true
+    const sync = async () => {
+      try {
+        const [{ assets: list }, { favorites }] = await Promise.all([api.assets({ limit: REMOTE_PAGE }), api.favorites()])
+        if (!alive) return
+        const favs = favoriteSets(favorites).mine
+        const opts = { complete: list.length < REMOTE_PAGE }
+        setAssets((xs) => mergeRemote(xs, list, favs, opts).list)
+        for (const id of mergeRemote(latest.current, list, favs, opts).push) api.setFavorite('mine', id, true).catch(() => {}) // étoiles posées avant la connexion
+      } catch { /* API ou base indisponible : la liste locale reste */ }
+    }
+    sync()
+    const onShow = () => { if (!document.hidden) sync() }
+    document.addEventListener('visibilitychange', onShow)
+    return () => { alive = false; document.removeEventListener('visibilitychange', onShow) }
+  }, [remote])
+
   const addUpload = useCallback(async (file) => {
     const kind = kindOfFile(file)
     if (!kind) return null
@@ -121,20 +149,33 @@ export function AssetsProvider({ children }) {
     return asset
   }, [])
 
-  const update = useCallback((id, patch) => setAssets((xs) => xs.map((a) => (a.id === id ? { ...a, ...patch } : a))), [])
+  const update = useCallback((id, patch) => {
+    const a = latest.current.find((x) => x.id === id)
+    if (remote && a?.remoteId && 'starred' in patch && patch.starred !== a.starred) api.setFavorite('mine', a.remoteId, patch.starred).catch(() => {})
+    setAssets((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+  }, [remote])
 
+  const doomed = useRef(new Map()) // id → remoteId des fichiers retirés, supprimés côté serveur seulement au `purge` (après le délai d'annulation)
   const remove = useCallback((ids) => {
     setAssets((xs) => {
       trash.current = xs.filter((a) => ids.includes(a.id))
+      for (const a of trash.current) if (a.remoteId) doomed.current.set(a.id, a.remoteId)
       return xs.filter((a) => !ids.includes(a.id))
     })
   }, [])
   const restore = useCallback(() => {
     const back = trash.current
     trash.current = []
+    for (const a of back) doomed.current.delete(a.id)
     setAssets((xs) => [...xs, ...back].sort((a, b) => b.createdAt - a.createdAt))
   }, [])
-  const purge = useCallback((ids) => ids.forEach((id) => { files.current.delete(id); blobDelete(id) }), [])
+  const purge = useCallback((ids) => ids.forEach((id) => {
+    files.current.delete(id)
+    blobDelete(id)
+    const remoteId = doomed.current.get(id)
+    doomed.current.delete(id)
+    if (remote && remoteId) api.deleteAsset(remoteId).catch(() => {}) // déjà supprimé ailleurs (404) : rien à faire
+  }), [remote])
 
   /** Le fichier réel d'un asset (ou l'une de ses images clés pour une vidéo), prêt à remplir une entrée. */
   const getFile = useCallback(async (asset, { frame } = {}) => {

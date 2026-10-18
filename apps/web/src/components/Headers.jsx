@@ -4,11 +4,12 @@ import Icon from '../lib/icons.jsx'
 import BalanceChip from './BalanceChip.jsx'
 import { AccountMenu, authEnabled, useAuthState } from '../lib/auth.jsx'
 import { features } from '../lib/features.js'
+import { useLibrary } from '../lib/libraryDialog.jsx'
 import logo from '../assets/brand/yeelen-logo-on-lime.svg'
 import mark from '../assets/brand/yeelen-mark-on-lime.svg'
 import '../styles/chrome.css'
 
-const ROUTES = { Explorer: '/', Image: '/image', Vidéo: '/video', Audio: '/audio', Bibliothèque: '/library', 'Spot pub': '/spot', Marque: '/brand', Cinéma: '/cinema' }
+const ROUTES = { Explorer: '/', Image: '/image', Vidéo: '/video', Audio: '/audio', 'Spot pub': '/spot', Marque: '/brand', Cinéma: '/cinema' } // Bibliothèque : une fenêtre, pas une page
 
 // Seules les pages qui existent figurent dans la navigation.
 const FLAG_OF = { Image: 'image', Vidéo: 'video', Audio: 'audio', 'Spot pub': 'spot', Marque: 'brand' } // écrans éteints par drapeau : absents de la navigation
@@ -28,6 +29,7 @@ export function Logo() {
 function NavLinks() {
   const nav = useRef(null)
   const { pathname } = useLocation()
+  const { openLibrary } = useLibrary()
   // Sur écran étroit la barre défile : on amène le lien de la page courante dans la zone visible.
   useEffect(() => {
     const el = nav.current?.querySelector('.nl.on')
@@ -35,11 +37,13 @@ function NavLinks() {
   }, [pathname])
   return (
     <nav className="nls" ref={nav} aria-label="Navigation principale">
-      {NAV.map((label) => (
-        <NavLink key={label} to={ROUTES[label]} end={label === 'Explorer'} className={({ isActive }) => `nl${isActive ? ' on' : ''}`}>
-          {label}
-        </NavLink>
-      ))}
+      {NAV.map((label) => (label === 'Bibliothèque'
+        ? <button key={label} type="button" className="nl" aria-haspopup="dialog" onClick={() => openLibrary()}>{label}</button>
+        : (
+          <NavLink key={label} to={ROUTES[label]} end={label === 'Explorer'} className={({ isActive }) => `nl${isActive ? ' on' : ''}`}>
+            {label}
+          </NavLink>
+        )))}
     </nav>
   )
 }

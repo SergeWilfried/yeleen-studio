@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import { gradient } from '../lib/gradients.js'
 import { ShellHeader, SkipLink } from '../components/Headers.jsx'
+import { useLibrary } from '../lib/libraryDialog.jsx'
 import Menu from '../components/Menu.jsx'
 import PromoBar from '../components/PromoBar.jsx'
 import { Section, DropTile } from '../components/GenPanel.jsx'
@@ -62,6 +63,7 @@ function Storyboard({ brief, lines, busy, progress, colors, logoUrl }) {
 
 export default function Spot() {
   useDocumentTitle('Spot pub')
+  const { openLibrary } = useLibrary()
   const { run, start, retry, cancel, reset } = useSpots()
   const { jobs, balance } = useJobs()
   const { assets, getFile } = useAssets()
@@ -305,7 +307,7 @@ export default function Spot() {
 
         <section className="mp" aria-label="Aperçu du spot">
           <div className="pl">
-            <Link to="/library"><Icon name="folder" size={15} />Bibliothèque</Link>
+            <button type="button" aria-haspopup="dialog" onClick={() => openLibrary()}><Icon name="folder" size={15} />Bibliothèque</button>
             {run && <button type="button" onClick={reset}>Effacer l’aperçu</button>}
           </div>
 
@@ -338,7 +340,7 @@ export default function Spot() {
                 <Menu items={exportItems} value={null} onChange={exportOne} label="Télécharger" menuWidth={260} heading="Télécharger" className="lb-menu">
                   <Icon name="download" size={16} /><span>Télécharger</span>
                 </Menu>
-                <Link className="lb-btn" to={`/library?asset=${encodeURIComponent(result.id)}`}><Icon name="folder" size={16} />Voir dans la bibliothèque</Link>
+                <button type="button" className="lb-btn" aria-haspopup="dialog" onClick={() => openLibrary({ focus: result.id })}><Icon name="folder" size={16} />Voir dans la bibliothèque</button>
               </div>
             )}
 

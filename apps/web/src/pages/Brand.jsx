@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import { gradient } from '../lib/gradients.js'
 import { ShellHeader, SkipLink } from '../components/Headers.jsx'
+import { useLibrary } from '../lib/libraryDialog.jsx'
 import Menu from '../components/Menu.jsx'
 import PromoBar from '../components/PromoBar.jsx'
 import Segment from '../components/Segment.jsx'
@@ -49,6 +50,7 @@ function ColorField({ label, value, onChange, swatches }) {
 
 export default function Brand() {
   useDocumentTitle('Marque')
+  const { openLibrary } = useLibrary()
   const { brand, patch, reset, colors, style } = useBrand()
   const { assets, getFile } = useAssets()
   const [tab, setTab] = useState(0)
@@ -186,7 +188,7 @@ export default function Brand() {
 
         <section className="mp" aria-label="Aperçu de la marque">
           <div className="pl">
-            <Link to="/library"><Icon name="folder" size={15} />Bibliothèque</Link>
+            <button type="button" aria-haspopup="dialog" onClick={() => openLibrary()}><Icon name="folder" size={15} />Bibliothèque</button>
             <button type="button" onClick={() => { reset(); setLogoFile(null); setTouched(false) }}>Réinitialiser</button>
           </div>
 

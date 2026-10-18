@@ -1,14 +1,21 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { api, apiEnabled } from './api.js'
+import { useAuthState } from './auth.jsx'
 import { features } from './features.js'
+import { favoriteSets } from './librarySync.js'
 
 /**
  * Bibliothèque Yeleen : personnages, objets (images, rendus 3D sur fond transparent) et vidéos proposés à tous les utilisateurs,
  * à utiliser comme références. Le catalogue est une liste (`public/catalog/yeleen.json`, ou `VITE_CATALOG_URL` : un bucket R2 derrière
- * le CDN) : pas de serveur à interroger. Chaque entrée devient un « asset » (source `yeleen`) ; les favoris sont gardés dans le navigateur.
+ * le CDN, ou `<API>/catalog`, servi depuis D1) : pas de serveur à interroger. Chaque entrée devient un « asset » (source `yeleen`).
+ * Les favoris sont gardés dans le navigateur et, avec l'API (compte connecté), côté serveur (portée `yeleen`) pour suivre l'utilisateur.
  */
 const URL_ = import.meta.env?.VITE_CATALOG_URL || '/catalog/yeleen.json'
 const FAVS = 'studio.catalog.favs.v1'
 const readFavs = () => { try { return new Set(JSON.parse(localStorage.getItem(FAVS) || '[]')) } catch { return new Set() } }
+const writeFavs = (set) => { try { localStorage.setItem(FAVS, JSON.stringify([...set])) } catch { /* quota ou navigation privée */ } }
+const PREFIX = 'yeleen:'
+const entryId = (assetId) => (assetId.startsWith(PREFIX) ? assetId.slice(PREFIX.length) : assetId) // côté serveur : l'identifiant du catalogue
 
 export const CATEGORIES = [
   { id: 'character', label: 'Personnages' },
@@ -32,6 +39,26 @@ export function CatalogProvider({ children }) {
   const [state, setState] = useState({ items: [], status: 'loading' })
   const [favs, setFavs] = useState(readFavs)
   const [tick, setTick] = useState(0)
+  const { ready, signedIn } = useAuthState()
+  const remote = apiEnabled && ready && signedIn
+  const favsRef = useRef(favs)
+  favsRef.current = favs
+
+  // Favoris du serveur : réunis avec ceux du navigateur ; ceux que le serveur ignore encore lui sont envoyés une fois.
+  useEffect(() => {
+    if (!remote) return
+    let alive = true
+    api.favorites().then(({ favorites }) => {
+      if (!alive) return
+      const server = new Set([...favoriteSets(favorites).yeleen].map((id) => `${PREFIX}${id}`))
+      const local = favsRef.current
+      for (const id of local) if (!server.has(id)) api.setFavorite('yeleen', entryId(id), true).catch(() => {})
+      const all = new Set([...local, ...server])
+      writeFavs(all)
+      setFavs(all)
+    }).catch(() => { /* API ou base indisponible : les favoris du navigateur restent */ })
+    return () => { alive = false }
+  }, [remote])
 
   useEffect(() => {
     if (!features.catalog) return // éteint : on ne télécharge pas le catalogue
@@ -44,12 +71,15 @@ export function CatalogProvider({ children }) {
     return () => { alive = false }
   }, [tick])
 
-  const toggleFav = useCallback((id) => setFavs((f) => {
-    const n = new Set(f)
-    n.has(id) ? n.delete(id) : n.add(id)
-    try { localStorage.setItem(FAVS, JSON.stringify([...n])) } catch { /* quota ou navigation privée */ }
-    return n
-  }), [])
+  const toggleFav = useCallback((id) => {
+    const n = new Set(favsRef.current)
+    const on = !n.has(id)
+    on ? n.add(id) : n.delete(id)
+    favsRef.current = n
+    writeFavs(n)
+    setFavs(n)
+    if (remote) api.setFavorite('yeleen', entryId(id), on).catch(() => {})
+  }, [remote])
   const reload = useCallback(() => setTick((t) => t + 1), [])
 
   const value = useMemo(() => ({ ...state, favs, toggleFav, reload }), [state, favs, toggleFav, reload])

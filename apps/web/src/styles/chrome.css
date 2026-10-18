@@ -45,3 +45,5 @@ body .pg .nv :focus-visible{outline-color:#111}
 @media (max-width:820px){
   .shell .nls{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
 }
+/* « Bibliothèque » dans la navigation ouvre une fenêtre : un bouton à l'allure d'un lien */
+button.nl{background:none;border:0;font:inherit;cursor:pointer}
