@@ -114,15 +114,22 @@
 
 /* Fenêtre des références */
 dialog.am-dlg{width:min(980px,94vw);height:min(640px,88vh);padding:0;border:0;border-radius:26px;background:#232325;color:var(--ink);overflow:hidden}
-dialog.am-dlg[open]{display:flex;flex-direction:column}
+dialog.am-dlg[open]{display:flex;flex-direction:row}
 dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
-.am-top{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px}
-.am-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
-.am-tabs button,.am-subs button{flex:none;height:44px;padding:0 18px;border:0;border-radius:999px;background:none;color:var(--ink-3);font-size:15px;font-weight:600;cursor:pointer}
-.am-tabs button:hover,.am-subs button:hover{color:var(--ink)}
-.am-tabs button.on{background:#fff;color:#111}
-.am-x{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:50%;background:#2f3033;color:var(--ink);cursor:pointer}
-.am-panel{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;margin:0 8px 8px;border-radius:20px;background:#1b1c1e}
+/* Barre latérale : Imports, Générations, Favoris */
+.am-side{flex:none;width:208px;padding:16px 8px 16px 16px;overflow-y:auto}
+.am-side [role="tablist"]{display:flex;flex-direction:column;gap:4px}
+.am-side button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:0 12px;border:0;border-radius:14px;background:none;color:var(--ink-3);font:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer}
+.am-side button:hover{color:var(--ink);background:#2a2b2e}
+.am-side button.on{background:#fff;color:#111}
+.am-side .am-lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.am-side small{flex:none;min-width:22px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px;font-weight:700;line-height:20px;text-align:center;font-variant-numeric:tabular-nums}
+.am-side button.on small{background:rgba(0,0,0,.12)}
+.am-subs button{flex:none;height:44px;padding:0 18px;border:0;border-radius:999px;background:none;color:var(--ink-3);font-size:15px;font-weight:600;cursor:pointer}
+.am-subs button:hover{color:var(--ink)}
+.am-x{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:50%;background:#2f3033;color:var(--ink);cursor:pointer}
+.am-panel{position:relative;flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;margin:8px 8px 8px 0;border-radius:20px;background:#1b1c1e}
+.am-end{flex:none;display:flex;align-items:center;gap:8px}
 .am-sub{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid #262729}
 .am-subs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
 .am-subs button{height:40px;padding:0 16px}
@@ -189,3 +196,5 @@ dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-back{flex:none;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer}
 .rc-back:hover{border-color:var(--line-strong)}
 .rc-notext{margin:0;padding:8px 6px;min-height:72px;font-size:15px;line-height:1.55;color:var(--ink-3)}
+
+@media (max-width:640px){.am-side{width:68px;padding:12px 6px}.am-side .am-lb,.am-side small{display:none}.am-side button{justify-content:center;padding:0}}
