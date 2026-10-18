@@ -24,9 +24,9 @@
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "studio-files" }],
 
   // Base D1 : les utilisateurs (profil, pays, date d'arrivée), liés à Clerk par `sub`. Le portefeuille et les générations restent dans le
-  // Durable Object. Créer la base : `pnpm exec wrangler d1 create studio` (scripts/deploy.mjs le fait), puis remplacer database_id ci-dessous
+  // Durable Object. Créer la base : `pnpm exec wrangler d1 create yeleen` (scripts/deploy.mjs le fait), puis remplacer database_id ci-dessous
   // par l'identifiant affiché (le script le remplace lui-même) et le valider dans git. Migrations : dossier `migrations/`.
-  "d1_databases": [{ "binding": "DB", "database_name": "studio", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "yeleen", "database_id": "4aecfcb9-7cd4-4eae-aaad-1822ee3706a3", "migrations_dir": "migrations" }],
 
   // À activer quand les ressources existent :
   
