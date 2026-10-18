@@ -15,7 +15,15 @@ function setup({ files = true, vars = {} } = {}) {
   const storage = { get: async (k) => structuredClone(store.get(k)), put: async (k, v) => { store.set(k, structuredClone(v)) } }
   const account = new Account({ storage }, { ENV: 'dev', DB: db })
   const objects = new Map()
-  const bucket = { put: async (key, body) => { objects.set(key, body) }, get: async () => null }
+  const bucket = {
+    put: async (key, body, opts) => {
+      const buf = body instanceof ArrayBuffer ? body : body?.getReader ? await new Response(body).arrayBuffer() : body
+      objects.set(key, { buf, type: opts?.httpMetadata?.contentType })
+      return { size: buf?.byteLength ?? 0 }
+    },
+    get: async (key) => { const o = objects.get(key); return o && { body: new Uint8Array(o.buf), size: o.buf.byteLength, httpMetadata: { contentType: o.type } } },
+    delete: async (key) => { objects.delete(key) },
+  }
   const env = {
     ENV: 'dev', FAL_KEY: 'test', DB: db, ALLOWED_ORIGINS: 'http://localhost:5174', ...(files ? { FILES: bucket } : {}), ...vars,
     ACCOUNT: { idFromName: (n) => n, get: () => ({ fetch: (url, init) => account.fetch(new Request(url, init)) }) },
@@ -38,7 +46,7 @@ function setup({ files = true, vars = {} } = {}) {
     await json(`/jobs/${body.jobId}`) // terminée : sorties copiées dans R2
     return body.jobId
   }
-  return { db, json, generate, objects, rows: (sql) => db.raw.prepare(sql).all(), restore: () => { globalThis.fetch = real } }
+  return { db, env, json, generate, objects, rows: (sql) => db.raw.prepare(sql).all(), restore: () => { globalThis.fetch = real } }
 }
 
 test('une génération terminée : sa ligne dans `jobs` et un fichier par sortie dans `assets`, rendus par GET /assets', async () => {
@@ -141,4 +149,53 @@ test('migrations : rejouées sur une base existante, sans erreur ni changement',
   const before = db.raw.prepare("SELECT name, sql FROM sqlite_master ORDER BY name").all()
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.sql')).sort()) db.exec(readFileSync(new URL(f, dir), 'utf8'))
   assert.deepEqual(db.raw.prepare("SELECT name, sql FROM sqlite_master ORDER BY name").all(), before)
+})
+
+const send = (t, bytes, type, q = '') => t.json(`/assets${q}`, { method: 'POST', headers: { 'content-type': type, 'content-length': String(bytes.length) }, body: bytes, duplex: 'half' })
+
+test('import : le fichier va dans R2 sous uploads/, une ligne `assets` (source upload), servi par /files', async () => {
+  const t = setup()
+  try {
+    const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3])
+    const res = await send(t, png, 'image/png', '?name=Logo%20Maquis&width=512&height=256')
+    assert.equal(res.status, 201)
+    const a = res.body.asset
+    assert.match(a.id, /^up-[0-9a-f-]{36}$/)
+    assert.deepEqual([a.source, a.kind, a.name, a.bytes, a.width, a.height], ['upload', 'image', 'Logo Maquis', 7, 512, 256])
+    assert.equal(a.url, `http://api/files/uploads/demo/${a.id}.png`)
+    assert.ok(t.objects.has(`uploads/demo/${a.id}.png`))
+    assert.deepEqual((await t.json('/assets')).body.assets.map((x) => x.id), [a.id])
+    const served = await app.fetch(new Request(a.url), t.env)
+    assert.equal(served.status, 200)
+    assert.equal(served.headers.get('content-type'), 'image/png')
+    assert.deepEqual(new Uint8Array(await served.arrayBuffer()), png)
+    // Supprimé : retiré de la bibliothèque (le fichier reste dans R2 jusqu'au nettoyage).
+    assert.equal((await t.json(`/assets/${a.id}`, { method: 'DELETE' })).status, 200)
+    assert.equal((await t.json('/assets')).body.assets.length, 0)
+  } finally { t.restore() }
+})
+
+test('import : vidéo et audio acceptés, durée gardée ; nom par défaut, caractères de contrôle retirés', async () => {
+  const t = setup()
+  try {
+    const v = await send(t, new Uint8Array(10), 'video/mp4', '?secs=12.5')
+    assert.deepEqual([v.status, v.body.asset.kind, v.body.asset.secs, v.body.asset.name], [201, 'video', 12.5, 'Fichier importé'])
+    const s = await send(t, new Uint8Array(4), 'audio/mpeg', '?name=voix%0Aoff&secs=abc')
+    assert.deepEqual([s.body.asset.kind, s.body.asset.name, s.body.asset.secs], ['audio', 'voixoff', null])
+  } finally { t.restore() }
+})
+
+test('import refusé : type, taille, longueur absente, sans R2 ; D1 en panne → rien ne reste dans R2', async () => {
+  const t = setup()
+  try {
+    assert.equal((await send(t, new Uint8Array(4), 'application/pdf')).status, 415)
+    const big = await t.json('/assets', { method: 'POST', headers: { 'content-type': 'image/png', 'content-length': String(26 * 1024 * 1024) }, body: new Uint8Array(4), duplex: 'half' })
+    assert.equal(big.status, 413)
+    assert.equal((await t.json('/assets', { method: 'POST', headers: { 'content-type': 'image/png' } })).status, 411)
+    t.db.failing = true
+    assert.equal((await send(t, new Uint8Array(4), 'image/png')).status, 503)
+    assert.equal([...t.objects.keys()].filter((k) => k.startsWith('uploads/')).length, 0)
+  } finally { t.restore() }
+  const off = setup({ files: false })
+  try { assert.equal((await send(off, new Uint8Array(4), 'image/png')).status, 503) } finally { off.restore() }
 })

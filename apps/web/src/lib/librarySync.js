@@ -2,8 +2,10 @@
  * Ma bibliothèque côté serveur (GET /assets, /favorites) : les fichiers générés gardés par l'API, et les favoris.
  * Fonctions pures, sans React ni navigateur : la bibliothèque locale (lib/assets.jsx) les applique quand l'API est branchée.
  *
- * Un fichier du serveur a pour identifiant « <génération>:<rang> » (`remoteId`). Une génération suivie dans cet onglet produit
+ * Un fichier généré a pour identifiant serveur « <génération>:<rang> » (`remoteId`). Une génération suivie dans cet onglet produit
  * le même fichier en local, repéré par le même `remoteId` : on fusionne au lieu de doubler.
+ * Un fichier importé reçoit son `remoteId` (« up-… ») quand l'API l'a gardé (POST /assets). En local, il garde son fichier dans le navigateur
+ * (IndexedDB) ; l'adresse du serveur (`remoteUrl`) sert quand ce fichier manque (autre appareil, navigateur nettoyé).
  */
 export const hash = (str) => [...str].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7) // graine stable pour la forme d'onde d'un fichier réel
 
@@ -16,7 +18,8 @@ export const remoteAssetId = (jobRemoteId, index, output) => (jobRemoteId && out
 /** Un fichier du serveur au format d'un asset local. */
 export function fromRemote(a, starred = false) {
   return {
-    id: a.id, remoteId: a.id, kind: a.kind, source: 'generated', name: a.name, prompt: a.prompt ?? '', model: a.model ?? '', meta: null, cost: null,
+    id: a.id, remoteId: a.id, kind: a.kind, source: a.source === 'upload' ? 'upload' : 'generated', name: a.name, prompt: a.prompt ?? '', model: a.model ?? '', meta: null, cost: null,
+    size: a.bytes ?? null, type: a.source === 'upload' ? a.contentType : undefined,
     secs: a.secs ?? null, seed: hash(a.url), url: a.url, contentType: a.contentType ?? null, art: null, createdAt: a.createdAt, starred,
     origin: a.jobId ? { jobKey: null, index: a.index ?? 0, runId: null, step: null } : null,
   }
@@ -45,12 +48,16 @@ export function mergeRemote(local, remote, favMine, { now = Date.now(), graceMs 
     seen.add(r.id)
     const starred = favMine.has(r.id) || Boolean(a.starred)
     if (a.starred && !favMine.has(r.id)) push.push(r.id)
-    list.push({ ...a, url: r.url, contentType: r.contentType ?? a.contentType, starred })
+    // Un import garde son fichier local (plus rapide, hors ligne) ; un fichier généré prend l'adresse durable du serveur.
+    list.push(a.source === 'upload' ? { ...a, remoteUrl: r.url, starred } : { ...a, url: r.url, contentType: r.contentType ?? a.contentType, starred })
   }
   for (const r of remote) if (!seen.has(r.id)) list.push(fromRemote(r, favMine.has(r.id)))
   list.sort((x, y) => (y.createdAt ?? 0) - (x.createdAt ?? 0))
   return { list, push }
 }
+
+/** Imports encore absents du serveur (faits avant la connexion, ou quand l'API ne répondait pas) ; ceux qu'il a refusés ne sont pas renvoyés. */
+export const pendingImports = (local) => local.filter((a) => a.source === 'upload' && !a.remoteId && !a.remoteSkip)
 
 /** Favoris du serveur, par portée : { mine: Set, yeleen: Set }. */
 export function favoriteSets(favorites) {

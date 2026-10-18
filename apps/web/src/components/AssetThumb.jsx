@@ -21,7 +21,7 @@ export function useAssetUrl(asset) {
     if (asset.source === 'upload') {
       const f = files.current.get(asset.id)
       if (f) done(URL.createObjectURL(f))
-      else blobGet(asset.id).then((b) => b && done(URL.createObjectURL(b)))
+      else blobGet(asset.id).then((b) => (b ? done(URL.createObjectURL(b)) : asset.remoteUrl && done(asset.remoteUrl))) // sinon la copie du serveur
     } else if (asset.kind === 'audio') {
       done(URL.createObjectURL(synthWav(asset.seed, asset.secs ?? 5)))
     } else if (asset.kind === 'video') {
@@ -30,7 +30,7 @@ export function useAssetUrl(asset) {
       setUrl(null)
     }
     return () => { alive = false }
-  }, [asset.id, asset.url, asset.source, asset.kind, asset.seed, asset.secs, files])
+  }, [asset.id, asset.url, asset.remoteUrl, asset.source, asset.kind, asset.seed, asset.secs, files])
   return url
 }
 

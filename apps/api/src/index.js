@@ -4,12 +4,12 @@ import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { TOPUP_COUNTRIES, findPack, toE164 } from '@studio/catalog/packs'
-import { addFavorite, catalog, deleteAsset, ITEM_ID, listAssets, listFavorites, removeFavorite, SCOPES } from './library.js'
+import { addFavorite, assetView, catalog, deleteAsset, insertUpload, ITEM_ID, listAssets, listFavorites, removeFavorite, SCOPES } from './library.js'
 import { ledgerOf } from './mirror.js'
 import { isBlocked } from './moderation.js'
 import { PaygateError, paygateClient, verifySignature } from './paygate.js'
 import { priceJob } from './pricing.js'
-import { serveFile, storeOutputs } from './storage.js'
+import { serveFile, storeOutputs, uploadKey } from './storage.js'
 import { newReference, topupView } from './topups.js'
 import { ensureUser, getUser, markWelcomed } from './users.js'
 
@@ -128,6 +128,38 @@ const withDb = (handler) => async (c) => {
 app.get('/assets', withDb(async (c, db) => {
   const { kind, limit, before } = c.req.query()
   return c.json({ assets: await listAssets(db, accountId(c), { origin: new URL(c.req.url).origin, kind, limit, before }) })
+}))
+// Import dans Ma bibliothèque : le fichier (corps de la requête, avec sa longueur) est écrit dans R2 sous `uploads/<compte>/…`, puis
+// enregistré dans `assets` (source `upload`). Il suit ainsi l'utilisateur sur tous ses appareils. `name`, `secs`, `width`, `height` en paramètres.
+// (Une génération utilise toujours POST /uploads : ses fichiers d'entrée vont chez fal, qui doit pouvoir les lire.)
+const IMPORT_TYPES = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime)|audio\/(mpeg|mp3|wav|x-wav|mp4|x-m4a|aac|ogg|webm|flac))$/
+const MAX_IMPORT = { image: 25 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 100 * 1024 * 1024 }
+const STREAM_FROM = 25 * 1024 * 1024 // au-delà, le corps est envoyé à R2 en flux, sans être chargé en mémoire
+const num = (v, max) => { const n = Number(v); return v != null && v !== '' && Number.isFinite(n) && n > 0 && n <= max ? n : null }
+app.post('/assets', withDb(async (c, db) => {
+  const bucket = c.env.FILES
+  if (!bucket) return c.json({ error: 'storage_unavailable' }, 503)
+  const type = (c.req.header('content-type') ?? '').split(';')[0].trim().toLowerCase()
+  if (!IMPORT_TYPES.test(type)) return c.json({ error: 'unsupported_type' }, 415)
+  const kind = type.split('/')[0]
+  const length = Number(c.req.header('content-length') ?? 0)
+  if (!length) return c.json({ error: 'length_required' }, 411)
+  if (length > MAX_IMPORT[kind]) return c.json({ error: 'too_large', max: MAX_IMPORT[kind] }, 413)
+  const q = c.req.query()
+  const name = (q.name ?? '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 120) || 'Fichier importé'
+  const id = `up-${crypto.randomUUID()}`
+  const key = uploadKey(accountId(c), id, type)
+  const body = length > STREAM_FROM ? c.req.raw.body : await c.req.arrayBuffer()
+  const stored = await bucket.put(key, body, { httpMetadata: { contentType: type } })
+  const bytes = stored?.size ?? length
+  if (!bytes || bytes > MAX_IMPORT[kind]) { await bucket.delete(key); return c.json({ error: bytes ? 'too_large' : 'empty' }, bytes ? 413 : 400) }
+  try {
+    const row = await insertUpload(db, accountId(c), { id, kind, name, key, contentType: type, bytes, secs: num(q.secs, 6 * 3600), width: num(q.width, 20000), height: num(q.height, 20000) })
+    return c.json({ asset: assetView(row, new URL(c.req.url).origin) }, 201)
+  } catch (e) {
+    await bucket.delete(key).catch(() => {}) // pas de fichier orphelin dans R2 si D1 refuse
+    throw e
+  }
 }))
 app.delete('/assets/:id', withDb(async (c, db) => (await deleteAsset(db, accountId(c), c.req.param('id')) ? c.json({ ok: true }) : c.json({ error: 'not_found' }, 404))))
 

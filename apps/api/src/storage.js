@@ -1,12 +1,20 @@
 /**
- * Stockage des fichiers générés dans R2. Les adresses de fal sont temporaires : à la fin d'une génération on copie
+ * Stockage des fichiers dans R2 : les sorties des générations (`outputs/`) et les fichiers importés par les utilisateurs (`uploads/`).
+ * Les adresses de fal sont temporaires : à la fin d'une génération on copie
  * chaque sortie dans le bucket et on la sert depuis l'API (`/files/…`), avec les requêtes par plage que demandent
  * les lecteurs vidéo pour avancer dans un clip. Les clés contiennent l'identifiant (non devinable) de la génération.
  */
-const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mp4': 'm4a', 'video/mp4': 'mp4', 'video/webm': 'webm' }
+const EXT = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif',
+  'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/ogg': 'ogg', 'audio/webm': 'weba', 'audio/flac': 'flac',
+  'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov',
+}
 const PREFIX = 'outputs/'
+const UPLOADS = 'uploads/'
 
 export const keyFor = (accountId, jobId, index, contentType) => `${PREFIX}${accountId}/${jobId}/${index}.${EXT[contentType] ?? 'bin'}`
+/** Clé d'un fichier importé : l'identifiant de l'asset est aléatoire, l'adresse n'est donc pas devinable. */
+export const uploadKey = (accountId, assetId, contentType) => `${UPLOADS}${accountId}/${assetId}.${EXT[contentType] ?? 'bin'}`
 
 /**
  * Copie les sorties dans le bucket. Si la copie d'un fichier échoue, il garde l'adresse de fal : la génération est payée,
@@ -37,7 +45,7 @@ export async function storeOutputs({ bucket, origin, accountId, jobId, outputs, 
 
 /** Réponse HTTP pour un fichier du bucket, avec prise en charge de l'en-tête Range. */
 export async function serveFile(bucket, key, headers) {
-  if (!bucket || !key.startsWith(PREFIX) || key.includes('..')) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })
+  if (!bucket || !(key.startsWith(PREFIX) || key.startsWith(UPLOADS)) || key.includes('..')) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })
   const ranged = headers.get('range')
   const obj = await bucket.get(key, ranged ? { range: headers } : undefined)
   if (!obj) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })
