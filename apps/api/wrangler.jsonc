@@ -20,10 +20,15 @@
 
   // Fichiers générés. En local, `wrangler dev` simule le bucket. En production, le bucket doit exister :
   // `wrangler r2 bucket create studio-files` (scripts/deploy.mjs le crée).
-  "r2_buckets": [{ "binding": "FILES", "bucket_name": "studio-files" }]
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "studio-files" }],
+
+  // Base D1 : les utilisateurs (profil, pays, date d'arrivée), liés à Clerk par `sub`. Le portefeuille et les générations restent dans le
+  // Durable Object. Créer la base : `pnpm exec wrangler d1 create studio` (scripts/deploy.mjs le fait), puis remplacer database_id ci-dessous
+  // par l'identifiant affiché (le script le remplace lui-même) et le valider dans git. Migrations : dossier `migrations/`.
+  "d1_databases": [{ "binding": "DB", "database_name": "studio", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }]
 
   // À activer quand les ressources existent :
-  // "d1_databases": [{ "binding": "DB", "database_name": "studio", "database_id": "<id>" }],
+  
   // "queues": { "producers": [{ "binding": "MONTAGE_QUEUE", "queue": "studio-montage" }] },
   // Secrets : FAL_KEY, WEBHOOK_SECRET
 }

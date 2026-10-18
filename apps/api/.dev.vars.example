@@ -6,3 +6,5 @@ MAX_JOB_COST=150
 # Connexion Clerk : laissez vide pour développer sans compte (un compte « demo » unique). Renseignez l'adresse de votre instance
 # (ex. https://xxx.clerk.accounts.dev) pour tester la vraie garde : alors chaque requête exige un jeton de session.
 CLERK_ISSUER=
+# Jetons offerts une seule fois à chaque nouvel utilisateur (0 = aucun). Décision de produit : de l'argent réel part avec.
+WELCOME_JETONS=
