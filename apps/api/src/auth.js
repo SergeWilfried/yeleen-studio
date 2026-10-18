@@ -23,14 +23,21 @@ const cache = new Map() // url → { at, keys: Map(kid → CryptoKey) }
 async function keyFor(issuer, kid, { fetch: f = fetch, now = Date.now() } = {}) {
   const url = `${issuer}/.well-known/jwks.json`
   let entry = cache.get(url)
+  // Adresse injoignable, page qui n'est pas du JSON (CLERK_ISSUER mal réglé), clé illisible : tout devient `jwks_unavailable` (503),
+  // journalisé avec l'adresse essayée, jamais une erreur 500 muette.
   const load = async () => {
-    const res = await f(url)
-    if (!res.ok) throw new AuthError('jwks_unavailable')
-    const { keys = [] } = await res.json()
     const map = new Map()
-    for (const jwk of keys) {
-      if (jwk.kty !== 'RSA' || !jwk.kid) continue
-      map.set(jwk.kid, await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']))
+    try {
+      const res = await f(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const { keys = [] } = await res.json()
+      for (const jwk of keys) {
+        if (jwk.kty !== 'RSA' || !jwk.kid) continue
+        map.set(jwk.kid, await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']))
+      }
+    } catch (e) {
+      console.error(`clés Clerk illisibles (${url}) :`, e.message)
+      throw new AuthError('jwks_unavailable')
     }
     entry = { at: now, keys: map }
     cache.set(url, entry)
