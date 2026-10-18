@@ -11,7 +11,7 @@ export const keyFor = (accountId, jobId, index, contentType) => `${PREFIX}${acco
 /**
  * Copie les sorties dans le bucket. Si la copie d'un fichier échoue, il garde l'adresse de fal : la génération est payée,
  * on ne la fait pas échouer pour un problème de stockage.
- * Retourne les sorties avec, pour chaque fichier copié, `url` = adresse de l'API et `stored: true`.
+ * Retourne les sorties avec, pour chaque fichier copié, `url` = adresse de l'API, `key` = clé dans le bucket et `stored: true`.
  */
 export async function storeOutputs({ bucket, origin, accountId, jobId, outputs, fetch: f = fetch }) {
   if (!bucket) return outputs
@@ -27,7 +27,7 @@ export async function storeOutputs({ bucket, origin, accountId, jobId, outputs, 
         const again = await f(o.url) // sinon on charge le fichier en mémoire
         await bucket.put(key, await again.arrayBuffer(), { httpMetadata })
       }
-      return { ...o, url: `${origin}/files/${key}`, stored: true }
+      return { ...o, url: `${origin}/files/${key}`, key, stored: true }
     } catch (e) {
       console.error('copie R2', e.message)
       return { ...o, stored: false }

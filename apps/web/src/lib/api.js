@@ -47,6 +47,12 @@ export const api = {
   createTopup: (spec) => request('/topups', { method: 'POST', body: JSON.stringify(spec) }),
   topup: (reference) => request(`/topups/${encodeURIComponent(reference)}`),
   topups: () => request('/topups'),
+  /** Ma bibliothèque (fichiers générés gardés par l'API), favoris des deux bibliothèques, historique des jetons. */
+  assets: (q = {}) => request(`/assets?${new URLSearchParams(q)}`),
+  deleteAsset: (id) => request(`/assets/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  favorites: () => request('/favorites'),
+  setFavorite: (scope, id, on) => request(`/favorites/${scope}/${encodeURIComponent(id)}`, { method: on ? 'PUT' : 'DELETE' }),
+  ledger: (q = {}) => request(`/ledger?${new URLSearchParams(q)}`),
   /** Dépose un fichier d'entrée (image, audio) chez le fournisseur ; renvoie son adresse. */
   async upload(file) {
     let res

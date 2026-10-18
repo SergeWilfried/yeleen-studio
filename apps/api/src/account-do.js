@@ -1,4 +1,4 @@
-import { ledgerItem, topupItem, walletHistory, write } from './mirror.js'
+import { assetItems, jobItem, ledgerItem, topupItem, walletHistory, write } from './mirror.js'
 import { applyPayment, isOpen } from './topups.js'
 import { credit, debit, emptyWallet, refund } from './wallet.js'
 
@@ -114,6 +114,7 @@ export class Account {
       const job = await request.json()
       await this.state.storage.put(`job:${job.id}`, job)
       await this.track(job.id, job.status === 'IN_QUEUE' || job.status === 'IN_PROGRESS') // une génération terminée libère sa place
+      if (!job.storingAt) await this.record(jobItem(job), ...assetItems(job)) // l'étape « enregistrement en cours » n'est pas copiée
       return Response.json({ ok: true })
     }
     // Réservation d'une génération : même clé de demande → même génération (pas de second débit) ; sinon une place parmi
