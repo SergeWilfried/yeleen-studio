@@ -2,6 +2,7 @@ import Icon from '../lib/icons.jsx'
 import Menu from './Menu.jsx'
 import { useAssets } from '../lib/assets.jsx'
 import { useHandoff } from '../lib/handoff.jsx'
+import { useLibrary } from '../lib/libraryDialog.jsx'
 import { useToast } from '../lib/toasts.jsx'
 import { useBrand } from '../lib/brand.jsx'
 import { features } from '../lib/features.js'
@@ -26,6 +27,7 @@ export function useSendActions(asset, { withLibrary = false } = {}) {
   const navigate = useNavigate()
   const toast = useToast()
   const { patch: patchBrand } = useBrand()
+  const { openLibrary } = useLibrary()
   const to = (spec, msg) => () => sendTo({ ...spec, assetId: asset.id }, msg)
   const list = []
   if (asset.kind === 'image') {
@@ -49,7 +51,7 @@ export function useSendActions(asset, { withLibrary = false } = {}) {
       { id: 'audio', icon: 'sound', title: 'Piste audio', aside: 'Vidéo · Audio → vidéo', run: to({ target: 'video.create', slot: 'audio', modelId: 'ltx-2-3-a2v' }, 'Audio envoyé vers Vidéo · Audio → vidéo') },
     )
   }
-  if (withLibrary) list.push({ id: 'lib', icon: 'folder', title: 'Voir dans la bibliothèque', aside: 'Bibliothèque', run: () => navigate(`/library?asset=${encodeURIComponent(asset.id)}`) })
+  if (withLibrary) list.push({ id: 'lib', icon: 'folder', title: 'Voir dans la bibliothèque', aside: 'Bibliothèque', run: () => openLibrary({ focus: asset.id }) })
   list.push({ id: 'dl', icon: 'download', title: 'Télécharger', run: () => downloadAsset(assets, asset).catch(() => toast('Téléchargement impossible : fichier introuvable.')) })
   // Destinations éteintes par drapeau : Vidéo (créer, modifier) et Marque.
   const hidden = new Set([...(features.video ? [] : ['start', 'end', 'extend', 'edit', 'last', 'first', 'audio']), ...(features.brand ? [] : ['logo'])])

@@ -5,6 +5,7 @@ import icon from '../../assets/brand/yeelen-icon.svg'
 import { AccountMenu } from '../../lib/auth.jsx'
 import { features } from '../../lib/features.js'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
+import { useLibrary } from '../../lib/libraryDialog.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
 const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } catch { return false } }
@@ -14,15 +15,17 @@ const MODES = [
   { id: 'video', icon: 'vid', label: 'Vidéo', tint: 'red' },
   { id: 'recipe', icon: 'layers', label: 'Modèles', tint: 'lime' },
 ]
+// Chaque entrée ouvre la fenêtre de la bibliothèque sur la bonne vue.
 const NAV = [
-  { to: '/library?source=generated', icon: 'sparkle', label: 'Mes générations', tint: 'cyan' },
-  { to: '/library?source=upload', icon: 'at', label: 'Mes éléments', tint: 'blue' },
-  { to: '/library?filter=starred', icon: 'star', label: 'Mes favoris', tint: 'pink' },
+  { view: { tab: 'library', sub: 'all', origin: 'generated' }, icon: 'sparkle', label: 'Mes générations', tint: 'cyan' },
+  { view: { tab: 'library', sub: 'all', origin: 'upload' }, icon: 'at', label: 'Mes éléments', tint: 'blue' },
+  { view: { tab: 'favs' }, icon: 'star', label: 'Mes favoris', tint: 'pink' },
 ]
 
 /** Barre latérale de l'espace de travail : intitulé, type de création (Image, Vidéo, Modèles), accès aux fichiers, carte d'invitation, tarifs et compte. */
 export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
   const { balance } = useJobs()
+  const { openLibrary } = useLibrary()
   const [promo, setPromo] = useState(() => !dismissed())
   const close = () => { setPromo(false); try { localStorage.setItem(PROMO, 'off') } catch { /* ignoré */ } }
 
@@ -56,11 +59,11 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
         <ul className="cs-nav">
           {NAV.map((n) => (
             <li key={n.label}>
-              <Link to={n.to} title={collapsed ? n.label : undefined}>
+              <button type="button" aria-haspopup="dialog" title={collapsed ? n.label : undefined} onClick={() => openLibrary(n.view)}>
                 <span className={`cs-ic ${n.tint}`}><Icon name={n.icon} size={16} /></span>
                 {!collapsed && n.label}
                 {collapsed && <span className="sr-only">{n.label}</span>}
-              </Link>
+              </button>
             </li>
           ))}
         </ul>
@@ -78,11 +81,11 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
         </section>
       )}
 
-      <Link className="cs-row" to="/library" title={collapsed ? 'Bibliothèque' : undefined}>
+      <button type="button" className="cs-row" aria-haspopup="dialog" title={collapsed ? 'Bibliothèque' : undefined} onClick={() => openLibrary()}>
         <span className="cs-ic gray"><Icon name="folder" size={16} /></span>
         {!collapsed && <><span>Bibliothèque</span><Icon name="chevR" size={16} /></>}
         {collapsed && <span className="sr-only">Bibliothèque</span>}
-      </Link>
+      </button>
 
       <div className="cs-foot">
         <Link className="cs-price" to="/#tarifs" title={collapsed ? 'Tarifs' : undefined}>

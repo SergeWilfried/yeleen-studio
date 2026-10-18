@@ -2,16 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../../lib/icons.jsx'
 import Menu from '../Menu.jsx'
 import AssetThumb from '../AssetThumb.jsx'
+import { downloadAsset } from '../SendToMenu.jsx'
 import { KINDS, useAssets } from '../../lib/assets.jsx'
 import { CATEGORIES, useCatalog } from '../../lib/catalog.jsx'
 import { features } from '../../lib/features.js'
 import { useToast } from '../../lib/toasts.jsx'
 import useTabKeys from '../../lib/useTabKeys.js'
+import '../../styles/assetModal.css'
 
 const EMPTY = []
 const SORTS = [{ id: 'recent', title: 'Plus récents' }, { id: 'old', title: 'Plus anciens' }, { id: 'name', title: 'Nom' }]
 const ORIGINS = [{ id: 'all', title: 'Tout' }, { id: 'upload', title: 'Importés' }, { id: 'generated', title: 'Générés' }]
 const BY_KIND = [{ id: 'all', label: 'Tout' }, { id: 'image', label: 'Images' }, { id: 'video', label: 'Vidéos' }, { id: 'audio', label: 'Audio' }]
+const UNDO_MS = 9000 // la suppression devient définitive (y compris côté serveur) après ce délai
 
 // Les trois entrées de la barre latérale, chacune avec ses propres filtres.
 const TABS = [
@@ -21,15 +24,20 @@ const TABS = [
 ]
 
 /**
- * Fenêtre de choix des références, avec trois entrées dans la barre latérale :
+ * Fenêtre de la bibliothèque, la seule interface de galerie de l'application, avec trois entrées dans la barre latérale :
  *  - Ma bibliothèque : tout ce qui est à moi, importé ou généré (filtre par origine et par type) ;
  *  - Bibliothèque Yeleen : personnages, objets (images) et vidéos proposés à tous ;
  *  - Favoris : les éléments marqués d'une étoile, de l'une ou l'autre bibliothèque.
- * Plusieurs fichiers peuvent être cochés puis ajoutés d'un coup.
+ * Avec `onAdd` (choix des références dans Cinéma), plusieurs fichiers peuvent être cochés puis ajoutés d'un coup.
+ * Sans `onAdd` (consultation, ouverte depuis la navigation : voir lib/libraryDialog.jsx), on parcourt, on importe, on met en favori.
+ * Dans les deux cas, chaque fichier a un menu : Télécharger, et Supprimer pour les miens (annulable pendant quelques secondes).
+ * `view` choisit la vue d'arrivée : { tab, sub, origin, focus } (focus : identifiant d'un fichier à montrer).
  */
-export default function AssetModal({ open, onClose, onAdd, taken = [], initialSub = 'recent' }) {
+export default function AssetModal({ open, onClose, onAdd, taken = [], initialSub = 'recent', view = null }) {
   const ref = useRef(null)
-  const { assets, addUpload, update } = useAssets()
+  const assetsCtx = useAssets()
+  const { assets, addUpload, update, remove, restore, purge } = assetsCtx
+  const browse = !onAdd
   const catalog = useCatalog()
   const toast = useToast()
   const onTabKeys = useTabKeys()
@@ -39,14 +47,33 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
   const [origin, setOrigin] = useState('all')
   const [sort, setSort] = useState('recent')
   const [picked, setPicked] = useState(() => new Set())
+  const [focus, setFocus] = useState(null)
+  const [undo, setUndo] = useState(null) // { ids, timer } : dernière suppression, annulable
   const sub = subs[tab]
   const setSub = (v) => setSubs((s) => ({ ...s, [tab]: v }))
 
   useEffect(() => {
     const d = ref.current
-    if (open && !d.open) { setTab('library'); setSubs({ library: initialSub, yeleen: 'all', favs: 'all' }); setOrigin('all'); setPicked(new Set()); d.showModal() }
+    if (open && !d.open) {
+      const t = view?.tab ?? 'library'
+      const base = { library: view?.focus ? 'all' : initialSub, yeleen: 'all', favs: 'all' }
+      setTab(t)
+      setSubs(view?.sub ? { ...base, [t]: view.sub } : base)
+      setOrigin(view?.origin ?? 'all')
+      setPicked(new Set())
+      setFocus(view?.focus ?? null)
+      setUndo(null)
+      d.showModal()
+    }
     if (!open && d.open) d.close()
-  }, [open, initialSub])
+  }, [open, initialSub, view])
+
+  // Fichier à montrer (« Voir dans la bibliothèque ») : amené au centre et encadré.
+  useEffect(() => {
+    if (!open || !focus) return
+    const id = requestAnimationFrame(() => ref.current?.querySelector(`[data-asset="${CSS.escape(focus)}"]`)?.scrollIntoView({ block: 'center' }))
+    return () => cancelAnimationFrame(id)
+  }, [open, focus])
 
   const yeleen = features.catalog ? catalog.items : EMPTY
   const byId = useMemo(() => new Map([...assets, ...yeleen].map((a) => [a.id, a])), [assets, yeleen])
@@ -76,12 +103,28 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
   }
   const add = () => { onAdd([...picked].map((id) => byId.get(id)).filter(Boolean)); onClose() } // dans l'ordre où on les a cochés
 
+  // Suppression : retirée tout de suite, définitive après UNDO_MS (le fichier local et sa copie côté serveur). La barre d'annulation est
+  // dans la fenêtre : tant qu'elle est ouverte (modale), le reste de la page, toasts compris, ne répond pas.
+  const del = (a) => {
+    const ids = [a.id]
+    remove(ids)
+    setPicked((s) => { const n = new Set(s); n.delete(a.id); return n })
+    const timer = setTimeout(() => { purge(ids); setUndo((u) => (u?.ids === ids ? null : u)) }, UNDO_MS)
+    setUndo({ ids, timer, name: a.name })
+  }
+  const cancelDelete = () => { clearTimeout(undo.timer); restore(); setUndo(null) }
+  const act = (a, id) => {
+    if (id === 'dl') downloadAsset(assetsCtx, a).catch(() => toast('Téléchargement impossible : fichier introuvable.'))
+    if (id === 'rm') del(a)
+  }
+  const actions = (a) => [{ id: 'dl', title: 'Télécharger', icon: 'download' }, ...(a.source === 'yeleen' ? [] : [{ id: 'rm', title: 'Supprimer', icon: 'trash' }])]
+
   const empty = tab === 'yeleen'
     ? (catalog.status === 'loading' ? 'Chargement de la bibliothèque Yeleen…' : catalog.status === 'error' ? null : 'Rien dans cette catégorie pour l’instant.')
     : tab === 'favs' ? 'Touchez l’étoile d’un élément pour le retrouver ici.' : 'Rien ici pour l’instant. Importez un fichier ou générez-en un.'
 
   return (
-    <dialog ref={ref} className="am-dlg" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-label="Ajouter des références">
+    <dialog ref={ref} className="am-dlg" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-label={browse ? 'Bibliothèque' : 'Ajouter des références'}>
       <nav className="am-side" aria-label="Bibliothèques">
         <div role="tablist" aria-orientation="vertical" aria-label="Bibliothèque" onKeyDown={onTabKeys}>
           {tabs.map((t) => (
@@ -126,13 +169,26 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
             const on = picked.has(a.id)
             const had = taken.includes(a.id)
             const fav = favorite(a)
+            const label = `${a.name} (${KINDS[a.kind]})${a.source === 'yeleen' ? ', bibliothèque Yeleen' : ''}`
             return (
-              <div key={a.id} className="am-cell">
-                <button type="button" className={`am-it${on ? ' on' : ''}`} aria-pressed={on} disabled={had} onClick={() => toggle(a.id)} aria-label={`${a.name} (${KINDS[a.kind]})${a.source === 'yeleen' ? ', bibliothèque Yeleen' : ''}${had ? ', déjà ajouté' : ''}`}>
-                  <AssetThumb asset={a} />
-                  <span className="am-nm">{a.name}</span>
-                  {(on || had) && <span className="am-ck" aria-hidden="true"><Icon name="check" size={14} /></span>}
-                </button>
+              <div key={a.id} className={`am-cell${focus === a.id ? ' hl' : ''}`} data-asset={a.id}>
+                {browse ? (
+                  <div className="am-it view" role="img" aria-label={label}>
+                    <AssetThumb asset={a} />
+                    <span className="am-nm" aria-hidden="true">{a.name}</span>
+                  </div>
+                ) : (
+                  <button type="button" className={`am-it${on ? ' on' : ''}`} aria-pressed={on} disabled={had} onClick={() => toggle(a.id)} aria-label={`${label}${had ? ', déjà ajouté' : ''}`}>
+                    <AssetThumb asset={a} />
+                    <span className="am-nm">{a.name}</span>
+                    {(on || had) && <span className="am-ck" aria-hidden="true"><Icon name="check" size={14} /></span>}
+                  </button>
+                )}
+                {!(on || had) && (
+                  <Menu items={actions(a)} value={null} onChange={(id) => act(a, id)} label={`Actions : ${a.name}`} menuWidth={180} className="am-act">
+                    <Icon name="dots" size={15} />
+                  </Menu>
+                )}
                 {a.source === 'yeleen' && <span className="am-tag">{a.placeholder ? 'Exemple' : 'Yeleen'}</span>}
                 <button type="button" className={`am-fav${fav ? ' on' : ''}`} aria-pressed={fav} aria-label={`${fav ? 'Retirer des' : 'Ajouter aux'} favoris : ${a.name}`} onClick={() => toggleFav(a)}>
                   <Icon name="star" size={15} fill={fav ? 'currentColor' : 'none'} />
@@ -146,9 +202,10 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
           <p className="am-empty">La bibliothèque Yeleen est indisponible pour l’instant. <button type="button" className="am-retry" onClick={catalog.reload}>Réessayer</button></p>
         )}
 
-        {picked.size > 0 && (
-          <div className="am-bar" role="region" aria-label="Sélection">
-            <button type="button" className="am-add" onClick={add}>Ajouter {picked.size} fichier{picked.size > 1 ? 's' : ''}</button>
+        {(undo || picked.size > 0) && (
+          <div className="am-bar" role="region" aria-label={undo ? 'Suppression' : 'Sélection'} aria-live="polite">
+            {undo && <div className="am-undo"><span>« {undo.name} » supprimé</span><button type="button" onClick={cancelDelete}>Annuler</button></div>}
+            {picked.size > 0 && <button type="button" className="am-add" onClick={add}>Ajouter {picked.size} fichier{picked.size > 1 ? 's' : ''}</button>}
           </div>
         )}
       </div>
