@@ -13,7 +13,7 @@ const ARTICLE = { image: 'une image', video: 'une vidéo', audio: 'un audio' }
  */
 export default function AssetPicker({ kind, open, onClose, onPick }) {
   const ref = useRef(null)
-  const { assets, addUpload, getFile } = useAssets()
+  const { assets, importMany, getFile } = useAssets()
   const toast = useToast()
   const [q, setQ] = useState('')
   const [busy, setBusy] = useState(null)
@@ -39,8 +39,10 @@ export default function AssetPicker({ kind, open, onClose, onPick }) {
     }
   }
   const importFiles = async (fl) => {
-    const added = (await Promise.all([...fl].map(addUpload))).filter((a) => a && a.kind === kind)
-    if (added.length === 1) pick(added[0])
+    const { added, errors } = await importMany(fl)
+    errors.forEach((m) => toast(m))
+    const ofKind = added.filter((a) => a.kind === kind)
+    if (ofKind.length === 1) pick(ofKind[0])
   }
 
   return (

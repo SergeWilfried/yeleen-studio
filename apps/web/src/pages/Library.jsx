@@ -92,7 +92,7 @@ function Inspector({ asset, onRemove }) {
 }
 
 function AssetsView({ focusId }) {
-  const { assets, addUpload, update, remove, restore, purge } = useAssets()
+  const { assets, importMany, update, remove, restore, purge } = useAssets()
   const toast = useToast()
   const [params] = useSearchParams() // ?filter=starred|image|video|audio et ?source=upload|generated : vue d'arrivée depuis un lien
   const [filter, setFilter] = useState(() => (['image', 'video', 'audio', 'starred'].includes(params.get('filter')) ? params.get('filter') : 'all'))
@@ -127,10 +127,10 @@ function AssetsView({ focusId }) {
   const current = assets.find((a) => a.id === selected) ?? null
 
   const importFiles = async (fl) => {
-    const added = (await Promise.all([...fl].map(addUpload))).filter(Boolean)
-    const skipped = fl.length - added.length
+    const { added, unsupported, errors } = await importMany(fl)
     if (added.length) { setSelected(added[0].id); toast(`${added.length} fichier${added.length > 1 ? 's' : ''} importé${added.length > 1 ? 's' : ''}.`) }
-    if (skipped) toast(`${skipped} fichier${skipped > 1 ? 's' : ''} ignoré${skipped > 1 ? 's' : ''} : seuls les images, vidéos et audios sont acceptés.`)
+    if (unsupported) toast(`${unsupported} fichier${unsupported > 1 ? 's' : ''} ignoré${unsupported > 1 ? 's' : ''} : seuls les images, vidéos et audios sont acceptés.`)
+    errors.forEach((m) => toast(m))
   }
 
   const removeIds = (ids) => {

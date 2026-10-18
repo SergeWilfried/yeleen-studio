@@ -11,6 +11,7 @@ import PlanTabs from './PlanTabs.jsx'
 import { ROLE_LABEL, resolveMentions, tokenFor, tokensIn } from '../lib/mentions.js'
 import { KINDS } from '../lib/assets.jsx'
 import { useBrand } from '../lib/brand.jsx'
+import { useToast } from '../lib/toasts.jsx'
 import { DURATIONS, QUALITY, MODES, next } from '../lib/useGenSettings.js'
 import '../styles/edit-panel.css'
 
@@ -41,6 +42,7 @@ export function DropTile({ icon, label, accept, file, onFile, disabled = false, 
   const [thumb, setThumb] = useState(null)
   const [picking, setPicking] = useState(false)
   const { addUpload } = useAssets()
+  const toast = useToast()
   const kind = accept.split('/')[0]
   useEffect(() => {
     if (!file || !file.type.startsWith('image')) return setThumb(null)
@@ -65,7 +67,7 @@ export function DropTile({ icon, label, accept, file, onFile, disabled = false, 
           accept={accept}
           onChange={async (e) => {
             const f = e.target.files[0] ?? null
-            const asset = f ? await addUpload(f) : null // les fichiers importés rejoignent la bibliothèque
+            const asset = f ? await addUpload(f).catch((err) => { toast(err.message); return null }) : null // les fichiers importés rejoignent la bibliothèque
             onFile(f, asset)
           }}
         />

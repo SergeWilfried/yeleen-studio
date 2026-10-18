@@ -15,13 +15,11 @@ export function testD1() {
     failing: false,
     prepare(sql) {
       const stmt = db.prepare(sql)
-      return {
-        bind: (...args) => ({
-          run: async () => { d1.calls++; if (d1.failing) throw new Error('D1 indisponible'); const r = stmt.run(...args); return { success: true, meta: { changes: Number(r.changes) } } },
-          first: async () => { d1.calls++; if (d1.failing) throw new Error('D1 indisponible'); return stmt.get(...args) ?? null },
-          all: async () => { d1.calls++; return { results: stmt.all(...args) } },
-        }),
-      }
+      const run = (args) => async () => { d1.calls++; if (d1.failing) throw new Error('D1 indisponible'); const r = stmt.run(...args); return { success: true, meta: { changes: Number(r.changes) } } }
+      const first = (args) => async () => { d1.calls++; if (d1.failing) throw new Error('D1 indisponible'); return stmt.get(...args) ?? null }
+      const all = (args) => async () => { d1.calls++; if (d1.failing) throw new Error('D1 indisponible'); return { results: stmt.all(...args) } }
+      // Comme D1 : on peut appeler run, first et all directement, ou après bind(…).
+      return { bind: (...args) => ({ run: run(args), first: first(args), all: all(args) }), run: run([]), first: first([]), all: all([]) }
     },
     exec: (sql) => db.exec(sql),
     raw: db,

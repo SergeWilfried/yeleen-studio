@@ -303,7 +303,7 @@ export function JobsProvider({ children }) {
         const logs = (r.logs ?? []).filter((m) => !j.logs.some((l) => l.msg === m)).map((msg) => ({ msg }))
         let patch
         let message
-        if (r.status === 'COMPLETED') { patch = { status: 'COMPLETED', progress: 100, finishedAt: now, outputs: r.outputs, logs: logs.concat({ msg: 'Terminé' }) }; message = `Terminée : ${j.title}.` }
+        if (r.status === 'COMPLETED') { patch = { status: 'COMPLETED', progress: 100, finishedAt: now, outputs: r.outputs, assets: r.assets, logs: logs.concat({ msg: 'Terminé' }) }; message = `Terminée : ${j.title}.` }
         else if (r.status === 'FAILED') { const failure = r.failure ?? 'provider'; patch = { status: 'FAILED', failure, refund: r.refund ?? 0, finishedAt: now, logs: logs.concat({ msg: `Erreur : ${FAILURES[failure].message}`, error: true }) }; message = `Échec : ${j.title}. ${jetons(r.refund ?? 0)} jetons remboursés.` }
         else if (r.status === 'IN_PROGRESS') patch = { status: 'IN_PROGRESS', startedAt: j.startedAt ?? now, queuePosition: 0, logs: logs.length || j.logs.some((l) => l.msg === 'Génération en cours') ? logs : [{ msg: 'Génération en cours' }] } // fal ne détaille pas toujours ses étapes
         else patch = { status: 'IN_QUEUE', queuePosition: r.queuePosition ?? 0, logs }

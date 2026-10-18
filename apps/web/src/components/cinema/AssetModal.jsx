@@ -29,7 +29,7 @@ const TABS = [
  */
 export default function AssetModal({ open, onClose, onAdd, taken = [], initialSub = 'recent' }) {
   const ref = useRef(null)
-  const { assets, addUpload, update } = useAssets()
+  const { assets, importMany, update } = useAssets()
   const catalog = useCatalog()
   const toast = useToast()
   const onTabKeys = useTabKeys()
@@ -69,8 +69,9 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
 
   const toggle = (id) => setPicked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const upload = async (files) => {
-    const added = (await Promise.all([...files].map(addUpload))).filter(Boolean)
-    if (!added.length) return toast('Format non pris en charge : image, vidéo ou audio.')
+    const { added, unsupported, errors } = await importMany(files)
+    errors.forEach((m) => toast(m))
+    if (!added.length) return unsupported ? toast('Format non pris en charge : image, vidéo ou audio.') : undefined
     setTab('library')
     setPicked((s) => new Set([...s, ...added.map((a) => a.id)]))
   }

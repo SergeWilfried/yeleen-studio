@@ -5,6 +5,7 @@
  */
 const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/mp4': 'm4a', 'video/mp4': 'mp4', 'video/webm': 'webm' }
 const PREFIX = 'outputs/'
+const PUBLIC = ['outputs/', 'library/', 'catalog/'] // préfixes servis par /files (les clés contiennent un identifiant non devinable)
 
 export const keyFor = (accountId, jobId, index, contentType) => `${PREFIX}${accountId}/${jobId}/${index}.${EXT[contentType] ?? 'bin'}`
 
@@ -37,7 +38,7 @@ export async function storeOutputs({ bucket, origin, accountId, jobId, outputs, 
 
 /** Réponse HTTP pour un fichier du bucket, avec prise en charge de l'en-tête Range. */
 export async function serveFile(bucket, key, headers) {
-  if (!bucket || !key.startsWith(PREFIX) || key.includes('..')) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })
+  if (!bucket || !PUBLIC.some((p) => key.startsWith(p)) || key.includes('..')) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })
   const ranged = headers.get('range')
   const obj = await bucket.get(key, ranged ? { range: headers } : undefined)
   if (!obj) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: { 'content-type': 'application/json' } })

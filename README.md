@@ -100,14 +100,28 @@ pnpm deploy                         # ensuite : tests, API, site, autorisation d
 
 ## Base de données (D1)
 
-D1 tient les **utilisateurs** : une ligne par compte Clerk (`users` : identifiant `sub`, date d'arrivée, dernière activité, pays d'après Cloudflare, e-mail et nom si le jeton les porte). Elle est créée à la première requête authentifiée ; la date d'activité n'est écrite qu'au plus toutes les 10 minutes. Le **portefeuille et les générations restent dans le Durable Object** du compte (un seul écrivain pour l'argent) : D1 sert au profil, à l'analyse et aux rapports. Une panne de D1 n'empêche jamais une requête.
+D1 tient le profil, l'historique et la bibliothèque. **Le portefeuille et l'état des générations en cours restent dans le Durable Object** du compte (un seul écrivain pour l'argent) ; D1 en reçoit des copies, écrites sans bloquer la requête : une panne de D1 n'empêche jamais une génération ni un débit.
 
-- `GET /me` : profil (D1) et solde (Durable Object) de l'utilisateur connecté.
+| Table | Contenu | Migration |
+|---|---|---|
+| `users` | un compte Clerk (`sub`), arrivée, dernière activité (au plus toutes les 10 min), pays d'après Cloudflare, e-mail et nom si le jeton les porte, crédit de bienvenue | `0001` |
+| `jobs` | historique des générations : modèle, statut, coût, texte, réglages, échec, remboursement, sorties, dates | `0002` |
+| `assets` | « Ma bibliothèque » : fichiers importés et générés (clé R2, type, taille, durée, texte, génération d'origine), suppression douce | `0003` |
+| `favorites` | favoris des deux bibliothèques : `(utilisateur, mine ou yeleen, élément)` | `0003` |
+| `catalog_items` | la Bibliothèque Yeleen (personnages, objets, vidéos), modifiable sans déploiement ; 15 exemples au départ | `0004` |
+
+**Routes** (toutes derrière la garde Clerk) : `GET /me`, `GET /jobs?limit&before` (historique, page suivante par la date de la dernière reçue), `GET /library?kind&source&limit&before`, `POST /library/uploads` (le corps est le fichier : image, audio 25 Mo au plus, vidéo 100 Mo ; quota `MAX_LIBRARY_BYTES`, 2 Gio par défaut), `PATCH /library/:id` (renommer), `POST /library/delete` et `/library/restore` (suppression douce annulable), `GET /library/favorites?scope=`, `PUT|DELETE /library/favorites/:scope/:id`, `GET /catalog`.
+
+- **Génération terminée** : ses sorties copiées dans R2 entrent dans `assets` (une seule fois par sortie) et la réponse du suivi les contient : l'interface les affiche tout de suite.
+- **Suppression** : un fichier supprimé est masqué aussitôt et reste annulable ; une tâche planifiée (tous les jours à 3 h 17 UTC) efface pour de bon, dans R2 et dans D1, ce qui est supprimé depuis plus d'un jour.
+- **Fichiers** : `/files/library/<utilisateur>/<id>.<ext>` et `/files/outputs/…` se lisent sans en-tête (balises `<img>` et `<video>`) ; la confidentialité tient à l'identifiant non devinable de la clé, pas à une session.
+- **Site** : avec l'API et une session, Ma bibliothèque et les favoris Yeleen vivent côté serveur (ils survivent à un rechargement et à un changement d'appareil). Sans API, ou si l'API n'a pas de stockage, tout reste dans le navigateur comme avant.
 - `WELCOME_JETONS` (variable de l'API, 0 par défaut) : crédit offert une seule fois à chaque nouvel utilisateur, enregistré dans `users.welcomed_at`.
-- E-mail et nom : Clerk ne les met pas dans le jeton de session par défaut ; pour les enregistrer, ajoutez `{"email": "{{user.primary_email_address}}", "name": "{{user.full_name}}"}` dans « Customize session token » (tableau de bord Clerk). Sans cela, ces colonnes restent vides.
+- E-mail et nom : Clerk ne les met pas dans le jeton de session par défaut ; pour les enregistrer, ajoutez `{"email": "{{user.primary_email_address}}", "name": "{{user.full_name}}"}` dans « Customize session token » (tableau de bord Clerk).
 - **Local** : `pnpm dev:api` applique les migrations à la base locale (simulée) avant de démarrer ; `pnpm --filter @studio/api db:migrate:local` le fait seul.
 - **Déploiement** : `scripts/deploy.mjs` crée la base `studio` si besoin, écrit son identifiant dans `apps/api/wrangler.jsonc` (à valider dans git), applique les migrations (`migrations/*.sql`), puis déploie l'API. Les tests exécutent les vraies migrations sur SQLite (le moteur de D1) : Node 22.13 ou plus.
-- Pour une nouvelle table : ajouter `apps/api/migrations/0002_….sql` (jamais modifier une migration déjà appliquée).
+- Nouvelle table ou colonne : `apps/api/migrations/0005_….sql` (jamais modifier une migration déjà appliquée).
+- Pas encore dans D1 : journal des mouvements de jetons (`credit_ledger`), paiements, marque et spots.
 
 ### Construction Git de l'API dans Cloudflare
 

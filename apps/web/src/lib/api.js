@@ -42,6 +42,28 @@ export const api = {
   createJob: (spec) => request('/jobs', { method: 'POST', body: JSON.stringify(spec) }),
   job: (id) => request(`/jobs/${id}`),
   cancelJob: (id) => request(`/jobs/${id}/cancel`, { method: 'POST' }),
+  // Ma bibliothèque, mes favoris, la bibliothèque Yeleen et mon historique (D1 côté API).
+  library: (params = {}) => request(`/library?${new URLSearchParams(params)}`),
+  renameAsset: (id, name) => request(`/library/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) }),
+  deleteAssets: (ids) => request('/library/delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  restoreAssets: (ids) => request('/library/restore', { method: 'POST', body: JSON.stringify({ ids }) }),
+  favorites: (scope) => request(`/library/favorites?scope=${scope}`),
+  setFavorite: (scope, id, on) => request(`/library/favorites/${scope}/${encodeURIComponent(id)}`, { method: on ? 'PUT' : 'DELETE' }),
+  catalog: () => request('/catalog'),
+  jobs: (params = {}) => request(`/jobs?${new URLSearchParams(params)}`),
+  /** Importe un fichier dans Ma bibliothèque (stocké côté serveur) ; renvoie l'asset créé. */
+  async uploadAsset(file, secs) {
+    let res
+    try {
+      const q = new URLSearchParams({ name: file.name, ...(secs ? { secs } : {}) })
+      res = await fetch(`${BASE}/library/uploads?${q}`, { method: 'POST', headers: { 'content-type': file.type, ...(await authHeader()) }, body: file })
+    } catch {
+      throw new ApiError(0, { error: 'unreachable' })
+    }
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new ApiError(res.status, body)
+    return body
+  },
   /** Dépose un fichier d'entrée (image, audio) chez le fournisseur ; renvoie son adresse. */
   async upload(file) {
     let res

@@ -14,6 +14,9 @@
   "vars": { "ENV": "production" },
   "keep_vars": true,
 
+  // Tous les jours à 3 h 17 (UTC) : effacement définitif des fichiers supprimés de la bibliothèque depuis plus d'un jour.
+  "triggers": { "crons": ["17 3 * * *"] },
+
   // Compte : portefeuille de jetons et générations, un Durable Object par compte (un seul écrivain, pas de double débit).
   "durable_objects": { "bindings": [{ "name": "ACCOUNT", "class_name": "Account" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Account"] }],

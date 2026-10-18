@@ -1,6 +1,9 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { AuthError, verifyClerkToken } from './auth.js'
+import { library, catalogRoutes } from './library-routes.js'
+import { addGenerated, purgeDeleted, toAsset } from './library.js'
+import { listJobs, mirrorJob, paramsOf, promptOf } from './jobs-store.js'
 import { FalError, falClient } from './fal.js'
 import { buildInput, endpointFor, outputsOf } from './inputs.js'
 import { isBlocked } from './moderation.js'
@@ -23,7 +26,7 @@ const allowedOrigins = (env) => (env.ALLOWED_ORIGINS ?? '').split(',').map((s) =
 
 app.use('*', async (c, next) => {
   const allowed = allowedOrigins(c.env)
-  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: ['content-type', 'range', 'authorization'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
+  return cors({ origin: (o) => (allowed.includes(o) ? o : null), allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], allowHeaders: ['content-type', 'range', 'authorization'], exposeHeaders: ['content-range', 'accept-ranges', 'content-length'] })(c, next)
 })
 
 // Garde : tout passe par ici sauf la santé, les fichiers (adresses non devinables, lus par <img> et <video> sans en-tête) et les webhooks.
@@ -73,6 +76,17 @@ const call = async (c, path, body) => {
   return res.json()
 }
 const fal = (c) => falClient({ key: c.env.FAL_KEY })
+
+/** Travail secondaire (copie dans D1) : en production il continue après la réponse ; sans contexte (tests), on l'attend. Il ne fait jamais échouer la requête. */
+async function later(c, promise, what) {
+  const task = Promise.resolve(promise).catch((e) => console.error(`${what} (D1)`, e.message))
+  try { c.executionCtx.waitUntil(task) } catch { await task }
+}
+/** Enregistre une génération dans le Durable Object (l'autorité) puis en copie dans D1 pour l'historique. */
+async function saveJob(c, job) {
+  await call(c, '/job/put', job)
+  if (c.env.DB) await later(c, mirrorJob(c.env.DB, accountId(c), job), 'historique')
+}
 
 const MAX_UPLOAD = 25 * 1024 * 1024
 const UPLOAD_TYPES = /^(image\/(png|jpeg|webp|gif)|audio\/(mpeg|mp3|wav|x-wav|mp4|x-m4a|aac|ogg|webm|flac))$/
@@ -139,12 +153,19 @@ app.post('/jobs', async (c) => {
     return c.json({ error: policy ? 'moderation' : 'provider', refunded: back.refunded ?? price.cost, balance: back.balance }, policy ? 422 : 502)
   }
 
-  const job = { id, kind: req.kind, modelId: price.model.id, endpoint, cost: price.cost, count: price.count, status: 'IN_QUEUE', createdAt: Date.now(), ...sub }
-  await call(c, '/job/put', job)
+  const job = { id, kind: req.kind, modelId: price.model.id, title: price.model.name, prompt: promptOf(req), params: paramsOf(req, { count: price.count, title: price.model.name }), endpoint, cost: price.cost, count: price.count, status: 'IN_QUEUE', createdAt: Date.now(), ...sub }
+  await saveJob(c, job)
   return c.json({ jobId: id, status: job.status, cost: price.cost, balance: debit.balance }, 202)
 })
 
 const view = (job, extra = {}) => ({ jobId: job.id, status: job.status, outputs: job.outputs, failure: job.failure, refund: job.refund ?? 0, ...extra })
+
+// Mes générations (historique dans D1), les plus récentes d'abord : ?limit=30&before=<date de création de la dernière reçue>.
+app.get('/jobs', async (c) => {
+  if (!c.env.DB) return c.json({ error: 'db_unavailable' }, 503)
+  const q = c.req.query()
+  return c.json(await listJobs(c.env.DB, accountId(c), { limit: q.limit, before: q.before ? Number(q.before) : null }))
+})
 
 // Suivi : on interroge fal tant que la génération est active ; un échec rembourse (une seule fois).
 app.get('/jobs/:id', async (c) => {
@@ -156,14 +177,14 @@ app.get('/jobs/:id', async (c) => {
   const fail = async (failure) => {
     const back = await call(c, '/refund', { jobId: job.id })
     const next = { ...job, status: 'FAILED', failure, refund: back.refunded ?? job.cost, finishedAt: Date.now() }
-    await call(c, '/job/put', next)
+    await saveJob(c, next)
     return c.json(view(next, { balance: back.balance }))
   }
   try {
     const st = await client.status(job.statusUrl)
     if (st.status !== 'COMPLETED') {
       const next = { ...job, status: st.status }
-      if (next.status !== job.status) await call(c, '/job/put', next)
+      if (next.status !== job.status) await saveJob(c, next)
       return c.json(view(next, { queuePosition: st.queuePosition, logs: st.logs.slice(-3), balance: (await call(c, '/balance')).balance }))
     }
     let result
@@ -175,18 +196,27 @@ app.get('/jobs/:id', async (c) => {
     if (!found.length) return fail('provider')
     // Copie dans R2 : un seul suivi à la fois s'en charge ; les autres voient « enregistrement » et réessaient.
     if (job.storingAt && Date.now() - job.storingAt < 60_000) return c.json(view({ ...job, status: 'IN_PROGRESS' }, { logs: ['Enregistrement du résultat'], balance: (await call(c, '/balance')).balance }))
-    if (c.env.FILES) await call(c, '/job/put', { ...job, status: 'IN_PROGRESS', storingAt: Date.now() })
+    if (c.env.FILES) await call(c, '/job/put', { ...job, status: 'IN_PROGRESS', storingAt: Date.now() }) // marqueur interne : pas de copie dans D1
     const outputs = await storeOutputs({ bucket: c.env.FILES, origin: new URL(c.req.url).origin, accountId: accountId(c), jobId: job.id, outputs: found })
     const next = { ...job, status: 'COMPLETED', outputs, finishedAt: Date.now(), storingAt: undefined }
-    await call(c, '/job/put', next)
-    return c.json(view(next, { balance: (await call(c, '/balance')).balance }))
+    await saveJob(c, next)
+    // Les sorties copiées dans R2 entrent dans « Ma bibliothèque » (une seule fois par sortie) ; l'interface les reçoit tout de suite.
+    let assets
+    if (c.env.DB && c.env.FILES) {
+      try { assets = (await addGenerated(c.env.DB, { userId: accountId(c), job: next, outputs, title: job.title ?? job.modelId })).map((r) => toAsset(r, new URL(c.req.url).origin)) } catch (e) { console.error('bibliothèque (D1)', e.message) }
+    }
+    return c.json(view(next, { assets, balance: (await call(c, '/balance')).balance }))
   } catch (e) {
     console.error('suivi fal', e.message) // erreur passagère : l'interface réessaiera
     return c.json({ error: 'upstream' }, 502)
   }
 })
 
-// Fichiers générés, conservés dans R2. Accès par adresse (non devinable) tant qu'il n'y a pas de comptes.
+// Ma bibliothèque (importés et générés), mes favoris, et la bibliothèque Yeleen.
+app.route('/library', library)
+app.route('/catalog', catalogRoutes)
+
+// Fichiers générés et importés, conservés dans R2. Accès par adresse (non devinable) tant qu'il n'y a pas de comptes.
 app.get('/files/*', (c) => serveFile(c.env.FILES, c.req.path.slice('/files/'.length), c.req.raw.headers))
 
 // Annulation : remboursement complet si la génération n'a pas commencé ; sinon fal la facture, rien n'est remboursé.
@@ -197,7 +227,7 @@ app.post('/jobs/:id/cancel', async (c) => {
   try { await fal(c).cancel(job.cancelUrl) } catch (e) { console.error('annulation fal', e.message) }
   const back = job.status === 'IN_QUEUE' ? await call(c, '/refund', { jobId: job.id }) : { refunded: 0, balance: (await call(c, '/balance')).balance }
   const next = { ...job, status: 'CANCELED', refund: back.refunded ?? 0, finishedAt: Date.now() }
-  await call(c, '/job/put', next)
+  await saveJob(c, next)
   return c.json(view(next, { balance: back.balance }))
 })
 
@@ -205,4 +235,9 @@ app.post('/jobs/:id/cancel', async (c) => {
 app.post('/webhooks/fal', (c) => c.json({ error: 'not_implemented' }, 501))
 app.post('/webhooks/payments', (c) => c.json({ error: 'not_implemented' }, 501))
 
-export default app
+/** Tâche planifiée (voir `triggers.crons` de wrangler.jsonc) : efface pour de bon les fichiers supprimés depuis plus d'un jour. */
+async function scheduled(_event, env, ctx) {
+  if (env.DB) ctx.waitUntil(purgeDeleted(env.DB, env.FILES).then((n) => console.log(`purge : ${n} fichier(s) effacé(s)`)))
+}
+
+export default { fetch: (request, env, ctx) => app.fetch(request, env, ctx), scheduled }

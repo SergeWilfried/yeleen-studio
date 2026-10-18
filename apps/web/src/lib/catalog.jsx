@@ -1,10 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { api, apiEnabled } from './api.js'
+import { useAuthState } from './auth.jsx'
 import { features } from './features.js'
 
 /**
  * Bibliothèque Yeleen : personnages, objets (images, rendus 3D sur fond transparent) et vidéos proposés à tous les utilisateurs,
  * à utiliser comme références. Le catalogue est une liste (`public/catalog/yeleen.json`, ou `VITE_CATALOG_URL` : un bucket R2 derrière
- * le CDN) : pas de serveur à interroger. Chaque entrée devient un « asset » (source `yeleen`) ; les favoris sont gardés dans le navigateur.
+ * le CDN) : pas de serveur à interroger. Avec l'API et une session, le catalogue vient de D1 (table catalog_items : modifiable sans déploiement)
+ * et les favoris sont enregistrés côté serveur ; sinon, fichier et navigateur. Chaque entrée devient un « asset » (source `yeleen`).
  */
 const URL_ = import.meta.env?.VITE_CATALOG_URL || '/catalog/yeleen.json'
 const FAVS = 'studio.catalog.favs.v1'
@@ -29,27 +32,38 @@ const Ctx = createContext({ items: [], status: 'idle', favs: new Set(), toggleFa
 export const useCatalog = () => useContext(Ctx)
 
 export function CatalogProvider({ children }) {
+  const { ready, signedIn } = useAuthState()
+  const server = apiEnabled && ready && signedIn
   const [state, setState] = useState({ items: [], status: 'loading' })
   const [favs, setFavs] = useState(readFavs)
   const [tick, setTick] = useState(0)
+  const serverRef = useRef(server)
+  serverRef.current = server
 
   useEffect(() => {
     if (!features.catalog) return // éteint : on ne télécharge pas le catalogue
     let alive = true
     setState((s) => ({ ...s, status: 'loading' }))
-    fetch(URL_)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    const load = server ? api.catalog() : fetch(URL_).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    load
       .then((doc) => alive && setState({ status: 'ready', items: (doc.items ?? []).filter((e) => e?.id && e?.name && (e.url || e.art)).map(toAsset) }))
       .catch(() => alive && setState({ items: [], status: 'error' }))
+    if (server) api.favorites('yeleen').then((r) => alive && setFavs(new Set(r.ids.map((id) => `yeleen:${id}`)))).catch(() => {})
     return () => { alive = false }
-  }, [tick])
+  }, [tick, server])
 
-  const toggleFav = useCallback((id) => setFavs((f) => {
-    const n = new Set(f)
-    n.has(id) ? n.delete(id) : n.add(id)
-    try { localStorage.setItem(FAVS, JSON.stringify([...n])) } catch { /* quota ou navigation privée */ }
-    return n
-  }), [])
+  const favsRef = useRef(favs)
+  favsRef.current = favs
+  const toggleFav = useCallback((id) => {
+    const on = !favsRef.current.has(id)
+    const set = (f, value) => { const n = new Set(f); value ? n.add(id) : n.delete(id); return n }
+    setFavs((f) => set(f, on))
+    if (serverRef.current) {
+      api.setFavorite('yeleen', id.replace(/^yeleen:/, ''), on).catch(() => setFavs((f) => set(f, !on))) // échec : on revient en arrière
+    } else {
+      try { localStorage.setItem(FAVS, JSON.stringify([...set(favsRef.current, on)])) } catch { /* quota ou navigation privée */ }
+    }
+  }, [])
   const reload = useCallback(() => setTick((t) => t + 1), [])
 
   const value = useMemo(() => ({ ...state, favs, toggleFav, reload }), [state, favs, toggleFav, reload])
