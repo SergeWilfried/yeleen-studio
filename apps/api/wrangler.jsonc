@@ -11,6 +11,7 @@
   // ALLOWED_ORIGINS (origines du site) et CLERK_ISSUER (adresse de l'instance Clerk) se règlent dans Cloudflare (Variables et secrets)
   // ou à la commande (`scripts/deploy.mjs`) ; `keep_vars` empêche un déploiement d'effacer ce qui est réglé dans le tableau de bord.
   // FAL_KEY est un secret : `wrangler secret put FAL_KEY` ou le tableau de bord, jamais ici.
+  // Recharges (paygate) : PAYGATE_URL (variable), PAYGATE_KEY et PAYGATE_WEBHOOK_SECRET (secrets), TOPUP_COUNTRIES (« BF » par défaut).
   "vars": { "ENV": "production" },
   "keep_vars": true,
 
@@ -25,7 +26,7 @@
   // À activer quand les ressources existent :
   // "d1_databases": [{ "binding": "DB", "database_name": "studio", "database_id": "<id>" }],
   // "queues": { "producers": [{ "binding": "MONTAGE_QUEUE", "queue": "studio-montage" }] },
-  // Secrets : FAL_KEY, WEBHOOK_SECRET
+  // Secrets : FAL_KEY, PAYGATE_KEY, PAYGATE_WEBHOOK_SECRET, WEBHOOK_SECRET (fal)
 
  "observability": {
     "logs": {

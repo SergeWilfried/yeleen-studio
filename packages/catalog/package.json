@@ -9,7 +9,8 @@
     "./chains": "./src/chainDefs.js",
     "./voices": "./src/voices.js",
     "./recipes": "./src/recipes.js",
-    "./workflows": "./src/workflows.js"
+    "./workflows": "./src/workflows.js",
+    "./packs": "./src/packs.js"
   },
   "scripts": {
     "test": "node --test"
