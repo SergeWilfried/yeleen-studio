@@ -4,11 +4,12 @@ import Menu from '../Menu.jsx'
 import AssetThumb from '../AssetThumb.jsx'
 import { KINDS, useAssets } from '../../lib/assets.jsx'
 import { useToast } from '../../lib/toasts.jsx'
+import useTabKeys from '../../lib/useTabKeys.js'
 
 const TABS = [
-  { id: 'upload', label: 'Imports', pick: (a) => a.source === 'upload' },
-  { id: 'generated', label: 'Générations', pick: (a) => a.source === 'generated' },
-  { id: 'starred', label: 'Favoris', pick: (a) => a.starred },
+  { id: 'upload', label: 'Imports', icon: 'upload', pick: (a) => a.source === 'upload' },
+  { id: 'generated', label: 'Générations', icon: 'sparkle', pick: (a) => a.source === 'generated' },
+  { id: 'starred', label: 'Favoris', icon: 'star', pick: (a) => a.starred },
 ]
 const SUBS = [
   { id: 'recent', label: 'Récents' },
@@ -21,12 +22,13 @@ const SORTS = [{ id: 'recent', title: 'Plus récents' }, { id: 'old', title: 'Pl
 
 /**
  * Fenêtre de choix des références : la bibliothèque par origine (imports, générations, favoris) et par type,
- * avec un bouton pour importer. Plusieurs fichiers peuvent être cochés puis ajoutés d'un coup.
+ * avec un bouton pour importer. L'origine se choisit dans la barre latérale à gauche. Plusieurs fichiers peuvent être cochés puis ajoutés d'un coup.
  */
 export default function AssetModal({ open, onClose, onAdd, taken = [], initialSub = 'recent' }) {
   const ref = useRef(null)
   const { assets, addUpload } = useAssets()
   const toast = useToast()
+  const onTabKeys = useTabKeys()
   const [tab, setTab] = useState('upload')
   const [sub, setSub] = useState(initialSub)
   const [sort, setSort] = useState('recent')
@@ -57,25 +59,34 @@ export default function AssetModal({ open, onClose, onAdd, taken = [], initialSu
 
   return (
     <dialog ref={ref} className="am-dlg" onClose={onClose} onClick={(e) => e.target === ref.current && onClose()} aria-label="Ajouter des références">
-      <header className="am-top">
-        <div className="am-tabs" role="tablist" aria-label="Origine">
-          {TABS.map((t) => (
-            <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : undefined} onClick={() => setTab(t.id)}>{t.label}</button>
-          ))}
+      <nav className="am-side" aria-label="Origine des fichiers">
+        <div role="tablist" aria-orientation="vertical" aria-label="Origine" onKeyDown={onTabKeys}>
+          {TABS.map((t) => {
+            const n = assets.filter(t.pick).length
+            return (
+              <button key={t.id} type="button" role="tab" id={`am-tab-${t.id}`} aria-selected={tab === t.id} aria-controls="am-main" title={t.label} tabIndex={tab === t.id ? 0 : -1} className={tab === t.id ? 'on' : undefined} onClick={() => setTab(t.id)}>
+                <Icon name={t.icon} size={18} />
+                <span className="am-lb">{t.label}</span>
+                <small aria-label={`${n} fichier${n > 1 ? 's' : ''}`}>{n}</small>
+              </button>
+            )
+          })}
         </div>
-        <button type="button" className="am-x" onClick={onClose} aria-label="Fermer"><Icon name="close" size={16} /></button>
-      </header>
+      </nav>
 
-      <div className="am-panel">
+      <div className="am-panel" id="am-main" role="tabpanel" aria-labelledby={`am-tab-${tab}`}>
         <div className="am-sub">
-          <div className="am-subs" role="tablist" aria-label="Type">
+          <div className="am-subs" role="tablist" aria-label="Type" onKeyDown={onTabKeys}>
             {SUBS.map((t) => (
-              <button key={t.id} type="button" role="tab" aria-selected={sub === t.id} className={sub === t.id ? 'on' : undefined} onClick={() => setSub(t.id)}>{t.label}</button>
+              <button key={t.id} type="button" role="tab" aria-selected={sub === t.id} tabIndex={sub === t.id ? 0 : -1} className={sub === t.id ? 'on' : undefined} onClick={() => setSub(t.id)}>{t.label}</button>
             ))}
           </div>
-          <Menu items={SORTS} value={sort} onChange={setSort} label="Trier par" menuWidth={200} className="am-sort">
-            <Icon name="sort" size={16} /><span>Trier par</span>
-          </Menu>
+          <div className="am-end">
+            <Menu items={SORTS} value={sort} onChange={setSort} label="Trier par" menuWidth={200} className="am-sort">
+              <Icon name="sort" size={16} /><span>Trier par</span>
+            </Menu>
+            <button type="button" className="am-x" onClick={onClose} aria-label="Fermer"><Icon name="close" size={16} /></button>
+          </div>
         </div>
 
         <div className="am-grid">
