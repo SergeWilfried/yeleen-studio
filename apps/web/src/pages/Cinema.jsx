@@ -8,6 +8,7 @@ import MentionTextarea from '../components/MentionTextarea.jsx'
 import PlanTabs from '../components/PlanTabs.jsx'
 import AssetThumb from '../components/AssetThumb.jsx'
 import BrandToggle from '../components/BrandToggle.jsx'
+import { features } from '../lib/features.js'
 import GenerationTray from '../components/GenerationTray.jsx'
 import ModelLogo from '../components/ModelLogo.jsx'
 import Sidebar from '../components/cinema/Sidebar.jsx'
@@ -123,13 +124,15 @@ export default function Cinema() {
   const setText = (v) => (video ? s.patch(s.active, { text: v }) : setItext(v))
   const model = video ? vmodel : imodel
   const caps = vmodel.caps
-  const styled = kit.apply && Boolean(style)
+  const styled = features.brand && kit.apply && Boolean(style) // sans l'écran Marque, personne ne peut régler (ni retirer) un style de marque
   const attached = useMemo(() => labelAttachments(att, assets), [att, assets])
   const ref = useMemo(() => resolveAttachments({ attached, texts: video ? s.plans.map((p) => p.text) : [itext], caps }), [attached, s.plans, itext, video, caps])
   const roles = Object.fromEntries(ref.items.map((i) => [i.token, i.role]))
   const items = attached.map((x) => ({ key: x.id, token: x.token, label: x.token, sub: x.asset.name, asset: x.asset }))
   const native = Boolean(caps.references) // le modèle prolonge ou modifie lui-même une vidéo jointe
   const activeTask = native ? task : 'refs'
+  // Suite, Avant et Modifier d'un modèle sans prise en charge native passent par l'écran Vidéo : sans lui, seul « Références » reste (et le menu disparaît).
+  const modeItems = native ? MODES.filter((m) => m.id !== 'prev') : features.video ? MODES : MODES.filter((m) => m.id === 'refs')
   const clipSecs = ref.references.filter((r) => r.kind === 'video').reduce((n, r) => n + (r.asset.secs || 0), 0) // durée des vidéos jointes : facturée en entrée
   const secs = activeTask === 'edit' ? Math.max(4, Math.ceil(clipSecs)) : s.total // modifier : la sortie dure autant que la vidéo
   const cost = video ? (native ? videoCost(vmodel, secs, s.res, { inputSecs: clipSecs }) : s.cost) : imageCost(imodel, iRes2, iN)
@@ -292,8 +295,8 @@ export default function Cinema() {
                 <Menu items={modelItems} value={modelValue} onChange={onModel} label={video ? 'Modèle vidéo' : 'Modèle image'} menuWidth={460} search="Rechercher un modèle…" className="cn-chip cn-model" listClass="cn-pop">
                   {logo ? <ModelLogo logo={logo} size={18} /> : <Icon name="sparkle" size={16} />}<span>{model.name}</span>
                 </Menu>
-                {video && (
-                  <Menu items={native ? MODES.filter((m) => m.id !== 'prev') : MODES} value={activeTask} onChange={native ? setTask : fromClip} label="Mode de création" menuWidth={240} className="cn-chip" listClass="cn-pop">
+                {video && modeItems.length > 1 && (
+                  <Menu items={modeItems} value={activeTask} onChange={native ? setTask : fromClip} label="Mode de création" menuWidth={240} className="cn-chip" listClass="cn-pop">
                     <Icon name={MODES.find((m) => m.id === activeTask).icon} size={16} /><span>{MODES.find((m) => m.id === activeTask).title}</span>
                   </Menu>
                 )}
@@ -327,7 +330,7 @@ export default function Cinema() {
                       </span>
                     </>
                   )}
-                  <BrandToggle className="cn-chip icon" iconOnly />
+                  {features.brand && <BrandToggle className="cn-chip icon" iconOnly />}
                 </ChipScroll>
               </div>
             </div>

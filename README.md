@@ -50,6 +50,14 @@ Ordre de construction conseillé : voir `docs/architecture.html`.
 
 `PRODUCT.md` décrit le positionnement et les principes de design (registre, ton, accessibilité).
 
+## Écrans masqués (MVP : studio Cinéma)
+
+Le MVP est le studio Cinéma, avec la bibliothèque. Image, Vidéo, Audio, Spot pub et Marque sont **éteints par défaut** dans la version construite : absents de la navigation, de « Envoyer vers » et de la barre latérale, et leurs adresses (`/image`, `/video`, `/audio`, `/spot`, `/brand`) renvoient au studio.
+
+- Pour en allumer, construire avec `VITE_FEATURES` (liste séparée par des virgules, ou `all`) : `VITE_FEATURES=image,video pnpm build`. Dans Cloudflare : variable de **build**, comme `VITE_CLERK_PUBLISHABLE_KEY`.
+- En développement, `apps/web/.env.development` allume tout. Pour voir ce que voient les utilisateurs : `VITE_FEATURES= pnpm dev`.
+- Drapeaux : `image`, `video`, `audio`, `spot`, `brand` (voir `apps/web/src/lib/features.js`). C'est de la présentation, pas une protection : l'API accepte toujours les mêmes demandes (la garde d'accès, c'est Clerk).
+
 ## Connexion (Clerk)
 
 Les écrans de création et toute l'API exigent une session Clerk ; un compte = un portefeuille de jetons et ses générations (`sub` du jeton).

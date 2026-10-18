@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Icon from '../../lib/icons.jsx'
 import icon from '../../assets/brand/yeelen-icon.svg'
 import { AccountMenu } from '../../lib/auth.jsx'
+import { features } from '../../lib/features.js'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
@@ -67,7 +68,7 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
 
       <div className="cs-grow" />
 
-      {promo && !collapsed && (
+      {promo && features.spot && !collapsed && (
         <section className="cs-promo" aria-label="Suggestion">
           <button type="button" className="cs-x" onClick={close} aria-label="Fermer la suggestion"><Icon name="close" size={12} /></button>
           <small>Passer de l’idée à la pub</small>

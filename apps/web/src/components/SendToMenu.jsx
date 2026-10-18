@@ -4,6 +4,7 @@ import { useAssets } from '../lib/assets.jsx'
 import { useHandoff } from '../lib/handoff.jsx'
 import { useToast } from '../lib/toasts.jsx'
 import { useBrand } from '../lib/brand.jsx'
+import { features } from '../lib/features.js'
 import { useNavigate } from 'react-router-dom'
 
 /** Télécharge le fichier d'un asset. */
@@ -50,7 +51,9 @@ export function useSendActions(asset, { withLibrary = false } = {}) {
   }
   if (withLibrary) list.push({ id: 'lib', icon: 'folder', title: 'Voir dans la bibliothèque', aside: 'Bibliothèque', run: () => navigate(`/library?asset=${encodeURIComponent(asset.id)}`) })
   list.push({ id: 'dl', icon: 'download', title: 'Télécharger', run: () => downloadAsset(assets, asset).catch(() => toast('Téléchargement impossible : fichier introuvable.')) })
-  return list
+  // Destinations éteintes par drapeau : Vidéo (créer, modifier) et Marque.
+  const hidden = new Set([...(features.video ? [] : ['start', 'end', 'extend', 'edit', 'last', 'first', 'audio']), ...(features.brand ? [] : ['logo'])])
+  return list.filter((a) => !hidden.has(a.id))
 }
 
 /** Bouton « Envoyer vers » (menu), pour les cartes de génération et les vignettes. */

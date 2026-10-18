@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import { JobsProvider } from './lib/jobs.jsx'
 import { AssetsProvider } from './lib/assets.jsx'
@@ -9,7 +9,8 @@ import { SpotsProvider } from './lib/spots.jsx'
 import { BrandProvider } from './lib/brand.jsx'
 import { ToastProvider } from './lib/toasts.jsx'
 import { Protected, SignInPage, SignUpPage } from './lib/auth.jsx'
-// Les écrans d'outils sont chargés à la demande : l'accueil n'embarque pas leur code.
+import { features } from './lib/features.js'
+// Écrans éteints par drapeau (lib/features.js) : on revient au studio Cinéma. Les écrans d'outils sont chargés à la demande : l'accueil n'embarque pas leur code.
 const Video = lazy(() => import('./pages/Video.jsx'))
 const ImageGen = lazy(() => import('./pages/ImageGen.jsx'))
 const Audio = lazy(() => import('./pages/Audio.jsx'))
@@ -40,12 +41,12 @@ export default function App() {
     <Suspense fallback={<div className="route-fallback" />}>
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/video" element={<Protected><Video /></Protected>} />
-      <Route path="/image" element={<Protected><ImageGen /></Protected>} />
-      <Route path="/audio" element={<Protected><Audio /></Protected>} />
+      <Route path="/video" element={features.video ? <Protected><Video /></Protected> : <Navigate to="/cinema" replace />} />
+      <Route path="/image" element={features.image ? <Protected><ImageGen /></Protected> : <Navigate to="/cinema" replace />} />
+      <Route path="/audio" element={features.audio ? <Protected><Audio /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/library" element={<Protected><Library /></Protected>} />
-      <Route path="/spot" element={<Protected><Spot /></Protected>} />
-      <Route path="/brand" element={<Protected><Brand /></Protected>} />
+      <Route path="/spot" element={features.spot ? <Protected><Spot /></Protected> : <Navigate to="/cinema" replace />} />
+      <Route path="/brand" element={features.brand ? <Protected><Brand /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/cinema" element={<Protected><Cinema /></Protected>} />
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
