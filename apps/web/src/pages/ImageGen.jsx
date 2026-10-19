@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { gradient } from '../lib/gradients.js'
 import Icon from '../lib/icons.jsx'
 import { ShellHeader, SkipLink } from '../components/Headers.jsx'
-import PromoBar from '../components/PromoBar.jsx'
 import useSpeech from '../lib/useSpeech.js'
 import GenerationTray from '../components/GenerationTray.jsx'
 import Menu from '../components/Menu.jsx'
@@ -58,9 +57,6 @@ export default function ImageGen() {
   return (
     <div className="pg shell image">
       <SkipLink />
-      <PromoBar badge="Offre spéciale" badgeClass="tm2" showTimer={false} cta="Obtenir l'offre illimitée">
-        Génération vidéo illimitée en 720p pendant 30 jours sur la formule Scale, remise de 54 %.
-      </PromoBar>
       <ShellHeader />
 
       <main className="mn" id="main" tabIndex={-1}>

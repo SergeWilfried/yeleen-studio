@@ -101,20 +101,12 @@ export default function Home() {
   useDocumentTitle(null)
   const [filter, setFilter] = useState('Tout')
   const [rows, setRows] = useState(ROWS_STEP)
-  const [promo, setPromo] = useState(true)
   const [annual, setAnnual] = useState(false)
   const [tier, setTier] = useState(0)
 
   return (
     <div className="pg home">
       <SkipLink />
-      {promo && (
-        <div className="promo">
-          <span>Remise supplémentaire sur les formules premium après inscription</span>
-          <a href="#">Obtenir ma remise</a>
-          <button type="button" className="x" aria-label="Fermer le bandeau" onClick={() => setPromo(false)}>✕</button>
-        </div>
-      )}
       <HomeHeader />
 
       <main className="wrap" id="main" tabIndex={-1}>

@@ -6,7 +6,6 @@ import { gradient } from '../lib/gradients.js'
 import { ShellHeader, SkipLink } from '../components/Headers.jsx'
 import { useLibrary } from '../lib/libraryDialog.jsx'
 import Menu from '../components/Menu.jsx'
-import PromoBar from '../components/PromoBar.jsx'
 import { Section, DropTile } from '../components/GenPanel.jsx'
 import SpotPlayer from '../components/SpotPlayer.jsx'
 import Segment from '../components/Segment.jsx'
@@ -176,9 +175,6 @@ export default function Spot() {
   return (
     <div className="pg shell video spot">
       <SkipLink />
-      <PromoBar seconds={2 * 3600 + 53 * 60 + 15} cta="Obtenir 50 % de remise">
-        Génération illimitée sur les formules Max. Remise personnelle de 50 %
-      </PromoBar>
       <ShellHeader />
 
       <main className="app" id="main" tabIndex={-1}>

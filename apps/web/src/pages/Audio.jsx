@@ -17,7 +17,6 @@ import { logoFor } from '../lib/modelLogos.js'
 import { flagFor } from '../lib/flags.js'
 import Flag from '../components/Flag.jsx'
 import ModelLogo from '../components/ModelLogo.jsx'
-import PromoBar from '../components/PromoBar.jsx'
 import '../styles/shell.css'
 import '../styles/audio.css'
 
@@ -78,9 +77,6 @@ export default function Audio() {
   return (
     <div className="pg shell audio">
       <SkipLink />
-      <PromoBar seconds={2 * 3600 + 48 * 60 + 22} cta="Obtenir 50 % de remise">
-        Génération illimitée sur les formules Max. Remise personnelle de 50 %
-      </PromoBar>
       <ShellHeader />
 
       <main className="app" id="main" tabIndex={-1}>

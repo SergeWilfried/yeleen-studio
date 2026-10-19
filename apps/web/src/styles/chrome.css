@@ -1,11 +1,4 @@
-/* Chrome partagé : bandeau promo sombre, en-tête vert primaire (var(--lime)). */
-body .pg .promo{background:#050506;color:var(--ink);border-bottom:1px solid #1d1e21}
-body .pg .promo a{background:var(--lime);color:#111}
-body .pg .promo a:hover{filter:brightness(.92)}
-body .pg .promo .x,body .pg .promo .px{color:var(--ink)}
-body .pg .promo .px:hover{background:rgba(255,255,255,.1)}
-body .pg .tt{background:var(--fill);color:#fff}
-body .pg .pcta{background:var(--lime);color:#111}
+/* Chrome partagé : en-tête vert primaire (var(--lime)). */
 
 body .pg .nv{background:var(--lime);color:#111}
 body .pg .lg{background:none}
