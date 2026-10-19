@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { RechargeButton } from '../../lib/rechargeDialog.jsx'
 import Icon from '../../lib/icons.jsx'
 import { FAILURES, jetonLabel, jetons, useJobs } from '../../lib/jobs.jsx'
 
@@ -29,7 +29,7 @@ export function FailureNotice({ job }) {
     <div className="gx-err" role="alert">
       <b>{f.message}</b>
       <span>{f.hint}</span>
-      {job.failure === 'insufficient' && <Link className="gx-topup" to="/recharge">Recharger mes cauris</Link>}
+      {job.failure === 'insufficient' && <RechargeButton className="gx-topup">Recharger mes cauris</RechargeButton>}
     </div>
   )
 }

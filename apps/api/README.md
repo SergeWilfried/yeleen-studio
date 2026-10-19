@@ -3,8 +3,9 @@
 Cloudflare Worker (Hono). Point d'entrée unique pour tout ce qui coûte de l'argent.
 
 - `src/pricing.js` : prix d'une génération à partir de `@studio/catalog`, validation des options.
-- `src/inputs.js` : entrée envoyée à fal pour chaque modèle (champs lus dans les schémas OpenAPI de fal) et format commun des sorties.
+- `src/inputs.js` : entrée envoyée à fal pour chaque modèle (champs lus dans les schémas OpenAPI de fal), tâche envoyée à Runware (`runwareInput`, règles lues dans https://runware.ai/docs/models/…) et format commun des sorties.
 - `src/fal.js` : client de la file fal (submit, status, result, cancel), sans dépendance.
+- `src/runware.js` : client de Runware (lancement d'une vidéo, puis `getResponse` jusqu'au résultat), sans dépendance. Pas d'annulation chez Runware.
 - `src/wallet.js` : règles des jetons (débit, remboursement, crédit), idempotentes. Sans dépendance, testées.
 - `src/storage.js` : copie des sorties dans R2 et lecture par plage.
 - `src/paygate.js` : client de paygate (moyens, encaissement, lecture) et vérification de la signature des webhooks.
@@ -17,9 +18,9 @@ Cloudflare Worker (Hono). Point d'entrée unique pour tout ce qui coûte de l'ar
 
 ## Générations réelles
 
-Seedance 2.5 (un modèle, trois points d'accès fal choisis selon les entrées : texte, image de départ et de fin, ou références d'images, de vidéos et d'audio, avec prolongation et modification d'une vidéo ; facturé au jeton par fal), image (Nano Banana Pro et 2, Flux 3), voix (ElevenLabs v3, multilingue v2, turbo v2.5) et vidéo de l'onglet Créer (Kling 3.0 Pro, MiniMax H3 Max et Turbo, LTX 2.3 et 2.5, audio vers vidéo) passent par fal. Les images et l'audio d'entrée sont d'abord déposés via `POST /uploads`. Restent simulés dans l'application : l'onglet Modifier de la vidéo (prolonger, modifier…) et le montage du Spot.
+Seedance 2.5 (texte, image de départ et de fin, ou références d'images, de vidéos et d'audio, avec prolongation et modification d'une vidéo), Kling 3.0 Pro et Standard, et Veo 3.1 Lite passent par Runware (`RUNWARE_KEY`), moitié moins cher que fal pour Seedance ; le catalogue (`provider: 'runware'`) en décide, et le prix tient compte du son quand Runware le facture à part. Image (Nano Banana Pro et 2, Flux 3), voix (ElevenLabs v3, multilingue v2, turbo v2.5), MiniMax H3 Max et Turbo, LTX 2.3 et 2.5 et l'audio vers vidéo passent par fal, comme les chaînes (workflows fal : Seedance et Kling Pro y gardent leur prix fal). Les images et l'audio d'entrée sont d'abord déposés via `POST /uploads`. Restent simulés dans l'application : l'onglet Modifier de la vidéo (prolonger, modifier…) et le montage du Spot.
 
-1. `cp .dev.vars.example .dev.vars` puis renseignez `FAL_KEY` (jamais dans `apps/web`).
+1. `cp .dev.vars.example .dev.vars` puis renseignez `FAL_KEY` et `RUNWARE_KEY` (jamais dans `apps/web`).
 2. `pnpm dev:api` (http://localhost:8787), puis `pnpm dev`. L'application active le mode réel quand `VITE_API_URL` est défini (`apps/web/.env.development`).
 3. En développement, un compte neuf reçoit 240 jetons.
 

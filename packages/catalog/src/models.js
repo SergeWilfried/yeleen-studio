@@ -6,6 +6,13 @@
  * Source : schémas d'entrée et page de prix fal.ai. `verified: true` = schéma lu en entier ; `verified: false` =
  * prix lu mais capacités à confirmer. En production, générez ces descripteurs depuis l'OpenAPI de chaque endpoint
  * (les enums `duration`, `resolution`, `aspect_ratio`, la présence de `end_image_url`, `generate_audio`, etc.).
+ *
+ * Fournisseur : fal par défaut. `provider: 'runware'` + `air` (identifiant du modèle chez Runware) : la génération passe par
+ * Runware (https://runware.ai/docs/models/…), moins cher pour ces modèles. `fal` garde alors le point d'accès et le prix fal,
+ * pour les chaînes, qui s'exécutent en workflow fal (voir chainDefs.js).
+ *
+ * Prix (`price`, en USD) : `usd` ou `byRes` (par résolution) ; `silentUsd` / `silentByRes` : tarif sans piste sonore, quand le
+ * fournisseur le facture moins cher ; `videoByRes` : tarif quand une vidéo est fournie en entrée (référence, modification).
  */
 
 // Conversion fournisseur (USD) → jetons : 1 jeton ≈ 33 FCFA (formule Pro) ≈ 0,0556 $, avec une marge ×2.
@@ -17,38 +24,67 @@ export const VIDEO_MODELS = [
   {
     id: 'kling-3-pro',
     input: 'image',
-    endpoint: 'fal-ai/kling-video/v3/pro/image-to-video',
+    provider: 'runware',
+    air: 'klingai:kling-video@3-pro',
     name: 'Kling 3.0 Pro',
-    tagline: 'Mouvement fluide, rendu cinéma, voix et sons intégrés',
+    tagline: 'Mouvement fluide, rendu cinéma 1080p, voix et sons intégrés',
     badge: 'TOP',
     tags: ['Audio natif', 'Multi-plans', 'Image de fin', 'Personnages'],
-    price: { usd: 0.14, per: 's' },
+    // Runware : 0,168 $/s avec le son, 0,112 $/s sans (1080p). fal facture les mêmes tarifs ; le catalogue disait 0,14 $ dans les deux cas.
+    price: { usd: 0.168, silentUsd: 0.112, per: 's' },
+    fal: { endpoint: 'fal-ai/kling-video/v3/pro/image-to-video', price: { usd: 0.168, silentUsd: 0.112, per: 's' } },
     verified: true,
     caps: {
       duration: { min: 3, max: 15 },
       resolutions: null, // aucun paramètre : la résolution suit l'image de départ
       ratio: 'image', // le format suit l'image de départ
-      audio: 'toggle', // generate_audio (activé par défaut)
-      startFrame: 'required', // start_image_url obligatoire
-      endFrame: true, // end_image_url
+      audio: 'toggle', // providerSettings.klingai.sound
+      startFrame: 'required', // inputs.frameImages : l'image de départ est obligatoire (les personnages n'existent qu'en image → vidéo)
+      endFrame: true,
       audioRef: false,
-      elements: true, // personnages et objets référencés par @Element1…
-      multiShot: true, // multi_prompt : un prompt et une durée par plan
+      elements: true, // personnages et objets référencés par @Element1… (inputs.elements)
+      maxElements: 3, // avec une image de départ, Runware en accepte 3
+      multiShot: true, // providerSettings.klingai.multiPrompt : un prompt et une durée par plan
+    },
+  },
+  {
+    id: 'kling-3-std',
+    input: 'image',
+    provider: 'runware',
+    air: 'klingai:kling-video@3-standard',
+    name: 'Kling 3.0 Standard',
+    tagline: 'Le même Kling 3.0 en 720p, un tiers moins cher',
+    tags: ['Audio natif', 'Multi-plans', 'Image de fin', 'Personnages'],
+    price: { usd: 0.126, silentUsd: 0.084, per: 's' }, // Runware, 720p
+    verified: true,
+    caps: {
+      duration: { min: 3, max: 15 },
+      resolutions: null,
+      ratio: 'image',
+      audio: 'toggle',
+      startFrame: 'required',
+      endFrame: true,
+      audioRef: false,
+      elements: true,
+      maxElements: 3,
+      multiShot: true,
     },
   },
   {
     id: 'seedance-2-5',
     input: 'both',
-    // Un seul modèle, trois points d'accès fal selon ce que l'on fournit : texte seul, image(s) de départ et de fin, ou références.
-    endpoint: 'bytedance/seedance-2.5/us/image-to-video',
-    endpoints: { text: 'bytedance/seedance-2.5/us/text-to-video', image: 'bytedance/seedance-2.5/us/image-to-video', reference: 'bytedance/seedance-2.5/us/reference-to-video' },
+    provider: 'runware',
+    air: 'bytedance:seedance@2.5',
     name: 'Seedance 2.5',
     tagline: 'Références d’images, de vidéos et d’audio, durées jusqu’à 30 s',
     badge: 'TOP',
     tags: ['Références', 'Audio natif', 'Jusqu’à 30 s', 'Prolonger et modifier une vidéo'],
-    // fal facture au jeton : 0,2205 / 0,473 / 1,164 $ par seconde générée en 480p / 720p / 1080p. Avec des vidéos de référence,
-    // le tarif est multiplié par 0,6 et la durée des vidéos fournies s'ajoute à celle de la sortie.
-    price: { per: 's', byRes: { '480p': 0.2205, '720p': 0.473, '1080p': 1.164 }, videoInput: 0.6 },
+    // Runware : 0,102 / 0,23 / 0,614 $ par seconde générée en 480p / 720p / 1080p ; avec une vidéo en entrée (référence, modification,
+    // prolongation), 0,131 / 0,295 / 0,734 $ par seconde générée. Moitié moins que fal.
+    price: { per: 's', byRes: { '480p': 0.102, '720p': 0.23, '1080p': 0.614 }, videoByRes: { '480p': 0.131, '720p': 0.295, '1080p': 0.734 } },
+    // fal facture au jeton : 0,2205 / 0,473 / 1,164 $ par seconde ; avec des vidéos de référence, le tarif est multiplié par 0,6 et la
+    // durée des vidéos fournies s'ajoute à celle de la sortie.
+    fal: { endpoint: 'bytedance/seedance-2.5/us/image-to-video', price: { per: 's', byRes: { '480p': 0.2205, '720p': 0.473, '1080p': 1.164 }, videoInput: 0.6 } },
     verified: true,
     caps: {
       duration: { min: 4, max: 30, integer: true },
@@ -63,6 +99,31 @@ export const VIDEO_MODELS = [
       cameraMotion: false,
       references: { images: 30, videos: 10, audios: 10 }, // « @Image1 », « @Video1 », « @Audio1 » dans le prompt
       tasks: ['reference', 'editing', 'extension'], // avec une vidéo de référence : la prolonger ou la modifier
+    },
+  },
+  {
+    id: 'veo-3-1-lite',
+    input: 'both',
+    provider: 'runware',
+    air: 'google:veo@3.1-lite',
+    name: 'Veo 3.1 Lite',
+    tagline: 'Google Veo à petit prix : idéal pour essayer une idée',
+    badge: 'ÉCO',
+    tags: ['Petit prix', 'Audio natif', 'Image de fin'],
+    // Runware : 720p 0,05 $/s avec le son, 0,03 $/s sans ; 1080p 0,08 / 0,05 $/s.
+    price: { per: 's', byRes: { '720p': 0.05, '1080p': 0.08 }, silentByRes: { '720p': 0.03, '1080p': 0.05 } },
+    verified: true,
+    caps: {
+      duration: { values: [4, 6, 8] },
+      resolutions: ['720p', '1080p'],
+      ratios: ['16:9', '9:16'], // avec une image de départ, le format suit l'image
+      audio: 'toggle', // providerSettings.google.generateAudio
+      startFrame: 'optional',
+      endFrame: true,
+      audioRef: false,
+      elements: false,
+      multiShot: false,
+      cameraMotion: false,
     },
   },
   {
@@ -327,16 +388,26 @@ export const durationOptions = (caps, res, fps) => {
   return DURATION_PICKS.filter((v) => v >= d.min && v <= d.max)
 }
 
-/** Prix par seconde en USD : fixe, ou selon la résolution. */
-export const usdPerSecond = (model, res) => model.price.byRes ? (model.price.byRes[res] ?? Math.min(...Object.values(model.price.byRes))) : model.price.usd
 /**
- * Coût d'une vidéo en jetons. Pour un modèle qui accepte des vidéos de référence (`price.videoInput`), fal facture aussi leur durée,
- * à un tarif multiplié par `videoInput` : `inputSecs` est la durée totale des vidéos fournies.
+ * Prix par seconde en USD : fixe, ou selon la résolution ; sans le son (`sound: false`) quand le fournisseur le facture moins cher,
+ * et avec une vidéo en entrée (`video: true`) quand il a un tarif à part. Sans précision, le son compte : c'est le tarif le plus haut.
  */
-export const videoCost = (model, seconds, res, { inputSecs = 0 } = {}) => {
-  const rate = usdPerSecond(model, res)
-  const usd = inputSecs > 0 && model.price.videoInput ? rate * model.price.videoInput * (seconds + inputSecs) : rate * seconds
-  return toJetons(usd)
+export const usdPerSecond = (model, res, { sound = true, video = false } = {}) => {
+  const p = model.price
+  const table = (video && p.videoByRes) || (!sound && p.silentByRes) || p.byRes
+  if (table) return table[res] ?? Math.min(...Object.values(table))
+  return !sound && p.silentUsd != null ? p.silentUsd : p.usd
+}
+/**
+ * Coût d'une vidéo en jetons. `inputSecs` : durée totale des vidéos fournies en entrée. Runware applique alors son tarif « vidéo en
+ * entrée » (`price.videoByRes`) à la seule durée produite ; fal (`price.videoInput`) facture aussi la durée des vidéos fournies, à
+ * un tarif multiplié par `videoInput`.
+ */
+export const videoCost = (model, seconds, res, { inputSecs = 0, sound = true } = {}) => {
+  const p = model.price
+  const video = inputSecs > 0
+  if (video && p.videoInput) return toJetons(usdPerSecond(model, res, { sound }) * p.videoInput * (seconds + inputSecs))
+  return toJetons(usdPerSecond(model, res, { sound, video }) * seconds)
 }
 
 // Mouvements de caméra (camera_motion) : « auto » n'envoie rien.
@@ -352,10 +423,17 @@ export const TRYON_MODEL = { id: 'fashn-tryon-v1-6', endpoint: 'fal-ai/fashn/try
 export const tryonCost = () => toJetons(TRYON_MODEL.price.usd)
 export const voiceCost = (model, chars) => toJetons(model.price.usd * Math.max(1, Math.ceil(chars / 1000)))
 
+/** Tarif le plus bas d'un modèle en USD (selon la résolution et le son), et s'il en a plusieurs (« dès … »). */
+export const lowestRate = (model) => {
+  const p = model.price
+  const rates = [...Object.values(p.byRes ?? {}), ...Object.values(p.silentByRes ?? {}), p.usd, p.silentUsd].filter((v) => typeof v === 'number')
+  return { usd: Math.min(...rates), from: rates.length > 1 }
+}
+
 /** Prix affiché dans le sélecteur : « ≈ 2,5 jetons / s », « ≈ 5,4 jetons / image »… */
 export const priceLabel = (model) => {
   const unit = { s: 's', image: 'image', Mpx: 'Mpx', '1 000 caractères': '1 000 car.' }[model.price.per]
-  const from = model.price.byRes ? Math.min(...Object.values(model.price.byRes)) : model.price.usd
-  const n = toJetons(from)
-  return `${model.price.byRes ? 'dès ' : ''}≈ ${n.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} cauri${n >= 2 ? 's' : ''} / ${unit}`
+  const low = lowestRate(model)
+  const n = toJetons(low.usd)
+  return `${low.from ? 'dès ' : ''}≈ ${n.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} cauri${n >= 2 ? 's' : ''} / ${unit}`
 }

@@ -65,52 +65,15 @@ const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !=
  * Les images et l'audio d'entrée sont des adresses du stockage de fal (voir POST /uploads).
  */
 
-/** Le point d'accès fal d'un modèle : un seul, ou l'un de trois selon ce que la demande contient (Seedance). */
-export function endpointFor(model, req) {
-  if (!model.endpoints) return model.endpoint
-  const hasRefs = Boolean(req.references?.length || req.audioUrl)
-  return model.endpoints[hasRefs ? 'reference' : req.startImageUrl || req.endImageUrl ? 'image' : 'text']
-}
-
-/**
- * Seedance 2.5. Références : « @Image1 », « @Video1 », « @Audio1 » dans le prompt, dans l'ordre de `references` pour chaque type ;
- * l'image de départ, l'image de fin et l'audio fournis à part passent après, pour ne pas décaler ces numéros.
- */
-function seedanceInput(model, req) {
-  const text = [req.plans.map((p) => p.text.trim()).filter(Boolean).join(' '), req.brandStyle].filter(Boolean).join(', ')
-  const editing = req.task === 'editing'
-  const base = { prompt: text || undefined, resolution: req.resolution, aspect_ratio: req.ratio ?? 'auto', duration: editing ? 'auto' : String(Math.round(req.secs)), generate_audio: req.sound !== false, end_user_id: req.endUserId }
-  const kind = endpointFor(model, req) === model.endpoints.reference ? 'reference' : endpointFor(model, req) === model.endpoints.image ? 'image' : 'text'
-  if (kind === 'text') return clean(base)
-  if (kind === 'image') return clean({ ...base, image_url: req.startImageUrl ?? req.endImageUrl, end_image_url: req.startImageUrl ? req.endImageUrl : undefined })
-  const refs = req.references ?? []
-  const of = (k) => refs.filter((r) => r.kind === k).map((r) => r.url)
-  const images = [...of('image'), req.startImageUrl, req.endImageUrl].filter(Boolean)
-  const audios = [...of('audio'), req.audioUrl].filter(Boolean)
-  const videos = of('video')
-  return clean({ ...base, task: req.task ?? 'reference', image_urls: images.length ? images : undefined, video_urls: videos.length ? videos : undefined, audio_urls: audios.length ? audios : undefined })
-}
+/** Le point d'accès d'un modèle : chez fal, son endpoint ; chez Runware, son identifiant (AIR). */
+export const endpointFor = (model) => (model.provider === 'runware' ? model.air : model.endpoint)
 
 function videoInput(model, req) {
-  if (model.id === 'seedance-2-5') return seedanceInput(model, req)
   const text = [req.plans.map((p) => p.text.trim()).filter(Boolean).join(' '), req.brandStyle].filter(Boolean).join(', ')
   const secs = req.secs
   const res = req.resolution
   const sound = req.sound !== false
 
-  if (model.id === 'kling-3-pro') {
-    const multi = req.plans.length > 1
-    return clean({
-      start_image_url: req.startImageUrl,
-      end_image_url: req.endImageUrl,
-      prompt: multi ? undefined : text,
-      multi_prompt: multi ? req.plans.map((p) => ({ prompt: p.text.trim(), duration: String(p.dur) })) : undefined,
-      duration: String(Math.round(secs)),
-      generate_audio: sound,
-      // Personnages et objets cités dans le prompt par @Element1, @Element2… : une image (face) ou une vidéo.
-      elements: req.elements?.length ? req.elements.map((e) => (e.kind === 'video' ? { video_url: e.url } : { frontal_image_url: e.url })) : undefined,
-    })
-  }
   if (model.id === 'h3-max' || model.id === 'h3-max-turbo') {
     return clean({
       prompt: text,
@@ -137,4 +100,89 @@ function videoInput(model, req) {
     generate_audio: sound,
     camera_motion: model.caps.cameraMotion && req.camera && req.camera !== 'none' ? req.camera : undefined,
   })
+}
+
+/**
+ * Runware (modèles du catalogue avec `provider: 'runware'`) : un format commun (`positivePrompt`, `duration`, `inputs.*`, `settings`,
+ * `providerSettings`) et des règles propres à chaque modèle, lues dans https://runware.ai/docs/models/<modèle> (« Compatibility &
+ * Validation »). Les fichiers d'entrée restent des adresses du stockage de fal (POST /uploads) : Runware les télécharge.
+ */
+// Dimensions acceptées par format et résolution (Seedance 2.5 ; Veo 3.1 Lite n'en garde que 16:9 et 9:16 en 720p et 1080p).
+const DIMS = {
+  '480p': { '21:9': [992, 432], '16:9': [854, 480], '4:3': [752, 560], '1:1': [640, 640], '3:4': [560, 752], '9:16': [480, 854] },
+  '720p': { '21:9': [1470, 630], '16:9': [1280, 720], '4:3': [1112, 834], '1:1': [960, 960], '3:4': [834, 1112], '9:16': [720, 1280] },
+  '1080p': { '21:9': [2206, 946], '16:9': [1920, 1080], '4:3': [1664, 1248], '1:1': [1440, 1440], '3:4': [1248, 1664], '9:16': [1080, 1920] },
+}
+const size = (res, r) => { const d = DIMS[res]?.[r]; return d ? { width: d[0], height: d[1] } : {} }
+const frames = (start, end) => [start && { image: start, frame: 'first' }, end && { image: end, frame: 'last' }].filter(Boolean)
+const listOrNone = (a) => (a.length ? a : undefined)
+
+/**
+ * Seedance 2.5 : texte seul, images de départ et de fin (`frameImages`), références (« @Image1 », « @Video1 », « @Audio1 » dans le
+ * prompt, dans l'ordre de `references` ; l'image de départ, l'image de fin et l'audio fournis à part passent après), ou une vidéo à
+ * modifier ou prolonger (`inputs.video`, la première vidéo citée). `frameImages` ne se combine pas avec des références, et un format
+ * choisi (`width`/`height`) ne se combine ni avec `resolution` ni avec des images de départ ou une vidéo source.
+ */
+function seedanceRunware(req, text) {
+  const refs = req.references ?? []
+  const of = (k) => refs.filter((r) => r.kind === k).map((r) => r.url)
+  const task = req.task ?? 'reference'
+  const base = { positivePrompt: text || undefined, duration: Math.round(req.secs), settings: { audio: req.sound !== false } }
+  const images = [...of('image'), req.startImageUrl, req.endImageUrl].filter(Boolean)
+  const audios = [...of('audio'), req.audioUrl].filter(Boolean)
+  if (task === 'editing' || task === 'extension') {
+    const [video, ...others] = of('video')
+    return clean({
+      ...base,
+      duration: task === 'editing' ? 'auto' : base.duration, // une modification dure autant que la vidéo source
+      resolution: req.resolution,
+      settings: { ...base.settings, operation: task === 'editing' ? 'edit' : 'extend' },
+      inputs: clean({ video, referenceVideos: listOrNone(others), referenceImages: listOrNone(images), referenceAudios: listOrNone(audios) }),
+    })
+  }
+  const hasRefs = refs.length > 0 || Boolean(req.audioUrl)
+  if (!hasRefs && (req.startImageUrl || req.endImageUrl)) return clean({ ...base, resolution: req.resolution, inputs: { frameImages: frames(req.startImageUrl, req.endImageUrl) } })
+  const sized = req.ratio && req.ratio !== 'auto' ? size(req.resolution, req.ratio) : { resolution: req.resolution }
+  if (!hasRefs) return clean({ ...base, ...sized })
+  return clean({ ...base, ...sized, inputs: clean({ referenceImages: listOrNone(images), referenceVideos: listOrNone(of('video')), referenceAudios: listOrNone(audios) }) })
+}
+
+/**
+ * Kling 3.0 (Pro et Standard) : image vers vidéo, avec image de fin, personnages et objets (`inputs.elements`, cités dans le prompt
+ * par « <<<element_1>>> » : on traduit nos « @Element1 ») et plusieurs plans (`multiPrompt`, qui remplace `positivePrompt`).
+ * Un élément image demande une image de face et au moins une image : on donne la même.
+ */
+function klingRunware(req, text) {
+  const cite = (t) => t.replace(/@Element(\d+)/g, '<<<element_$1>>>')
+  const multi = req.plans.length > 1
+  const elements = (req.elements ?? []).map((e, i) => {
+    const head = { id: `element_${i + 1}`, description: `Élément ${i + 1}` }
+    return e.kind === 'video' ? { ...head, videos: [e.url] } : { ...head, frontalImage: e.url, images: [e.url] }
+  })
+  return clean({
+    positivePrompt: multi ? undefined : cite(text),
+    duration: Math.round(req.secs),
+    inputs: clean({ frameImages: frames(req.startImageUrl, req.endImageUrl), elements: listOrNone(elements) }),
+    providerSettings: { klingai: clean({ sound: req.sound !== false, multiPrompt: multi ? req.plans.map((p) => ({ prompt: cite(p.text.trim()), duration: Math.round(p.dur) })) : undefined }) },
+  })
+}
+
+/** Veo 3.1 Lite : sans image, un format (`width`/`height`) ; avec une image de départ ou de fin, `resolution` et le format de l'image. */
+function veoRunware(req, text) {
+  const fr = frames(req.startImageUrl, req.endImageUrl)
+  return clean({
+    positivePrompt: text,
+    duration: req.secs,
+    ...(fr.length ? { resolution: req.resolution } : size(req.resolution, req.ratio ?? '16:9')),
+    inputs: fr.length ? { frameImages: fr } : undefined,
+    providerSettings: { google: { generateAudio: req.sound !== false } },
+  })
+}
+
+/** Tâche `videoInference` envoyée à Runware pour un modèle du catalogue servi par Runware (sans `taskType` ni `taskUUID`). */
+export function runwareInput(model, req) {
+  const text = [req.plans.map((p) => p.text.trim()).filter(Boolean).join(' '), req.brandStyle].filter(Boolean).join(', ')
+  const build = model.id === 'seedance-2-5' ? seedanceRunware : model.id.startsWith('kling-3') ? klingRunware : model.id === 'veo-3-1-lite' ? veoRunware : null
+  if (!build) throw new Error(`modèle Runware sans entrée : ${model.id}`)
+  return { model: model.air, ...build(req, text) }
 }

@@ -1,4 +1,4 @@
-import { toJetons } from '@studio/catalog'
+import { lowestRate, toJetons } from '@studio/catalog'
 import { logoFor } from './modelLogos.js'
 
 const KIND_ICON = { video: 'film', image: 'img', audio: 'sound' }
@@ -26,7 +26,7 @@ export function modelItem(model, kind) {
   } else {
     for (const t of (model.tags ?? []).slice(0, 2)) specs.push({ text: t })
   }
-  const from = model.price.byRes ? Math.min(...Object.values(model.price.byRes)) : model.price.usd
+  const low = lowestRate(model)
   return {
     id: model.id,
     icon: KIND_ICON[kind],
@@ -34,6 +34,6 @@ export function modelItem(model, kind) {
     title: model.name,
     badge: model.badge,
     specs,
-    price: { from: Boolean(model.price.byRes), n: toJetons(from), unit: UNIT[model.price.per] },
+    price: { from: low.from, n: toJetons(low.usd), unit: UNIT[model.price.per] },
   }
 }

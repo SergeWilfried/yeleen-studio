@@ -1,5 +1,7 @@
 # Copiez ce fichier en .dev.vars (ignoré par git) et renseignez la clé. Ne la mettez jamais dans apps/web.
 FAL_KEY=
+# Clé Runware (https://my.runware.ai) : Seedance 2.5, Kling 3.0 et Veo 3.1 Lite passent par Runware. Sans elle, ils sont refusés (503).
+RUNWARE_KEY=
 ENV=dev
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
 MAX_JOB_COST=150

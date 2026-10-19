@@ -6,6 +6,7 @@ import { AccountMenu } from '../../lib/auth.jsx'
 import { features } from '../../lib/features.js'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
 import { useLibrary } from '../../lib/libraryDialog.jsx'
+import { useRecharge } from '../../lib/rechargeDialog.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
 const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } catch { return false } }
@@ -26,6 +27,7 @@ const NAV = [
 export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
   const { balance } = useJobs()
   const { openLibrary } = useLibrary()
+  const { openRecharge } = useRecharge()
   const [promo, setPromo] = useState(() => !dismissed())
   const close = () => { setPromo(false); try { localStorage.setItem(PROMO, 'off') } catch { /* ignoré */ } }
 
@@ -88,11 +90,11 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
       </button>
 
       <div className="cs-foot">
-        <Link className="cs-price" to="/recharge" title={collapsed ? 'Recharger' : undefined}>
+        <button type="button" className="cs-price" aria-haspopup="dialog" title={collapsed ? 'Recharger' : undefined} onClick={() => openRecharge()}>
           <span className="cs-ic red"><Icon name="diamond" size={16} /></span>
           {!collapsed && <span>Recharger</span>}
           {collapsed && <span className="sr-only">Recharger mes cauris</span>}
-        </Link>
+        </button>
         <div className="cs-user">
           <AccountMenu fallback={<span className="av" aria-hidden="true" />} />
           {!collapsed && <span className="cs-who">Mon compte<small>{jetons(balance)} cauris</small></span>}

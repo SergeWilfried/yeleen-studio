@@ -13,6 +13,7 @@
  *           VITE_CLERK_PUBLISHABLE_KEY (pk_…) pour le site, dans l'environnement ; `check` refuse un déploiement sans eux (sauf --no-auth).
  * Recharges Mobile Money (paygate) : PAYGATE_URL (adresse de paygate, variable), PAYGATE_KEY (pgk_…) et PAYGATE_WEBHOOK_SECRET (whsec_…),
  *           secrets ; facultatifs : sans eux, /topups répond 503. Tenant « sandbox » de paygate hors production.
+ * Runware : RUNWARE_KEY, secret ; sans lui, Seedance 2.5, Kling 3.0 et Veo 3.1 Lite sont refusés (503), sans débit.
  * Premier déploiement : CLERK_ISSUER=… VITE_CLERK_PUBLISHABLE_KEY=… FAL_KEY=… node scripts/deploy.mjs all   (la clé n'est lue que de l'environnement, jamais affichée).
  * Connexion : `pnpm exec wrangler login`, ou CLOUDFLARE_API_TOKEN et CLOUDFLARE_ACCOUNT_ID pour l'intégration continue.
  */
@@ -126,12 +127,15 @@ function secretNames() {
   return list.code === 0 ? (() => { try { return JSON.parse(list.out.slice(list.out.indexOf('['))).map((s) => s.name) } catch { return [] } })() : []
 }
 
-/** Secret de l'API, lu seulement dans l'environnement. `required` : FAL_KEY ; les secrets paygate sont facultatifs (recharges coupées sans eux). */
-function ensureSecret(name, names, { required = true } = {}) {
+/**
+ * Secret de l'API, lu seulement dans l'environnement. `required` : FAL_KEY ; les autres sont facultatifs, et `missing` dit ce qui
+ * reste coupé sans eux (recharges Mobile Money, modèles servis par Runware).
+ */
+function ensureSecret(name, names, { required = true, missing = 'les recharges Mobile Money restent coupées' } = {}) {
   const key = process.env[name]
   if (names.includes(name) && !key) return ok(`secret ${name} déjà défini (pour le changer : ${name}=… node scripts/deploy.mjs api)`)
   if (!key) {
-    if (!required) return warn(`secret ${name} absent : les recharges Mobile Money restent coupées (${name}=… node scripts/deploy.mjs api)`)
+    if (!required) return warn(`secret ${name} absent : ${missing} (${name}=… node scripts/deploy.mjs api)`)
     if (dry) return warn(`secret ${name} absent : il faudra le fournir (${name}=… node scripts/deploy.mjs api)`)
     fail(`Le secret ${name} n’existe pas encore. Relancez avec la clé dans l’environnement :  ${name}=… node scripts/deploy.mjs api`)
   }
@@ -147,6 +151,7 @@ function ensureSecrets() {
   ensureSecret('FAL_KEY', names)
   ensureSecret('PAYGATE_KEY', names, { required: false })
   ensureSecret('PAYGATE_WEBHOOK_SECRET', names, { required: false })
+  ensureSecret('RUNWARE_KEY', names, { required: false, missing: 'Seedance 2.5, Kling 3.0 et Veo 3.1 Lite sont refusés' })
 }
 
 /** Base D1 : la crée si besoin et écrit son identifiant dans apps/api/wrangler.jsonc (à valider dans git : la construction Git de Cloudflare le lit). */

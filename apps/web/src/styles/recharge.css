@@ -1,119 +1,147 @@
-/* Recharge Mobile Money : une colonne centrée, un parcours en quatre étapes, une seule action principale (vert) par étape. */
-.rc .rc-main{width:min(100%,680px);margin:0 auto;padding:28px 16px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
-.rc .rc-head h1{font-size:34px;line-height:1}
-.rc .rc-head p{margin:8px 0 0;color:var(--ink-2);line-height:1.5}
-.rc .rc-head b{color:var(--ink);font-variant-numeric:tabular-nums}
-.rc .rc-card{display:flex;flex-direction:column;gap:18px;padding:20px;border:1px solid var(--line-soft);border-radius:16px;background:var(--surface)}
-.rc .rc-card h2{font-size:18px}
-.rc fieldset{margin:0;padding:0;border:0;min-width:0}
+/* Recharge Mobile Money : une fenêtre en quatre étapes. En-tête et pied fixes, contenu défilant ; une seule action principale (vert), toujours à droite du pied. */
+dialog.rc-dlg{--rc-pad:24px;font-family:'Instrument Sans',Helvetica,sans-serif;width:min(600px,94vw);max-height:min(760px,92vh);padding:0;border:1px solid var(--line-soft);border-radius:22px;background:var(--surface);color:var(--ink);overflow:hidden;box-sizing:border-box}
+dialog.rc-dlg[open]{display:flex;flex-direction:column}
+dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 
-/* Étapes */
-.rc .rc-stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.rc .rc-stepper li>*{display:flex;align-items:center;gap:8px;width:100%;padding:0 0 10px;border:0;border-bottom:3px solid var(--fill);background:none;color:var(--ink-4);font:inherit;font-size:13px;font-weight:600;text-align:left}
-.rc .rc-stepper i{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--fill);color:var(--ink-3);font-style:normal;font-size:12px;font-variant-numeric:tabular-nums}
-.rc .rc-stepper li.on>*{border-bottom-color:var(--lime);color:var(--ink)}
-.rc .rc-stepper li.on i{background:var(--lime);color:var(--on-lime)}
-.rc .rc-stepper li.done>*{border-bottom-color:#4b5a1c;color:var(--ink-2)}
-.rc .rc-stepper li.done i{background:#26300f;color:var(--lime)}
-.rc .rc-stepper button{cursor:pointer;min-height:44px;align-items:flex-end}
-.rc .rc-stepper span{min-height:44px;align-items:flex-end;box-sizing:border-box}
-.rc .rc-stepper button:hover{color:var(--ink)}
+.rc-top{flex:none;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px var(--rc-pad) 0}
+.rc-top h2{margin:0;font-size:26px;line-height:1.1}
+.rc-top p{margin:6px 0 0;color:var(--ink-3);font-size:14px}
+.rc-top b{color:var(--ink);font-variant-numeric:tabular-nums}
+.rc-x{flex:none;margin:-4px -6px 0 0;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:50%;background:var(--fill);color:var(--ink);cursor:pointer}
+.rc-x:hover{background:var(--line)}
+
+.rc-body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:16px var(--rc-pad) 20px}
+.rc-foot{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px var(--rc-pad);border-top:1px solid var(--line-soft)}
+/* Une seule action : à droite, comme l'action principale des autres étapes ; « Retour » seul reste à gauche. */
+.rc-foot>:only-child.rc-pay{margin-left:auto}
+
+/* Étapes : pastille et libellé sur une même ligne, centrés verticalement ; la barre sous chaque étape marque l'avancée. */
+.rc-stepper{flex:none;list-style:none;margin:16px var(--rc-pad) 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.rc-stepper li>*{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 0 8px;border:0;border-bottom:3px solid var(--fill);background:none;color:var(--ink-4);font:inherit;font-size:13px;font-weight:600;line-height:1;text-align:left;box-sizing:border-box}
+.rc-stepper li>* span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-stepper i{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--fill);color:var(--ink-3);font-style:normal;font-size:12px;font-variant-numeric:tabular-nums}
+.rc-stepper li.on>*{border-bottom-color:var(--lime);color:var(--ink)}
+.rc-stepper li.on i{background:var(--lime);color:var(--on-lime)}
+.rc-stepper li.done>*{border-bottom-color:#4b5a1c;color:var(--ink-2)}
+.rc-stepper li.done i{background:#26300f;color:var(--lime)}
+.rc-stepper button{cursor:pointer}
+.rc-stepper button:hover{color:var(--ink)}
 
 /* Rappel des choix */
-.rc .rc-sum{margin:0;display:flex;flex-wrap:wrap;gap:8px}
-.rc .rc-sum>div{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 12px;border-radius:10px;background:var(--field);border:1px solid var(--line-soft)}
-.rc .rc-sum dt{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
-.rc .rc-sum dd{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.rc .rc-sum button{border:0;border-radius:8px;padding:4px 8px;background:none;color:var(--ink-3);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.rc .rc-sum button:hover{color:var(--ink);background:var(--fill)}
-.rc .rc-sum>div:has(dd):not(:has(button)){padding-right:12px}
+.rc-sum{margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.rc-sum>div{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 4px 0 12px;border-radius:10px;background:var(--field);border:1px solid var(--line-soft);box-sizing:border-box}
+.rc-sum>div:not(:has(button)){padding-right:12px}
+.rc-sum dt{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
+.rc-sum dd{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.rc-sum button{border:0;border-radius:8px;padding:6px 8px;background:none;color:var(--ink-3);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rc-sum button:hover{color:var(--ink);background:var(--fill)}
 
-.rc .rc-panel{display:flex;flex-direction:column;gap:16px}
-.rc .rc-panel h2{font-size:22px;outline:none}
-.rc .rc-lead{margin:0;color:var(--ink-2);line-height:1.5}
+.rc-panel{display:flex;flex-direction:column;gap:16px}
+.rc-panel h3{margin:0;font-size:20px;outline:none}
+.rc-lead{margin:0;color:var(--ink-2);line-height:1.5}
 
-/* Étape 1 : packs */
-.rc .rc-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.rc .rc-pack{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 16px;border:1px solid var(--line);border-radius:14px;background:var(--field);cursor:pointer}
-.rc .rc-pack:hover{border-color:var(--line-strong)}
-.rc .rc-pack.on{border-color:var(--lime);background:#1b2010}
-.rc .rc-pack input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
-.rc .rc-pack:has(input:focus-visible){outline:2px solid var(--lime);outline-offset:2px}
-.rc .rc-pack b{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-size:34px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
-.rc .rc-pack b span{font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:normal;font-size:14px;font-weight:600;color:var(--ink-2)}
-.rc .rc-pack strong{font-size:15px;font-variant-numeric:tabular-nums}
-.rc .rc-pack small{color:var(--ink-4);font-size:12px}
-.rc .rc-pack.on b{color:var(--lime)}
+/* Étape 1 : packs. Trois cartes de même hauteur, contenu centré ; une pastille de sélection dans le coin. */
+.rc-packs{margin:0;padding:0;border:0;min-width:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rc-pack{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:14px;padding:28px 12px 16px;border:1px solid var(--line);border-radius:16px;background:var(--field);text-align:center;cursor:pointer}
+.rc-pack:hover{border-color:var(--line-strong)}
+.rc-pack.on{border-color:var(--lime);background:#1b2010}
+.rc-pack input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.rc-pack:has(input:focus-visible){outline:2px solid var(--lime);outline-offset:2px}
+.rc-pack::after{content:'';position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong);box-sizing:border-box}
+.rc-pack.on::after{border:5px solid var(--lime)}
+.rc-pack em{position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:2px 8px;border-radius:999px;background:var(--lime);color:var(--on-lime);font-style:normal;font-size:10px;font-weight:700;white-space:nowrap}
+.rc-qty{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--ink-2);font-size:13px;font-weight:600}
+.rc-qty b{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-size:40px;line-height:1;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.rc-pack.on .rc-qty b{color:var(--lime)}
+.rc-price{align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:12px;border-top:1px solid var(--line-soft)}
+.rc-price strong{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rc-price small{color:var(--ink-4);font-size:12px;font-variant-numeric:tabular-nums}
 
-/* Étape 2 : opérateurs, une rangée pleine largeur chacun */
-.rc .seg{display:flex;flex-wrap:wrap;gap:6px}
-.rc .seg button{padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink-2);font-weight:600}
-.rc .seg button.on{border-color:var(--lime);color:var(--lime);background:#1b2010}
-.rc .rc-ops{display:flex;flex-direction:column;gap:10px}
-.rc .rc-op{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--field);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.rc .rc-op:hover{border-color:var(--line-strong);background:#141518}
-.rc .rc-op.on{border-color:var(--lime)}
-.rc .rc-op>i{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;font-style:normal;font-weight:800;font-size:20px;color:#fff}
-.rc .rc-op-orange>i{background:#ff7900;color:#111}
-.rc .rc-op-moov>i{background:#0060a9}
-.rc .rc-op-wave>i{background:#1dc8f2;color:#111}
-.rc .rc-op>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.rc .rc-op b{font-size:16px}
-.rc .rc-op small{font-size:13px;color:var(--ink-3)}
-.rc .rc-op>svg{flex:none;color:var(--ink-4)}
+/* Étape 2 : opérateurs, en tuiles côte à côte de même taille (deux ou trois par pays). */
+.rc-dlg .seg{display:flex;flex-wrap:wrap;gap:6px}
+.rc-dlg .seg button{padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink-2);font-weight:600;cursor:pointer}
+.rc-dlg .seg button.on{border-color:var(--lime);color:var(--lime);background:#1b2010}
+.rc-ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.rc-op{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:150px;padding:20px 12px;border:1px solid var(--line);border-radius:16px;background:var(--field);color:var(--ink);font:inherit;text-align:center;cursor:pointer}
+.rc-op:hover{border-color:var(--line-strong);background:#141518}
+.rc-op.on{border-color:var(--lime);background:#1b2010}
+.rc-op>i{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;font-style:normal;font-weight:800;font-size:22px;color:#fff}
+.rc-op-orange>i{background:#ff7900;color:#111}
+.rc-op-moov>i{background:#0060a9}
+.rc-op-wave>i{background:#1dc8f2;color:#111}
+.rc-op>span{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.rc-op b{font-size:16px}
+.rc-op small{font-size:12px;line-height:1.35;color:var(--ink-3)}
 
 /* Étape 3 : numéro, et code d'Orange Burkina */
-.rc .rc-phone{display:flex;flex-direction:column;gap:8px}
-.rc .rc-phone>span{color:var(--ink-2);line-height:1.5}
-.rc .rc-phone>div{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--field)}
-.rc .rc-phone>div:focus-within{border-color:var(--lime)}
-.rc .rc-phone em{font-style:normal;padding-left:14px;color:var(--ink-3);font-size:18px;font-variant-numeric:tabular-nums}
-.rc .rc-phone input{flex:1;min-width:0;padding:14px;border:0;background:none;color:var(--ink);font:inherit;font-size:18px;letter-spacing:.02em;font-variant-numeric:tabular-nums;outline:none}
-.rc .rc-phone small{font-size:12px;color:var(--ink-4)}
-.rc .rc-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;line-height:1.5;color:var(--ink)}
-.rc .rc-dial{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:10px;background:var(--fill);font-weight:600;font-variant-numeric:tabular-nums}
+.rc-field{display:flex;flex-direction:column;gap:8px}
+.rc-field>span{color:var(--ink-2);line-height:1.5}
+.rc-field>div{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--field)}
+.rc-field>div:focus-within{border-color:var(--lime)}
+.rc-field em{flex:none;font-style:normal;padding:0 12px 0 14px;margin-right:2px;border-right:1px solid var(--line-soft);color:var(--ink-3);font-size:18px;line-height:28px;font-variant-numeric:tabular-nums}
+.rc-field input{flex:1;min-width:0;padding:14px;border:0;background:none;color:var(--ink);font:inherit;font-size:18px;letter-spacing:.02em;font-variant-numeric:tabular-nums;outline:none}
+.rc-field small{font-size:12px;color:var(--ink-4)}
+.rc-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;line-height:1.5;color:var(--ink)}
+.rc-dial{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:10px;background:var(--fill);color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;text-decoration:none}
 
-.rc .rc-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.rc .rc-pay{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;border:0;border-radius:12px;background:var(--lime);color:var(--on-lime);font-weight:700;font-size:15px;cursor:pointer}
-.rc .rc-pay:hover{filter:brightness(.92)}
-.rc .rc-pay:disabled{opacity:.6;cursor:progress}
-.rc .rc-ghost{min-height:46px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:none;color:var(--ink-2);font-weight:600;cursor:pointer}
-.rc .rc-ghost:hover{border-color:var(--line-strong);color:var(--ink)}
-.rc .rc-err{margin:0;padding:10px 12px;border-radius:10px;background:#2a1816;color:var(--danger-ink);line-height:1.45}
-.rc .rc-note{margin:0;font-size:12px;line-height:1.5;color:var(--ink-4)}
+.rc-pay{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;border:0;border-radius:12px;background:var(--lime);color:var(--on-lime);font:inherit;font-weight:700;font-size:15px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.rc-pay:hover{filter:brightness(.92)}
+.rc-pay:disabled{opacity:.6;cursor:progress}
+.rc-ghost{min-height:46px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:none;color:var(--ink-2);font:inherit;font-weight:600;cursor:pointer}
+.rc-ghost:hover{border-color:var(--line-strong);color:var(--ink)}
+.rc-link{min-height:46px;padding:0 4px;border:0;background:none;color:var(--ink-2);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.rc-link:hover{color:var(--ink)}
+.rc-err{margin:0;padding:10px 12px;border-radius:10px;background:#2a1816;color:var(--danger-ink);line-height:1.45}
+.rc-note{margin:0;font-size:12px;line-height:1.5;color:var(--ink-4)}
 
-/* Étape 4 : attente et résultat */
-.rc .rc-wait,.rc .rc-result{display:flex;gap:14px;align-items:flex-start}
-.rc .rc-wait>div,.rc .rc-result>div{display:flex;flex-direction:column;gap:10px;min-width:0}
-.rc .rc-wait b,.rc .rc-result b{font-size:18px}
-.rc .rc-wait p,.rc .rc-result p{margin:0;line-height:1.5;color:var(--ink-2)}
-.rc .rc-left b{font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
-.rc .rc-spin{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:3px solid var(--fill);border-top-color:var(--lime);animation:rcspin 1s linear infinite}
+/* Étape 4 : attente, puis résultat centré */
+.rc-wait{display:flex;gap:14px;align-items:flex-start}
+.rc-wait>div{display:flex;flex-direction:column;gap:10px;min-width:0}
+.rc-wait b{font-size:18px}
+.rc-wait p,.rc-result p{margin:0;line-height:1.5;color:var(--ink-2)}
+.rc-left b{font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.rc-spin{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:3px solid var(--fill);border-top-color:var(--lime);animation:rcspin 1s linear infinite}
 @keyframes rcspin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.rc .rc-spin{animation-duration:3s}}
-.rc .rc-result>svg{flex:none;margin-top:2px}
-.rc .rc-result.ok>svg{color:var(--lime)}
-.rc .rc-result.ko>svg{color:var(--danger-ink)}
+@media (prefers-reduced-motion:reduce){.rc-spin{animation-duration:3s}}
+.rc-result{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 8px;text-align:center}
+.rc-result b{font-size:20px}
+.rc-result p{max-width:44ch}
+.rc-mark{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%}
+.rc-result.ok .rc-mark{background:#26300f;color:var(--lime)}
+.rc-result.ko .rc-mark{background:#2a1816;color:var(--danger-ink)}
 
 /* Historique */
-.rc .rc-hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.rc .rc-hist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line-soft)}
-.rc .rc-hist li>div{display:flex;flex-direction:column;gap:2px;min-width:0}
-.rc .rc-hist span{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
-.rc .rc-hist small{color:var(--ink-4);font-size:12px}
-.rc .rc-hist .rc-nw{white-space:nowrap}
-.rc .rc-st{flex:none;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;border:0;white-space:nowrap}
-.rc .rc-st-completed{background:#26300f;color:var(--lime)}
-.rc .rc-st-failed,.rc .rc-st-expired{background:#2a1816;color:var(--danger-ink)}
-.rc button.rc-st{min-height:32px;cursor:pointer}
-.rc button.rc-st:hover{color:var(--ink)}
+.rc-hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.rc-hist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line-soft)}
+.rc-hist li:first-child{border-top:0;padding-top:0}
+.rc-hist li>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rc-hist span{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
+.rc-hist small{color:var(--ink-4);font-size:12px}
+.rc-hist .rc-nw{white-space:nowrap}
+.rc-st{flex:none;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;border:0;white-space:nowrap}
+.rc-st-completed{background:#26300f;color:var(--lime)}
+.rc-st-failed,.rc-st-expired{background:#2a1816;color:var(--danger-ink)}
+button.rc-st{min-height:32px;cursor:pointer}
+button.rc-st:hover{color:var(--ink)}
 
+/* Téléphone : la fenêtre occupe tout l'écran ; packs en lignes (quantité à gauche, prix aligné à droite), opérateurs en lignes. */
 @media (max-width:560px){
-  .rc .rc-packs{grid-template-columns:1fr}
-  .rc .rc-pack{flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:12px;padding:14px 16px}
-  .rc .rc-pack b{font-size:28px}
-  .rc .rc-pack small{flex-basis:100%}
-  .rc .rc-stepper li>*{flex-direction:column;align-items:flex-start;gap:4px;font-size:11px}
-  .rc .rc-head h1{font-size:28px}
-  .rc .rc-card{padding:16px}
+  dialog.rc-dlg{--rc-pad:16px;width:100%;max-width:100%;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0}
+  .rc-top h2{font-size:22px}
+  .rc-stepper li>*{flex-direction:column;align-items:flex-start;gap:6px;font-size:11px}
+  .rc-stepper li>* span{max-width:100%}
+  .rc-packs{grid-template-columns:1fr}
+  .rc-pack{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:14px;padding:14px 16px;text-align:left}
+  .rc-pack::after{position:static;grid-column:1;grid-row:1}
+  .rc-pack em{position:static;transform:none;grid-column:2;grid-row:2;justify-self:start;margin-top:4px}
+  .rc-qty{grid-column:2;grid-row:1;flex-direction:row;align-items:baseline;gap:6px}
+  .rc-qty b{font-size:30px}
+  .rc-price{grid-column:3;grid-row:1/span 2;align-self:center;align-items:flex-end;padding:0;border:0}
+  .rc-ops{grid-template-columns:1fr}
+  .rc-op{flex-direction:row;justify-content:flex-start;min-height:72px;padding:12px 16px;text-align:left}
+  .rc-op>i{width:44px;height:44px;font-size:20px;border-radius:12px}
+  .rc-op>span{align-items:flex-start}
+  .rc-foot>*{flex:1}
+  .rc-foot .rc-pay,.rc-foot .rc-ghost{padding:0 12px;white-space:nowrap}
+  .rc-foot>.rc-link{flex:none}
 }

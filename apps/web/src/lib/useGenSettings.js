@@ -68,7 +68,7 @@ export default function useGenSettings(model, { audioSecs = null } = {}) {
   const draft = !caps && quality === 'draft'
   const fromAudio = Boolean(caps?.duration?.fromAudio) // la durée est celle du fichier audio fourni
   const total = fromAudio ? (audioSecs ?? 0) : plans.reduce((n, p) => n + p.dur, 0)
-  const cost = caps ? videoCost(model, fromAudio ? Math.max(total, caps.duration.fromAudio.min) : total, res) : Math.round(COST_PER_SECOND * total * RES_COST[res] * (draft ? 0.3 : 1))
+  const cost = caps ? videoCost(model, fromAudio ? Math.max(total, caps.duration.fromAudio.min) : total, res, { sound: caps.audio === 'always' || sound }) : Math.round(COST_PER_SECOND * total * RES_COST[res] * (draft ? 0.3 : 1))
   const patch = (i, v) => setPlans((ps) => ps.map((p, k) => (k === i ? { ...p, ...v } : p)))
 
   return {

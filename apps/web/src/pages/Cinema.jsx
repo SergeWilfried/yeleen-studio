@@ -135,7 +135,7 @@ export default function Cinema() {
   const modeItems = native ? MODES.filter((m) => m.id !== 'prev') : features.video ? MODES : MODES.filter((m) => m.id === 'refs')
   const clipSecs = ref.references.filter((r) => r.kind === 'video').reduce((n, r) => n + (r.asset.secs || 0), 0) // durée des vidéos jointes : facturée en entrée
   const secs = activeTask === 'edit' ? Math.max(4, Math.ceil(clipSecs)) : s.total // modifier : la sortie dure autant que la vidéo
-  const cost = video ? (native ? videoCost(vmodel, secs, s.res, { inputSecs: clipSecs }) : s.cost) : imageCost(imodel, iRes2, iN)
+  const cost = video ? (native ? videoCost(vmodel, secs, s.res, { inputSecs: clipSecs, sound: s.sound }) : s.cost) : imageCost(imodel, iRes2, iN)
   const busy = recipe ? Boolean(run) : jobs.some((j) => j.kind === mode)
 
   // Ce qui manque pour lancer, dit en clair sous le texte.

@@ -1,16 +1,17 @@
-import { Link } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import { jetons, useJobs } from '../lib/jobs.jsx'
+import { useRecharge } from '../lib/rechargeDialog.jsx'
 
-/** Solde de jetons et nombre de générations en cours, visibles depuis tous les outils. Mène à la recharge. */
+/** Solde de cauris et nombre de générations en cours, visibles depuis tous les outils. Ouvre la recharge. */
 export default function BalanceChip() {
   const { balance, running, queued } = useJobs()
+  const { openRecharge } = useRecharge()
   const busy = running + queued
   return (
-    <Link to="/recharge" className="bal" aria-label={`Solde : ${jetons(balance)} cauris${busy ? `, ${busy} génération${busy > 1 ? 's' : ''} en cours` : ''}. Recharger`}>
+    <button type="button" className="bal" aria-haspopup="dialog" onClick={() => openRecharge()} aria-label={`Solde : ${jetons(balance)} cauris${busy ? `, ${busy} génération${busy > 1 ? 's' : ''} en cours` : ''}. Recharger`}>
       <Icon name="sparkle" size={14} />
       <b>{jetons(balance)}</b>
       {busy > 0 && <span className="bal-busy"><i />{busy} en cours</span>}
-    </Link>
+    </button>
   )
 }

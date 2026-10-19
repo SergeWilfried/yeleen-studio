@@ -248,3 +248,93 @@ test('une demande refusée (solde ou fal) libère sa place', async () => {
     assert.equal((await t.req('/jobs', post({ ...image, count: 4, resolution: '4K' }))).status === 429, false)
   } finally { t.restore() }
 })
+
+// --- Runware (Seedance 2.5, Kling 3.0, Veo 3.1 Lite) -------------------------------------------------------------------
+const veo = { kind: 'video', modelId: 'veo-3-1-lite', plans: [{ text: 'un marché au lever du soleil', dur: 8 }], secs: 8, resolution: '720p', ratio: '16:9', sound: true }
+/** Faux Runware : `poll(tâche)` rend la réponse de getResponse ; les tâches reçues sont gardées dans `sent`. */
+function fakeRunware(poll) {
+  const sent = []
+  const handler = (url, init) => {
+    assert.equal(url, 'https://api.runware.ai/v1')
+    assert.equal(init.headers.Authorization, 'Bearer rw_test')
+    const [task] = JSON.parse(init.body)
+    sent.push(task)
+    if (task.taskType === 'videoInference') return { body: { data: [{ taskType: 'videoInference', taskUUID: task.taskUUID }] } }
+    return poll(task)
+  }
+  return { sent, handler }
+}
+
+test('Runware sans clé : modèle refusé avant tout débit', async () => {
+  const t = setup(() => { throw new Error('aucun appel attendu') })
+  try {
+    const start = (await (await t.req('/wallet')).json()).balance
+    const res = await t.req('/jobs', post(veo))
+    assert.equal(res.status, 503)
+    assert.equal((await res.json()).error, 'provider_unavailable')
+    assert.equal((await (await t.req('/wallet')).json()).balance, start)
+  } finally { t.restore() }
+})
+
+test('Runware : envoi asynchrone, progression, puis la vidéo ; le prix tient compte du son', async () => {
+  let done = false
+  const rw = fakeRunware((task) => ({ body: { data: [done
+    ? { taskType: 'videoInference', taskUUID: task.taskUUID, status: 'success', videoURL: 'https://vm.runware.ai/video/x.mp4', cost: 0.4 }
+    : { taskType: 'videoInference', taskUUID: task.taskUUID, status: 'processing', progress: 47 }] } }))
+  const t = setup(rw.handler, { RUNWARE_KEY: 'rw_test' })
+  try {
+    const start = (await (await t.req('/wallet')).json()).balance
+    const res = await t.req('/jobs', post(veo))
+    const { jobId, balance, cost, status } = await res.json()
+    assert.equal(res.status, 202)
+    assert.equal(status, 'IN_PROGRESS') // pas d'annulation remboursable chez Runware
+    assert.equal(Math.round((start - balance) * 10) / 10, cost)
+    const [task] = rw.sent
+    assert.deepEqual([task.taskType, task.model, task.deliveryMethod, task.width, task.height, task.providerSettings.google.generateAudio], ['videoInference', 'google:veo@3.1-lite', 'async', 1280, 720, true])
+    const mid = await (await t.req(`/jobs/${jobId}`)).json()
+    assert.equal(mid.status, 'IN_PROGRESS')
+    assert.deepEqual(mid.logs, ['47 %'])
+    assert.equal(rw.sent[1].taskUUID, task.taskUUID)
+    done = true
+    const end = await (await t.req(`/jobs/${jobId}`)).json()
+    assert.equal(end.status, 'COMPLETED')
+    assert.equal(end.outputs[0].url, 'https://vm.runware.ai/video/x.mp4')
+    const silent = await (await t.req('/jobs', post({ ...veo, sound: false, requestId: 'silencieux-1' }))).json()
+    assert.ok(silent.cost < cost)
+  } finally { t.restore() }
+})
+
+test('Runware : tâche refusée pour son contenu → modération, remboursée une seule fois', async () => {
+  const rw = fakeRunware((task) => ({ status: 400, body: { errors: [{ code: 'contentModerated', message: 'Blocked by the provider safety filter', status: 'error', taskUUID: task.taskUUID }] } }))
+  const t = setup(rw.handler, { RUNWARE_KEY: 'rw_test' })
+  try {
+    const start = (await (await t.req('/wallet')).json()).balance
+    const { jobId } = await (await t.req('/jobs', post(veo))).json()
+    const a = await (await t.req(`/jobs/${jobId}`)).json()
+    const b = await (await t.req(`/jobs/${jobId}`)).json()
+    assert.deepEqual([a.status, a.failure, b.status], ['FAILED', 'moderation', 'FAILED'])
+    assert.equal(b.balance, start)
+  } finally { t.restore() }
+})
+
+test('Runware : une panne de la requête de suivi n’échoue pas la génération (on réessaiera)', async () => {
+  const rw = fakeRunware(() => ({ status: 503, body: { errors: [{ code: 'serviceUnavailable', message: 'try again' }] } }))
+  const t = setup(rw.handler, { RUNWARE_KEY: 'rw_test' })
+  try {
+    const { jobId } = await (await t.req('/jobs', post(veo))).json()
+    const res = await t.req(`/jobs/${jobId}`)
+    assert.equal(res.status, 502)
+    assert.equal((await res.json()).error, 'upstream')
+  } finally { t.restore() }
+})
+
+test('Runware : annuler arrête le suivi sans remboursement ni appel (Runware n’annule pas)', async () => {
+  const rw = fakeRunware(() => { throw new Error('aucun suivi attendu') })
+  const t = setup(rw.handler, { RUNWARE_KEY: 'rw_test' })
+  try {
+    const { jobId, balance } = await (await t.req('/jobs', post(veo))).json()
+    const out = await (await t.req(`/jobs/${jobId}/cancel`, { method: 'POST' })).json()
+    assert.deepEqual([out.status, out.refund, out.balance], ['CANCELED', 0, balance])
+    assert.equal(rw.sent.length, 1)
+  } finally { t.restore() }
+})

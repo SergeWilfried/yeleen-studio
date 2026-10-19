@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { VIDEO_MODELS, findModel, videoCost } from '@studio/catalog'
-import { buildInput } from '../src/inputs.js'
+import { buildInput, runwareInput } from '../src/inputs.js'
 import { priceJob } from '../src/pricing.js'
 
 const m = (id) => findModel(VIDEO_MODELS, id)
@@ -29,13 +29,16 @@ test('MiniMax H3 : résolution en majuscules, audio pour caler la bande-son', ()
   assert.equal(i.prompt_expansion_mode, 'balanced')
 })
 
-test('Kling : durée en texte ; plusieurs plans deviennent multi_prompt', () => {
-  const one = buildInput('video', m('kling-3-pro'), { ...base, secs: 5, startImageUrl: F })
-  assert.equal(one.duration, '5')
-  assert.equal(one.prompt.length > 0, true)
-  const multi = buildInput('video', m('kling-3-pro'), { ...base, plans: [{ text: 'A', dur: 3 }, { text: 'B', dur: 4 }], secs: 7, startImageUrl: F })
-  assert.deepEqual(multi.multi_prompt, [{ prompt: 'A', duration: '3' }, { prompt: 'B', duration: '4' }])
-  assert.equal('prompt' in multi, false)
+test('Kling (Runware) : durée entière, son, image de départ et de fin ; plusieurs plans deviennent multiPrompt', () => {
+  const one = runwareInput(m('kling-3-pro'), { ...base, secs: 5, startImageUrl: F, endImageUrl: A })
+  assert.deepEqual(one, {
+    model: 'klingai:kling-video@3-pro', positivePrompt: 'Une caméra tourne autour du produit', duration: 5,
+    inputs: { frameImages: [{ image: F, frame: 'first' }, { image: A, frame: 'last' }] }, providerSettings: { klingai: { sound: true } },
+  })
+  const multi = runwareInput(m('kling-3-std'), { ...base, plans: [{ text: 'Plan A', dur: 3 }, { text: 'Plan B', dur: 4 }], secs: 7, sound: false, startImageUrl: F })
+  assert.equal(multi.model, 'klingai:kling-video@3-standard')
+  assert.deepEqual(multi.providerSettings.klingai, { sound: false, multiPrompt: [{ prompt: 'Plan A', duration: 3 }, { prompt: 'Plan B', duration: 4 }] })
+  assert.equal('positivePrompt' in multi, false) // l'un ou l'autre, jamais les deux
 })
 
 test('audio vers vidéo : l’audio est obligatoire, le texte facultatif', () => {
@@ -61,16 +64,21 @@ test('options refusées : durée, résolution, fréquence, image manquante, plan
   assert.equal(priceJob({ ...ok, plans: [{ text: ' ', dur: 6 }] }).error, 'invalid_text')
 })
 
-test('Kling : les éléments cités deviennent des images frontales ou des vidéos', () => {
-  const i = buildInput('video', m('kling-3-pro'), { ...base, startImageUrl: F, elements: [{ kind: 'image', url: F }, { kind: 'video', url: 'https://v3b.fal.media/files/b/abc/v.mp4' }] })
-  assert.deepEqual(i.elements, [{ frontal_image_url: F }, { video_url: 'https://v3b.fal.media/files/b/abc/v.mp4' }])
-  assert.equal('elements' in buildInput('video', m('kling-3-pro'), { ...base, startImageUrl: F }), false)
+test('Kling (Runware) : les éléments cités deviennent des éléments Runware, et « @Element1 » devient « <<<element_1>>> »', () => {
+  const V2 = 'https://v3b.fal.media/files/b/abc/v.mp4'
+  const i = runwareInput(m('kling-3-pro'), { ...base, plans: [{ text: '@Element1 tient @Element2', dur: 5 }], secs: 5, startImageUrl: F, elements: [{ kind: 'image', url: F }, { kind: 'video', url: V2 }] })
+  assert.equal(i.positivePrompt, '<<<element_1>>> tient <<<element_2>>>')
+  assert.deepEqual(i.inputs.elements, [
+    { id: 'element_1', description: 'Élément 1', frontalImage: F, images: [F] },
+    { id: 'element_2', description: 'Élément 2', videos: [V2] },
+  ])
+  assert.equal('elements' in runwareInput(m('kling-3-pro'), { ...base, startImageUrl: F }).inputs, false)
 })
 
-test('éléments : refusés hors Kling, au-delà de quatre, ou depuis une adresse étrangère', () => {
+test('éléments : refusés hors Kling, au-delà de trois (Runware, avec une image de départ), ou depuis une adresse étrangère', () => {
   const kling = { ...base, modelId: 'kling-3-pro', secs: 5, startImageUrl: F }
-  assert.equal(priceJob({ ...kling, elements: [{ kind: 'image', url: F }] }).ok, true)
-  assert.equal(priceJob({ ...kling, elements: Array(5).fill({ kind: 'image', url: F }) }).error, 'invalid_elements')
+  assert.equal(priceJob({ ...kling, elements: Array(3).fill({ kind: 'image', url: F }) }).ok, true)
+  assert.equal(priceJob({ ...kling, elements: Array(4).fill({ kind: 'image', url: F }) }).error, 'invalid_elements')
   assert.equal(priceJob({ ...kling, elements: [{ kind: 'image', url: 'https://evil.example/x.png' }] }).error, 'invalid_elements')
   assert.equal(priceJob({ ...kling, elements: [{ kind: 'audio', url: F }] }).error, 'invalid_elements')
   const ltx = { ...base, modelId: 'ltx-2-5-fast', resolution: '720p', fps: 25, ratio: 'auto', startImageUrl: F, elements: [{ kind: 'image', url: F }] }
@@ -83,39 +91,54 @@ const seed = m('seedance-2-5')
 const V = 'https://v3b.fal.media/files/b/abc/v.mp4'
 const SB = { kind: 'video', modelId: 'seedance-2-5', plans: [{ text: 'Un plan large', dur: 5 }], secs: 5, resolution: '720p', ratio: 'auto', sound: true }
 
-test('Seedance : le point d’accès dépend de ce que l’on fournit', () => {
-  assert.equal(endpointFor(seed, SB), 'bytedance/seedance-2.5/us/text-to-video')
-  assert.equal(endpointFor(seed, { ...SB, startImageUrl: F }), 'bytedance/seedance-2.5/us/image-to-video')
-  assert.equal(endpointFor(seed, { ...SB, references: [{ kind: 'image', url: F }] }), 'bytedance/seedance-2.5/us/reference-to-video')
-  assert.equal(endpointFor(seed, { ...SB, startImageUrl: F, audioUrl: A }), 'bytedance/seedance-2.5/us/reference-to-video')
-  assert.equal(endpointFor(m('kling-3-pro'), SB), 'fal-ai/kling-video/v3/pro/image-to-video')
+test('point d’accès : l’identifiant Runware pour Seedance, Kling et Veo, l’endpoint fal pour les autres', () => {
+  assert.equal(endpointFor(seed), 'bytedance:seedance@2.5')
+  assert.equal(endpointFor(m('kling-3-pro')), 'klingai:kling-video@3-pro')
+  assert.equal(endpointFor(m('veo-3-1-lite')), 'google:veo@3.1-lite')
+  assert.equal(endpointFor(m('ltx-2-5-fast')), m('ltx-2-5-fast').endpoint)
 })
 
-test('Seedance texte et image : champs du schéma', () => {
-  const t = buildInput('video', seed, { ...SB, endUserId: 'demo' })
-  assert.deepEqual(t, { prompt: 'Un plan large', resolution: '720p', aspect_ratio: 'auto', duration: '5', generate_audio: true, end_user_id: 'demo' })
-  const i = buildInput('video', seed, { ...SB, startImageUrl: F, endImageUrl: F })
-  assert.equal(i.image_url, F)
-  assert.equal(i.end_image_url, F)
-  assert.equal('image_urls' in i, false)
+test('Seedance (Runware) : texte (format choisi ou « auto »), puis images de départ et de fin', () => {
+  assert.deepEqual(runwareInput(seed, SB), { model: 'bytedance:seedance@2.5', positivePrompt: 'Un plan large', duration: 5, settings: { audio: true }, resolution: '720p' })
+  // un format choisi devient des dimensions, sans `resolution` (les deux ne se combinent pas)
+  const wide = runwareInput(seed, { ...SB, ratio: '9:16', resolution: '1080p' })
+  assert.deepEqual([wide.width, wide.height, 'resolution' in wide], [1080, 1920, false])
+  const i = runwareInput(seed, { ...SB, ratio: '16:9', startImageUrl: F, endImageUrl: A })
+  assert.deepEqual(i.inputs, { frameImages: [{ image: F, frame: 'first' }, { image: A, frame: 'last' }] })
+  assert.deepEqual([i.resolution, 'width' in i], ['720p', false]) // l'image fixe le format
 })
 
-test('Seedance références : numérotation par type, départ, fin et audio passent après', () => {
-  const i = buildInput('video', seed, { ...SB, references: [{ kind: 'image', url: 'https://v3b.fal.media/files/b/1/a.png' }, { kind: 'video', url: V }, { kind: 'image', url: 'https://v3b.fal.media/files/b/1/b.png' }, { kind: 'audio', url: A }], startImageUrl: F, audioUrl: 'https://v3b.fal.media/files/b/1/z.mp3' })
-  assert.deepEqual(i.image_urls, ['https://v3b.fal.media/files/b/1/a.png', 'https://v3b.fal.media/files/b/1/b.png', F])
-  assert.deepEqual(i.video_urls, [V])
-  assert.deepEqual(i.audio_urls, [A, 'https://v3b.fal.media/files/b/1/z.mp3'])
-  assert.equal(i.task, 'reference')
+test('Seedance (Runware) références : numérotation par type ; départ, fin et audio passent après, jamais en frameImages', () => {
+  const i = runwareInput(seed, { ...SB, references: [{ kind: 'image', url: 'https://v3b.fal.media/files/b/1/a.png' }, { kind: 'video', url: V }, { kind: 'image', url: 'https://v3b.fal.media/files/b/1/b.png' }, { kind: 'audio', url: A }], startImageUrl: F, audioUrl: 'https://v3b.fal.media/files/b/1/z.mp3' })
+  assert.deepEqual(i.inputs, {
+    referenceImages: ['https://v3b.fal.media/files/b/1/a.png', 'https://v3b.fal.media/files/b/1/b.png', F],
+    referenceVideos: [V],
+    referenceAudios: [A, 'https://v3b.fal.media/files/b/1/z.mp3'],
+  })
+  assert.equal('operation' in i.settings, false)
 })
 
-test('Seedance modifier : la durée devient « auto »', () => {
-  const i = buildInput('video', seed, { ...SB, secs: 8, task: 'editing', references: [{ kind: 'video', url: V }] })
-  assert.equal(i.duration, 'auto')
-  assert.equal(i.task, 'editing')
-  assert.equal(buildInput('video', seed, { ...SB, task: 'extension', references: [{ kind: 'video', url: V }] }).duration, '5')
+test('Seedance (Runware) modifier et prolonger : la vidéo citée devient la source ; une modification dure « auto »', () => {
+  const edit = runwareInput(seed, { ...SB, secs: 8, task: 'editing', references: [{ kind: 'video', url: V }] })
+  assert.deepEqual([edit.duration, edit.settings.operation, edit.inputs.video, 'referenceVideos' in edit.inputs], ['auto', 'edit', V, false])
+  const ext = runwareInput(seed, { ...SB, task: 'extension', references: [{ kind: 'video', url: V }, { kind: 'video', url: F }] })
+  assert.deepEqual([ext.duration, ext.settings.operation, ext.inputs.video, ext.inputs.referenceVideos], [5, 'extend', V, [F]])
 })
 
-test('Seedance : prix au jeton, et les vidéos de référence s’ajoutent à tarif réduit', () => {
+test('Veo 3.1 Lite (Runware) : dimensions sans image, résolution avec ; son dans providerSettings.google', () => {
+  const veo = m('veo-3-1-lite')
+  const t = runwareInput(veo, { ...base, secs: 6, resolution: '720p', ratio: '9:16', sound: false })
+  assert.deepEqual(t, { model: 'google:veo@3.1-lite', positivePrompt: 'Une caméra tourne autour du produit', duration: 6, width: 720, height: 1280, providerSettings: { google: { generateAudio: false } } })
+  const i = runwareInput(veo, { ...base, secs: 8, resolution: '1080p', ratio: '16:9', startImageUrl: F })
+  assert.deepEqual([i.resolution, 'width' in i, i.inputs.frameImages], ['1080p', false, [{ image: F, frame: 'first' }]])
+  const ok = { ...base, modelId: 'veo-3-1-lite', secs: 8, resolution: '720p', ratio: '16:9' }
+  assert.equal(priceJob(ok).cost, videoCost(veo, 8, '720p'))
+  assert.equal(priceJob({ ...ok, sound: false }).cost, videoCost(veo, 8, '720p', { sound: false }))
+  assert.ok(priceJob({ ...ok, sound: false }).cost < priceJob(ok).cost)
+  assert.equal(priceJob({ ...ok, secs: 5 }).error, 'invalid_duration')
+})
+
+test('Seedance : une vidéo de référence fait passer au tarif « vidéo en entrée », quelle que soit la durée annoncée', () => {
   const plain = priceJob(SB)
   assert.equal(plain.cost, videoCost(seed, 5, '720p'))
   // la durée annoncée par le client n'est pas crue : le pire cas (30,2 s) est toujours compté
@@ -153,10 +176,13 @@ test('Seedance : limites et tâches', () => {
   assert.equal(priceJob({ ...SB, plans: [{ text: '', dur: 5 }] }).error, 'invalid_text')
 })
 
-test('Les prix du catalogue suivent fal (relevés du 17 oct. 2026)', async () => {
+test('Les prix du catalogue suivent les fournisseurs (fal le 17 oct. 2026, Runware le 19 oct. 2026)', async () => {
   const { findModel, IMAGE_MODELS } = await import('@studio/catalog')
   assert.equal(findModel(IMAGE_MODELS, 'flux-3').price.usd, 0.048)
   assert.equal(m('h3-max').price.usd, 0.0325)
   assert.equal(m('h3-max-turbo').price.usd, 0.01625)
-  assert.deepEqual(seed.price.byRes, { '480p': 0.2205, '720p': 0.473, '1080p': 1.164 })
+  assert.deepEqual(seed.price.byRes, { '480p': 0.102, '720p': 0.23, '1080p': 0.614 })
+  assert.deepEqual(seed.fal.price.byRes, { '480p': 0.2205, '720p': 0.473, '1080p': 1.164 }) // chaînes (workflows fal)
+  assert.deepEqual([m('kling-3-pro').price.usd, m('kling-3-pro').price.silentUsd], [0.168, 0.112])
+  assert.deepEqual([m('kling-3-std').price.usd, m('kling-3-std').price.silentUsd], [0.126, 0.084])
 })
