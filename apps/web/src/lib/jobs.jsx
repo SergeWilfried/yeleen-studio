@@ -21,7 +21,7 @@ const LIVE_MS = { image: 16000, video: 90000, audio: 8000 } // durée typique ch
 
 export const jetons = (n) => n.toLocaleString('fr-FR', { maximumFractionDigits: 1 })
 // En français, « 1 jeton » mais « 2 jetons » (le singulier couvre aussi 1,5).
-export const jetonLabel = (n) => `${jetons(n)} jeton${n >= 2 ? 's' : ''}`
+export const jetonLabel = (n) => `${jetons(n)} cauri${n >= 2 ? 's' : ''}`
 
 const STEPS = {
   image: [[10, 'Chargement du modèle'], [35, 'Génération'], [80, 'Mise à l’échelle et contrôle qualité'], [95, 'Enregistrement du résultat']],
@@ -33,17 +33,17 @@ const STEPS = {
 export const FAILURES = {
   moderation: {
     message: 'Contenu refusé par le filtre de sécurité',
-    hint: 'Reformulez votre description : évitez les scènes violentes ou explicites. Aucun jeton n’a été débité.',
+    hint: 'Reformulez votre description : évitez les scènes violentes ou explicites. Aucun cauri n’a été débité.',
     retry: false,
   },
   insufficient: {
     message: 'Solde insuffisant',
-    hint: 'Il ne reste pas assez de jetons pour cette génération. Rechargez puis relancez : rien n’a été débité.',
+    hint: 'Il ne reste pas assez de cauris pour cette génération. Rechargez puis relancez : rien n’a été débité.',
     retry: true,
   },
   unreachable: {
     message: 'Le service de génération est injoignable',
-    hint: 'Vos jetons n’ont pas été débités. Vérifiez que l’API tourne, puis relancez.',
+    hint: 'Vos cauris n’ont pas été débités. Vérifiez que l’API tourne, puis relancez.',
     retry: true,
   },
   auth: {
@@ -63,12 +63,12 @@ export const FAILURES = {
   },
   rejected: {
     message: 'La demande a été refusée par le service',
-    hint: 'Vérifiez le modèle et les options choisis, puis relancez. Aucun jeton n’a été débité.',
+    hint: 'Vérifiez le modèle et les options choisis, puis relancez. Aucun cauri n’a été débité.',
     retry: false,
   },
   provider: {
     message: 'Le fournisseur n’a pas répondu à temps',
-    hint: 'Ce n’est pas lié à votre demande. Vos jetons ont été remboursés : vous pouvez relancer.',
+    hint: 'Ce n’est pas lié à votre demande. Vos cauris ont été remboursés : vous pouvez relancer.',
     retry: true,
   },
 }
@@ -85,7 +85,7 @@ function tick(state, now) {
     const logs = fresh.length ? j.logs.concat(fresh) : j.logs
     if (j.failure && progress >= j.failAt) {
       balance += j.cost
-      notes.push(`Échec : ${j.title}. ${jetons(j.cost)} jetons remboursés.`)
+      notes.push(`Échec : ${j.title}. ${jetons(j.cost)} cauris remboursés.`)
       return { ...j, status: 'FAILED', progress: j.failAt, finishedAt: now, refund: j.cost, logs: logs.concat({ msg: `Erreur : ${FAILURES[j.failure].message}`, error: true }) }
     }
     if (progress >= 100) {
@@ -135,12 +135,12 @@ function reducer(state, action) {
         // Réel : annulée en file = remboursée en entier ; déjà en cours chez le fournisseur = facturée. Le solde exact vient du serveur.
         const refund = j.status === 'IN_QUEUE' ? j.cost : 0
         const jobs = state.jobs.map((x) => (x.id === j.id ? { ...x, status: 'CANCELED', finishedAt: action.now, refund, logs: x.logs.concat({ msg: 'Annulé par l’utilisateur' }) } : x))
-        return { ...state, jobs, message: refund ? `${j.title} annulée. ${jetons(refund)} jetons remboursés.` : `${j.title} annulée. La génération avait déjà commencé : elle est facturée.` }
+        return { ...state, jobs, message: refund ? `${j.title} annulée. ${jetons(refund)} cauris remboursés.` : `${j.title} annulée. La génération avait déjà commencé : elle est facturée.` }
       }
       // En file : tout est remboursé. En cours : seule la part non consommée l'est.
       const refund = j.status === 'IN_QUEUE' ? j.cost : Math.round(j.cost * (1 - j.progress / 100) * 10) / 10
       const jobs = state.jobs.map((x) => (x.id === j.id ? { ...x, status: 'CANCELED', finishedAt: action.now, refund, logs: x.logs.concat({ msg: 'Annulé par l’utilisateur' }) } : x))
-      return tick({ ...state, jobs, balance: state.balance + refund, message: `${j.title} annulée. ${jetons(refund)} jetons remboursés.` }, action.now)
+      return tick({ ...state, jobs, balance: state.balance + refund, message: `${j.title} annulée. ${jetons(refund)} cauris remboursés.` }, action.now)
     }
     case 'SYNC_WALLET':
       return { ...state, balance: action.balance, serverBalance: action.balance }
@@ -304,7 +304,7 @@ export function JobsProvider({ children }) {
         let patch
         let message
         if (r.status === 'COMPLETED') { patch = { status: 'COMPLETED', progress: 100, finishedAt: now, outputs: r.outputs, logs: logs.concat({ msg: 'Terminé' }) }; message = `Terminée : ${j.title}.` }
-        else if (r.status === 'FAILED') { const failure = r.failure ?? 'provider'; patch = { status: 'FAILED', failure, refund: r.refund ?? 0, finishedAt: now, logs: logs.concat({ msg: `Erreur : ${FAILURES[failure].message}`, error: true }) }; message = `Échec : ${j.title}. ${jetons(r.refund ?? 0)} jetons remboursés.` }
+        else if (r.status === 'FAILED') { const failure = r.failure ?? 'provider'; patch = { status: 'FAILED', failure, refund: r.refund ?? 0, finishedAt: now, logs: logs.concat({ msg: `Erreur : ${FAILURES[failure].message}`, error: true }) }; message = `Échec : ${j.title}. ${jetons(r.refund ?? 0)} cauris remboursés.` }
         else if (r.status === 'IN_PROGRESS') patch = { status: 'IN_PROGRESS', startedAt: j.startedAt ?? now, queuePosition: 0, logs: logs.length || j.logs.some((l) => l.msg === 'Génération en cours') ? logs : [{ msg: 'Génération en cours' }] } // fal ne détaille pas toujours ses étapes
         else patch = { status: 'IN_QUEUE', queuePosition: r.queuePosition ?? 0, logs }
         dispatch({ type: 'REMOTE', id: j.id, balance: r.balance, patch, message })

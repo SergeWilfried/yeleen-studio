@@ -51,7 +51,7 @@ export default function ImageGen() {
     const styled = brand.apply && Boolean(style) // style visuel de la marque, ajouté à la description
     const look = styleById(styleId)
     const r = submit({ kind: 'image', title: model.name, prompt: prompt.trim(), brandStyle: styled ? style : undefined, styleHint: look.prompt || undefined, count: n, cost, live: { kind: 'image', modelId: model.id, prompt: prompt.trim(), resolution, ratio, count: n, styleHint: look.prompt || undefined, brandStyle: styled ? style : undefined }, meta: `${n} × ${resolution}${ratio === 'Auto' ? '' : ` · ${ratio}`}${look.prompt ? ` · ${look.label}` : ''}${styled ? ' · style de la marque' : ''}` })
-    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} jetons.`)
+    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} cauris.`)
   }
 
   return (

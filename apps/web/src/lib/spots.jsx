@@ -54,7 +54,7 @@ export function SpotsProvider({ children }) {
     }
     const res = submit(spec)
     if (res.ok) patch(r.id, key, { status: 'running', jobId: res.job.id, jobKey: res.job.key, error: null })
-    else patch(r.id, key, { status: 'waiting', error: `Solde insuffisant : il manque ${jetons(res.missing)} jetons pour cette étape.`, blocked: true })
+    else patch(r.id, key, { status: 'waiting', error: `Solde insuffisant : il manque ${jetons(res.missing)} cauris pour cette étape.`, blocked: true })
   }, [assets, submit, patch])
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export function SpotsProvider({ children }) {
       if (job.status === 'COMPLETED') {
         const a = assets.find((x) => x.origin?.jobKey === s.jobKey)
         if (a) patch(run.id, key, { status: 'done', assetId: a.id })
-      } else if (job.status === 'FAILED') patch(run.id, key, { status: 'failed', error: 'La génération a échoué. Les jetons de cette étape sont remboursés.' })
+      } else if (job.status === 'FAILED') patch(run.id, key, { status: 'failed', error: 'La génération a échoué. Les cauris de cette étape sont remboursés.' })
       else if (job.status === 'CANCELED') patch(run.id, key, { status: 'failed', error: 'Étape annulée.' })
     }
     const ready = {

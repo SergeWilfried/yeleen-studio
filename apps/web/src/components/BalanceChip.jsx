@@ -7,7 +7,7 @@ export default function BalanceChip() {
   const { balance, running, queued } = useJobs()
   const busy = running + queued
   return (
-    <Link to="/recharge" className="bal" aria-label={`Solde : ${jetons(balance)} jetons${busy ? `, ${busy} génération${busy > 1 ? 's' : ''} en cours` : ''}. Recharger`}>
+    <Link to="/recharge" className="bal" aria-label={`Solde : ${jetons(balance)} cauris${busy ? `, ${busy} génération${busy > 1 ? 's' : ''} en cours` : ''}. Recharger`}>
       <Icon name="sparkle" size={14} />
       <b>{jetons(balance)}</b>
       {busy > 0 && <span className="bal-busy"><i />{busy} en cours</span>}

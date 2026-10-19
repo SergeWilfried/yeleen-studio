@@ -357,5 +357,5 @@ export const priceLabel = (model) => {
   const unit = { s: 's', image: 'image', Mpx: 'Mpx', '1 000 caractères': '1 000 car.' }[model.price.per]
   const from = model.price.byRes ? Math.min(...Object.values(model.price.byRes)) : model.price.usd
   const n = toJetons(from)
-  return `${model.price.byRes ? 'dès ' : ''}≈ ${n.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} jeton${n >= 2 ? 's' : ''} / ${unit}`
+  return `${model.price.byRes ? 'dès ' : ''}≈ ${n.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} cauri${n >= 2 ? 's' : ''} / ${unit}`
 }

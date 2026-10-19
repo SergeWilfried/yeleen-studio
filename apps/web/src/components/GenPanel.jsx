@@ -271,7 +271,7 @@ export function GenerateBar({ s, title, meta, blocker, cost = s.cost, needsText 
       inputSecs: inputSecs || undefined,
     }
     const r = submit({ kind: 'video', title, prompt, cost: price, secs, brandStyle: styled ? style : undefined, live: liveSpec, meta: styled ? `${base} · style de la marque` : base })
-    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} jetons.`)
+    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} cauris.`)
   }
   return (
     <div className="ep-gen">

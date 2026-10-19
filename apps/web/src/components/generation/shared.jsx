@@ -29,7 +29,7 @@ export function FailureNotice({ job }) {
     <div className="gx-err" role="alert">
       <b>{f.message}</b>
       <span>{f.hint}</span>
-      {job.failure === 'insufficient' && <Link className="gx-topup" to="/recharge">Recharger mes jetons</Link>}
+      {job.failure === 'insufficient' && <Link className="gx-topup" to="/recharge">Recharger mes cauris</Link>}
     </div>
   )
 }
