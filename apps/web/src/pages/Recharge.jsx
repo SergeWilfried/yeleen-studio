@@ -395,7 +395,8 @@ export default function Recharge() {
           {step === 3 && !topup && !codeSteps && err}
         </section>
 
-        <History items={history} onOpen={(t) => { setTopup(t); setPack(t.pack); setOperator(t.operator); setCodeSteps(null); setStep(3) }} />
+        {/* L'historique n'apparaît qu'avant l'achat : pendant le parcours, rien ne détourne du paiement en cours. */}
+        {step === 0 && <History items={history} onOpen={(t) => { setTopup(t); setPack(t.pack); setOperator(t.operator); setCodeSteps(null); setStep(3) }} />}
       </main>
     </div>
   )
