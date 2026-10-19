@@ -57,7 +57,7 @@ export function ShellHeader() {
       <div className="rt">
         <BalanceChip />
         <Icon name="search" />
-        <a href="#" className="pb">Tarifs<i className="of">-50 %</i></a>
+        <NavLink to="/recharge" className="pb">Recharger</NavLink>
         <a href="#" className="pb">Entreprise</a>
         <a href="#" className="pb">Ressources</a>
         <AccountMenu fallback={<span className="av" />} />

@@ -88,10 +88,10 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
       </button>
 
       <div className="cs-foot">
-        <Link className="cs-price" to="/#tarifs" title={collapsed ? 'Tarifs' : undefined}>
+        <Link className="cs-price" to="/recharge" title={collapsed ? 'Recharger' : undefined}>
           <span className="cs-ic red"><Icon name="diamond" size={16} /></span>
-          {!collapsed && <><span>Tarifs</span><i>-30 %</i></>}
-          {collapsed && <span className="sr-only">Tarifs</span>}
+          {!collapsed && <span>Recharger</span>}
+          {collapsed && <span className="sr-only">Recharger mes jetons</span>}
         </Link>
         <div className="cs-user">
           <AccountMenu fallback={<span className="av" aria-hidden="true" />} />

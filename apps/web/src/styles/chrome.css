@@ -28,6 +28,8 @@ body .pg .nv :focus-visible{outline-color:#111}
 
 .bal{display:flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:10px;border:1px solid rgba(17,17,17,.22);background:rgba(17,17,17,.08);color:#111;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bal b{font-weight:700}
+a.bal{text-decoration:none}
+a.bal:hover{background:rgba(17,17,17,.16)}
 .bal-busy{display:flex;align-items:center;gap:6px;padding-left:8px;border-left:1px solid rgba(17,17,17,.25);font-weight:600}
 .bal-busy i{width:8px;height:8px;border-radius:50%;background:#111;animation:balpulse 1.2s ease-in-out infinite}
 @keyframes balpulse{50%{transform:scale(.55);opacity:.5}}

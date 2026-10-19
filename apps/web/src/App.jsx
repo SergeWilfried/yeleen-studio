@@ -19,6 +19,7 @@ const Audio = lazy(() => import('./pages/Audio.jsx'))
 const Spot = lazy(() => import('./pages/Spot.jsx'))
 const Brand = lazy(() => import('./pages/Brand.jsx'))
 const Cinema = lazy(() => import('./pages/Cinema.jsx'))
+const Recharge = lazy(() => import('./pages/Recharge.jsx'))
 
 // Les liens `href="#"` sont des emplacements : ils ne doivent pas ramener la page en haut.
 function useDeadLinkGuard() {
@@ -50,6 +51,7 @@ export default function App() {
       <Route path="/spot" element={features.spot ? <Protected><Spot /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/brand" element={features.brand ? <Protected><Brand /></Protected> : <Navigate to="/cinema" replace />} />
       <Route path="/cinema" element={<Protected><Cinema /></Protected>} />
+      <Route path="/recharge/*" element={<Protected><Recharge /></Protected>} />
       <Route path="/sign-in/*" element={<SignInPage />} />
       <Route path="/sign-up/*" element={<SignUpPage />} />
       <Route path="*" element={<Home />} />
