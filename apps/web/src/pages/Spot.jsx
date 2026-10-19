@@ -280,7 +280,7 @@ export default function Spot() {
             </fieldset>
 
             <div className="ep-gen">
-              {short > 0 && step === STEPS.length - 1 && <p className="ep-gerr" role="alert">Solde insuffisant : il manque {jetons(short)} jetons.</p>}
+              {short > 0 && step === STEPS.length - 1 && <p className="ep-gerr" role="alert">Solde insuffisant : il manque {jetons(short)} cauris.</p>}
               {step === STEPS.length - 1 && (
                 <details className="sp-cost">
                   <summary>Détail du coût · {costLine}</summary>

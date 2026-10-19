@@ -74,7 +74,7 @@ const PACK_INFO = {
   createur: { name: 'Créateur', sub: 'Pour vos contenus de la semaine' },
   studio: { name: 'Studio', sub: 'Pour créer tous les jours', tag: 'Meilleur prix' },
 }
-const PERKS = ['Tous les modèles du studio', 'Jetons sans date d’expiration', 'Remboursés si une génération échoue']
+const PERKS = ['Tous les modèles du studio', 'Cauris sans date d’expiration', 'Remboursés si une génération échoue']
 
 function Pack({ pack }) {
   const info = PACK_INFO[pack.id] ?? { name: pack.id, sub: '' }
@@ -88,9 +88,9 @@ function Pack({ pack }) {
         <b>{fcfa(pack.fcfa)}</b>
         <span>FCFA, une fois</span>
       </div>
-      <small className="pn">{Math.round(pack.fcfa / pack.jetons)} FCFA le jeton</small>
+      <small className="pn">≈ {Math.round(pack.fcfa / pack.jetons)} FCFA le cauri</small>
       <div className="jt">
-        <b>{fcfa(pack.jetons)} jetons</b>
+        <b>{fcfa(pack.jetons)} cauris</b>
         <small>{usage(pack.jetons)}</small>
       </div>
       <Link to={`/recharge?pack=${pack.id}`} className={featured ? 'lim' : 'pbtn'}>Acheter ce pack</Link>
@@ -125,7 +125,7 @@ export default function Home() {
             <h2>Créez votre compte<span>et payez à l’usage</span></h2>
             <ul>
               <li>Compte gratuit, sans abonnement</li>
-              <li>Jetons par Mobile Money, dès {fcfa(PACKS[0].fcfa)} FCFA</li>
+              <li>Cauris par Mobile Money, dès {fcfa(PACKS[0].fcfa)} FCFA</li>
               <li>Remboursés si une génération échoue</li>
             </ul>
             <div><Link className="lim" to="/cinema">Créer un compte</Link></div>
@@ -196,7 +196,7 @@ export default function Home() {
           <div className="ph">
             <div>
               <h2 id="pricing-title">Rechargez, créez</h2>
-              <p>Chaque génération consomme des jetons. Pas d’abonnement : achetez un pack par Mobile Money quand vous en avez besoin.</p>
+              <p>Chaque génération consomme des cauris. Pas d’abonnement : achetez un pack par Mobile Money quand vous en avez besoin.</p>
             </div>
           </div>
           <div className="plans">

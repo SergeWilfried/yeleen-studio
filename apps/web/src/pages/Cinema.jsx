@@ -164,7 +164,7 @@ export default function Cinema() {
     if (!video) {
       const live = { kind: 'image', modelId: imodel.id, prompt: text.trim(), resolution: iRes2, ratio: iRatio, count: iN, brandStyle: styled ? style : undefined }
       const r = submit({ kind: 'image', title: imodel.name, prompt: text.trim(), count: iN, cost, live, brandStyle: styled ? style : undefined, meta: `${iN} × ${iRes2}${iRatio === 'Auto' ? '' : ` · ${iRatio}`}${styled ? ' · style de la marque' : ''}` })
-      return setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} jetons.`)
+      return setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} cauris.`)
     }
     // Vidéo : les pièces jointes deviennent références (Seedance), image de départ, image de fin, audio ou éléments selon le modèle.
     let extra
@@ -190,7 +190,7 @@ export default function Cinema() {
     }
     const base = `${vmodel.name}${activeTask === 'next' ? ' · suite' : activeTask === 'edit' ? ' · modification' : ''} · ${String(total).replace('.', ',')} s${s.resolutions ? ` · ${s.res}` : ''}`
     const r = submit({ kind: 'video', title: vmodel.name, prompt: s.plans.map((p) => p.text.trim()).join(' / '), cost, secs: total, live, brandStyle: styled ? style : undefined, meta: styled ? `${base} · style de la marque` : base })
-    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} jetons.`)
+    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} cauris.`)
   }
 
   // Suite, Avant, Modifier : ces gestes partent d'une vidéo, ils reprennent l'outil de l'écran Vidéo avec celle que vous avez jointe.
@@ -206,7 +206,7 @@ export default function Cinema() {
     setRerror('')
     const r = recipeById(recipeId)
     const cost = recipeCost(recipeId)
-    if (cost > balance) return setRerror(`Solde insuffisant : il manque ${jetons(Math.ceil((cost - balance) * 10) / 10)} jetons.`)
+    if (cost > balance) return setRerror(`Solde insuffisant : il manque ${jetons(Math.ceil((cost - balance) * 10) / 10)} cauris.`)
     let inputFiles
     try {
       inputFiles = Object.fromEntries(await Promise.all(r.photos.map(async (p) => [p.key, p.list ? [await getFile(photos[p.key])] : await getFile(photos[p.key])])))
@@ -215,7 +215,7 @@ export default function Cinema() {
     const id = crypto.randomUUID()
     const live = { kind: 'workflow', modelId: r.workflow.id, inputs, inputFiles }
     const res = submit({ kind: 'video', title: r.name, prompt: inputs[r.text?.key] || r.blurb, cost, live, recipe: { runId: id, step: 0, label: r.name }, meta: r.name })
-    if (!res.ok) return setRerror(`Solde insuffisant : il manque ${jetons(res.missing)} jetons.`)
+    if (!res.ok) return setRerror(`Solde insuffisant : il manque ${jetons(res.missing)} cauris.`)
     setRun({ id, recipeId })
   }
   const pickPhoto = (list) => {

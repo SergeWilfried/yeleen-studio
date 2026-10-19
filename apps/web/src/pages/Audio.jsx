@@ -71,7 +71,7 @@ export default function Audio() {
     const lang = LANGUAGES.find((l) => l.id === language)
     const live = { kind: 'audio', modelId: model.id, prompt: script.trim(), voice: voice.id, language, stability, normalization, timestamps }
     const r = submit({ kind: 'audio', title: model.name, prompt: script.trim(), count: Math.min(count, maxOut), cost, live, secs: Math.max(1, Math.round(script.length / 14)), voice: voice.id, meta: `${voice.label} · ${script.length} caractères${language === 'auto' ? '' : ` · ${lang.title}`}` })
-    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} jetons.`)
+    setError(r.ok ? '' : `Solde insuffisant : il manque ${jetons(r.missing)} cauris.`)
   }
 
   return (

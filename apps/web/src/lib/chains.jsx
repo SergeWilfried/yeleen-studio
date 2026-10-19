@@ -65,7 +65,7 @@ export function ChainsProvider({ children }) {
       input: inputAssetId ? { assetId: inputAssetId } : null,
     })
     if (r.ok) dispatch({ type: 'STEP_STARTED', id: run.id, i, jobId: r.job.id, jobKey: r.job.key })
-    else dispatch({ type: 'STEP_BLOCKED', id: run.id, i, error: `Solde insuffisant : il manque ${jetons(r.missing)} jetons pour cette étape.` })
+    else dispatch({ type: 'STEP_BLOCKED', id: run.id, i, error: `Solde insuffisant : il manque ${jetons(r.missing)} cauris pour cette étape.` })
   }, [submit])
 
   // Fait avancer chaque chaîne : étape terminée → asset → étape suivante.
@@ -86,7 +86,7 @@ export function ChainsProvider({ children }) {
         const asset = assets.find((a) => a.origin?.jobKey === st.jobKey)
         if (asset) dispatch({ type: 'STEP_DONE', id: run.id, i, assetId: asset.id })
       } else if (job.status === 'FAILED') {
-        dispatch({ type: 'STEP_FAILED', id: run.id, i, error: 'La génération a échoué. Les jetons de cette étape sont remboursés ; les étapes suivantes ne sont pas facturées.' })
+        dispatch({ type: 'STEP_FAILED', id: run.id, i, error: 'La génération a échoué. Les cauris de cette étape sont remboursés ; les étapes suivantes ne sont pas facturées.' })
       } else if (job.status === 'CANCELED') {
         dispatch({ type: 'RUN_CANCELED', id: run.id })
       }

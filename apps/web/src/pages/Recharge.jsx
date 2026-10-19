@@ -69,7 +69,7 @@ function Stepper({ step, onGo }) {
 function Summary({ pack, operator, phone, country, step, onGo }) {
   const c = TOPUP_COUNTRIES[country]
   const items = [
-    step > 0 && { k: 0, label: 'Pack', value: `${jetons(pack.jetons)} jetons · ${fcfa(pack.fcfa)}` },
+    step > 0 && { k: 0, label: 'Pack', value: `${jetons(pack.jetons)} cauris · ${fcfa(pack.fcfa)}` },
     step > 1 && { k: 1, label: 'Opérateur', value: `${OPERATORS[operator]}${COUNTRY_LIST.length > 1 ? ` · ${COUNTRIES[country]}` : ''}` },
     step > 2 && { k: 2, label: 'Numéro', value: `+${c.dial} ${localNumber(phone, c)}` },
   ].filter(Boolean)
@@ -114,7 +114,7 @@ function Waiting({ topup, onRetry, onDone }) {
         <Icon name="check" size={22} />
         <div>
           <b>Recharge réussie : +{jetonLabel(topup.jetons)}</b>
-          <p>{topup.late ? 'Le paiement a été confirmé en retard, mais il est bien crédité. ' : ''}Vos jetons sont disponibles tout de suite.</p>
+          <p>{topup.late ? 'Le paiement a été confirmé en retard, mais il est bien crédité. ' : ''}Vos cauris sont disponibles tout de suite.</p>
           <div className="rc-actions">
             <Link className="rc-pay" to="/cinema">Créer maintenant</Link>
             <button type="button" className="rc-ghost" onClick={onDone}>Nouvelle recharge</button>
@@ -304,7 +304,7 @@ export default function Recharge() {
       <main className="rc-main" id="main" tabIndex={-1}>
         <header className="rc-head">
           <h1>Recharger</h1>
-          <p>Solde actuel : <b>{jetonLabel(balance)}</b>. Payez par Mobile Money : les jetons arrivent dès que l’opérateur confirme.</p>
+          <p>Solde actuel : <b>{jetonLabel(balance)}</b>. Payez par Mobile Money : les cauris arrivent dès que l’opérateur confirme.</p>
         </header>
 
         <section className="rc-card rc-flow">
@@ -313,15 +313,15 @@ export default function Recharge() {
 
           {step === 0 && (
             <form className="rc-panel" onSubmit={(e) => { e.preventDefault(); go(operator ? 2 : 1) }}>
-              <h2 ref={panel} tabIndex={-1}>Combien de jetons ?</h2>
+              <h2 ref={panel} tabIndex={-1}>Combien de cauris ?</h2>
               <fieldset className="rc-packs">
-                <legend className="sr-only">Pack de jetons</legend>
+                <legend className="sr-only">Pack de cauris</legend>
                 {PACKS.map((p) => (
                   <label key={p.id} className={`rc-pack${pack === p.id ? ' on' : ''}`}>
                     <input type="radio" name="pack" value={p.id} checked={pack === p.id} onChange={() => setPack(p.id)} />
-                    <b>{jetons(p.jetons)}<span> jetons</span></b>
+                    <b>{jetons(p.jetons)}<span> cauris</span></b>
                     <strong>{fcfa(p.fcfa)}</strong>
-                    <small>{perJeton(p)} FCFA le jeton</small>
+                    <small>≈ {perJeton(p)} FCFA le cauri</small>
                   </label>
                 ))}
               </fieldset>
