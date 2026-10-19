@@ -124,12 +124,7 @@
 .home .ph{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
 .home .ph h2{font-size:clamp(28px,3vw,40px);line-height:1}
 .home .ph p{margin:8px 0 0;color:var(--ink-3);font-size:15px}
-.home .bill{display:flex;background:var(--surface);border:1px solid var(--fill);border-radius:999px;padding:4px}
-.home .bill button{background:none;border:0;border-radius:999px;padding:9px 18px;font-weight:600;font-size:14px;color:var(--ink-3);cursor:pointer;display:flex;gap:8px;align-items:center;transition:background-color .15s,color .15s}
-.home .bill button:hover:not(.on){color:var(--ink)}
-.home .bill .on{background:var(--ink);color:#111}
-.home .bill i{font-style:normal;font-size:11px;font-weight:700;background:var(--lime);color:#111;border-radius:999px;padding:2px 7px}
-.home .plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.home .plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .home .plan{position:relative;background:var(--raised);border:1px solid var(--fill);border-radius:18px;padding:26px 22px 24px;display:flex;flex-direction:column;gap:6px}
 .home .plan.feat{border-color:var(--lime);background:linear-gradient(180deg,#232a10,var(--raised) 55%)}
 .home .plan h3{font-size:26px}
@@ -146,17 +141,10 @@
 .home .plan li:before{content:"✓";margin-right:10px;color:var(--lime)}
 @media (max-width:900px){.home .plans{grid-template-columns:1fr}}
 
-.home .pp s{color:var(--ink-4);font-size:14px;width:100%;order:-1}
-.home .pop.alt{background:#2a2b2e;color:var(--ink)}
-.home .jt{display:flex;flex-direction:column;gap:3px;background:var(--field);border:1px solid var(--fill);border-radius:12px;padding:12px 14px;margin:8px 0 4px;min-height:112px}
+.home .jt{display:flex;flex-direction:column;gap:3px;background:var(--field);border:1px solid var(--fill);border-radius:12px;padding:12px 14px;margin:8px 0 4px}
 .home .jt>b{font-size:16px}
 .home .jt>b span{font-weight:500;color:var(--ink-3);font-size:13px}
 .home .jt small{color:var(--ink-3);font-size:12px}
-.home .jt .fx{margin-top:auto}
-.home .tier{display:flex;gap:4px;margin-top:auto;background:var(--raised);border-radius:999px;padding:3px}
-.home .tier button{flex:1;border:0;background:none;border-radius:999px;padding:6px 8px;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;font-variant-numeric:tabular-nums;transition:background-color .15s,color .15s}
-.home .tier button:hover:not(.on){color:var(--ink)}
-.home .tier .on{background:var(--lime);color:#111}
 .home .seats{display:flex;align-items:center;justify-content:space-between;margin-top:auto;font-size:13px;color:var(--ink-3)}
 .home .seats>div{display:flex;align-items:center;gap:6px;color:var(--ink)}
 .home .seats b{min-width:24px;text-align:center;font-variant-numeric:tabular-nums}
@@ -164,8 +152,6 @@
 .home .seats button:hover:not(:disabled){border-color:var(--line-strong);background:var(--fill)}
 .home .seats button:disabled{opacity:.35;cursor:not-allowed}
 .home .pfoot{margin:14px 0 0;color:var(--ink-4);font-size:12px}
-@media (max-width:1200px){.home .plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (pointer:coarse){.home .seats button{width:44px;height:44px}.home .tier button{min-height:44px}}
+@media (pointer:coarse){.home .seats button{width:44px;height:44px}}
 @media (max-width:900px){.home .plans{grid-template-columns:1fr}}
-.home .pp .qt{font-size:clamp(28px,2.4vw,36px);line-height:1.15;padding:6px 0}
 .home .pn{min-height:32px}

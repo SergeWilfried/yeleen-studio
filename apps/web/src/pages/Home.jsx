@@ -1,6 +1,7 @@
 import useDocumentTitle from '../lib/useDocumentTitle.js'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PACKS } from '@studio/catalog/packs'
 import { gradient as g } from '../lib/gradients.js'
 import Icon, { Heart, PlayBadge } from '../lib/icons.jsx'
 import { HomeHeader, SkipLink } from '../components/Headers.jsx'
@@ -47,12 +48,9 @@ const FILTERS = ['Tout', 'Vidéo', 'Image', 'Audio', 'Publicité', 'Personnages'
  */
 const VIDEO_SRC = {}
 const ROWS_STEP = 2
-const ANNUAL_DISCOUNT = 0.3
 // Coût moyen d'une génération, aligné sur les écrans d'outils (image 6,5 · vidéo 60).
 const COST = { image: 6.5, video: 60 }
-const PRO_TIERS = [{ jetons: 600, monthly: 20000 }, { jetons: 900, monthly: 30000 }]
 const fcfa = (n) => n.toLocaleString('fr-FR')
-const annualPrice = (monthly) => Math.round((monthly * (1 - ANNUAL_DISCOUNT)) / 100) * 100
 const usage = (jetons) => {
   const images = `≈ ${fcfa(Math.floor(jetons / COST.image))} images`
   const videos = Math.floor(jetons / COST.video)
@@ -70,29 +68,33 @@ function Creator({ i }) {
   )
 }
 
-function Plan({ name, sub, monthly, annual, jetons, fixed, quote, unit, cta, to, featured, tag, picker, perks }) {
-  const price = annual ? annualPrice(monthly) : monthly
-  const note = quote ? 'Tarif par personne et par mois, selon la taille de l’équipe'
-    : !monthly ? '\u00a0'
-      : annual ? `Facturé ${fcfa(price * 12)} FCFA par an` : '\u00a0'
+// Packs de jetons (packages/catalog) : paiement ponctuel par Mobile Money, sans abonnement. Le prix affiché est celui que l'API encaisse.
+const PACK_INFO = {
+  decouverte: { name: 'Découverte', sub: 'Pour essayer les outils' },
+  createur: { name: 'Créateur', sub: 'Pour vos contenus de la semaine' },
+  studio: { name: 'Studio', sub: 'Pour créer tous les jours', tag: 'Meilleur prix' },
+}
+const PERKS = ['Tous les modèles du studio', 'Jetons sans date d’expiration', 'Remboursés si une génération échoue']
+
+function Pack({ pack }) {
+  const info = PACK_INFO[pack.id] ?? { name: pack.id, sub: '' }
+  const featured = Boolean(info.tag)
   return (
     <article className={`plan${featured ? ' feat' : ''}`}>
-      {tag && <span className={`pop${featured ? '' : ' alt'}`}>{tag}</span>}
-      <h3>{name}</h3>
-      <p className="ps2">{sub}</p>
+      {info.tag && <span className="pop">{info.tag}</span>}
+      <h3>{info.name}</h3>
+      <p className="ps2">{info.sub}</p>
       <div className="pp">
-        {quote ? <b className="qt">Sur devis</b> : <b>{fcfa(price)}</b>}
-        {!quote && <span>{unit ?? 'FCFA / mois'}</span>}
-        {!quote && annual && monthly > 0 && <s aria-label={`au lieu de ${fcfa(monthly)}`}>{fcfa(monthly)}</s>}
+        <b>{fcfa(pack.fcfa)}</b>
+        <span>FCFA, une fois</span>
       </div>
-      <small className="pn">{note}</small>
+      <small className="pn">{Math.round(pack.fcfa / pack.jetons)} FCFA le jeton</small>
       <div className="jt">
-        <b>{quote ? 'Dès ' : ''}{fcfa(jetons)} jetons<span> / {quote ? 'personne / ' : ''}mois</span></b>
-        <small>{usage(jetons)}{quote ? ' par personne' : ''}</small>
-        {picker ?? <small className="fx">{fixed ? 'Quantité fixe, sans variation' : quote ? 'Jetons mutualisés dans l’équipe' : '\u00a0'}</small>}
+        <b>{fcfa(pack.jetons)} jetons</b>
+        <small>{usage(pack.jetons)}</small>
       </div>
-      {to ? <Link to={to} className={featured ? 'lim' : 'pbtn'}>{cta}</Link> : <a href="#" className={featured ? 'lim' : 'pbtn'}>{cta}</a>}
-      <ul>{perks.map((x) => <li key={x}>{x}</li>)}</ul>
+      <Link to={`/recharge?pack=${pack.id}`} className={featured ? 'lim' : 'pbtn'}>Acheter ce pack</Link>
+      <ul>{PERKS.map((x) => <li key={x}>{x}</li>)}</ul>
     </article>
   )
 }
@@ -101,8 +103,6 @@ export default function Home() {
   useDocumentTitle(null)
   const [filter, setFilter] = useState('Tout')
   const [rows, setRows] = useState(ROWS_STEP)
-  const [annual, setAnnual] = useState(false)
-  const [tier, setTier] = useState(0)
 
   return (
     <div className="pg home">
@@ -122,13 +122,13 @@ export default function Home() {
 
         <div className="bento">
           <div className="pr">
-            <h2>Inscrivez-vous et obtenez votre<span>remise exclusive</span></h2>
+            <h2>Créez votre compte<span>et payez à l’usage</span></h2>
             <ul>
-              <li>Accès illimité au modèle image Pro</li>
-              <li>Débloquez votre remise supplémentaire</li>
-              <li>Accès au modèle vidéo 2.5</li>
+              <li>Compte gratuit, sans abonnement</li>
+              <li>Jetons par Mobile Money, dès {fcfa(PACKS[0].fcfa)} FCFA</li>
+              <li>Remboursés si une génération échoue</li>
             </ul>
-            <div><a className="lim" href="#">Créer un compte et obtenir ma remise</a></div>
+            <div><Link className="lim" to="/cinema">Créer un compte</Link></div>
           </div>
           <div className="tg6">
             {TOOLS.map((t) => (
@@ -195,32 +195,14 @@ export default function Home() {
         <section className="pricing" id="tarifs" aria-labelledby="pricing-title">
           <div className="ph">
             <div>
-              <h2 id="pricing-title">Choisissez votre formule</h2>
-              <p>Chaque génération consomme des jetons. Sans engagement : changez de formule ou arrêtez à tout moment.</p>
-            </div>
-            <div className="bill" role="group" aria-label="Facturation">
-              <button type="button" aria-pressed={!annual} className={annual ? '' : 'on'} onClick={() => setAnnual(false)}>Mensuel</button>
-              <button type="button" aria-pressed={annual} className={annual ? 'on' : ''} onClick={() => setAnnual(true)}>Annuel<i>-30 %</i></button>
+              <h2 id="pricing-title">Rechargez, créez</h2>
+              <p>Chaque génération consomme des jetons. Pas d’abonnement : achetez un pack par Mobile Money quand vous en avez besoin.</p>
             </div>
           </div>
           <div className="plans">
-            <Plan name="Gratuit" sub="Pour découvrir les outils" monthly={0} unit="FCFA, pour toujours" jetons={50} cta="Commencer gratuitement" to="/cinema" annual={annual}
-              perks={['Modèle image standard', 'Vidéo en 720p, filigrane', '1 génération à la fois']} />
-            <Plan name="Basic" sub="Pour vos premiers contenus" monthly={7000} jetons={120} fixed cta="Choisir Basic" to="/recharge?pack=createur" annual={annual}
-              perks={['Modèle vidéo 2.5 en 720p', 'Sans filigrane', '2 générations en parallèle', 'Influenceur IA : 10 essais offerts']} />
-            <Plan name="Pro" sub="Pour créer tous les jours" monthly={PRO_TIERS[tier].monthly} jetons={PRO_TIERS[tier].jetons} cta="Choisir Pro" to="/recharge?pack=studio" featured tag="Le plus choisi" annual={annual}
-              picker={(
-                <div className="tier" role="radiogroup" aria-label="Jetons par mois">
-                  {PRO_TIERS.map((t, i) => (
-                    <button key={t.jetons} type="button" role="radio" aria-checked={tier === i} className={tier === i ? 'on' : ''} onClick={() => setTier(i)}>{fcfa(t.jetons)}</button>
-                  ))}
-                </div>
-              )}
-              perks={['Modèle vidéo 2.5 jusqu’en 1080p', 'Studio montage et Studio pubs', '3 générations en parallèle', 'Accès anticipé aux nouveaux modèles']} />
-            <Plan name="Max" sub="Pour les équipes et les agences" quote jetons={1000} cta="Demander un devis" tag="Par personne" annual={annual}
-              perks={['Espace de travail et jetons mutualisés', 'Vidéo en 4K, file prioritaire', 'Contrôle des dépenses par l’administrateur', 'Support prioritaire']} />
+            {PACKS.map((p) => <Pack key={p.id} pack={p} />)}
           </div>
-          <p className="pfoot">Prix en FCFA, taxes locales non incluses. Les jetons non utilisés ne sont pas reportés d’un mois sur l’autre.</p>
+          <p className="pfoot">Prix en FCFA, taxes locales non incluses. Paiement par Orange Money ou Moov Money. Le coût de chaque génération est affiché avant de la lancer.</p>
         </section>
 
         <div className="sec" style={{ marginBottom: 0 }}><h3>Créations de la communauté</h3></div>
