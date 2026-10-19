@@ -5,6 +5,8 @@ import { PACKS } from '@studio/catalog/packs'
 import { gradient as g } from '../lib/gradients.js'
 import Icon, { Heart, PlayBadge } from '../lib/icons.jsx'
 import { HomeHeader, SkipLink } from '../components/Headers.jsx'
+import { useAuthState } from '../lib/auth.jsx'
+import { RechargeButton } from '../lib/rechargeDialog.jsx'
 import MediaTile from '../components/MediaTile.jsx'
 import LazyMount from '../components/LazyMount.jsx'
 import montageVideo from '../assets/hero/montage.mp4'
@@ -79,6 +81,7 @@ const PERKS = ['Tous les modèles du studio', 'Cauris sans date d’expiration',
 function Pack({ pack }) {
   const info = PACK_INFO[pack.id] ?? { name: pack.id, sub: '' }
   const featured = Boolean(info.tag)
+  const { signedIn } = useAuthState()
   return (
     <article className={`plan${featured ? ' feat' : ''}`}>
       {info.tag && <span className="pop">{info.tag}</span>}
@@ -93,7 +96,10 @@ function Pack({ pack }) {
         <b>{fcfa(pack.jetons)} cauris</b>
         <small>{usage(pack.jetons)}</small>
       </div>
-      <Link to={`/recharge?pack=${pack.id}`} className={featured ? 'lim' : 'pbtn'}>Acheter ce pack</Link>
+      {/* Connecté : la fenêtre de recharge s'ouvre ici. Sinon, connexion d'abord, puis la fenêtre s'ouvre sur le studio. */}
+      {signedIn
+        ? <RechargeButton pack={pack.id} className={featured ? 'lim' : 'pbtn'}>Acheter ce pack</RechargeButton>
+        : <Link to={`/recharge?pack=${pack.id}`} className={featured ? 'lim' : 'pbtn'}>Acheter ce pack</Link>}
       <ul>{PERKS.map((x) => <li key={x}>{x}</li>)}</ul>
     </article>
   )

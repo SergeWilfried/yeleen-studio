@@ -42,3 +42,6 @@ a.bal:hover{background:rgba(17,17,17,.16)}
 }
 /* « Bibliothèque » dans la navigation ouvre une fenêtre : un bouton à l'allure d'un lien */
 button.nl{background:none;border:0;font:inherit;cursor:pointer}
+button.pb,button.bal{font:inherit;cursor:pointer}
+button.bal{font-size:13px}
+button.bal:hover{background:rgba(17,17,17,.16)}

@@ -5,6 +5,7 @@ import BalanceChip from './BalanceChip.jsx'
 import { AccountMenu, authEnabled, useAuthState } from '../lib/auth.jsx'
 import { features } from '../lib/features.js'
 import { useLibrary } from '../lib/libraryDialog.jsx'
+import { RechargeButton } from '../lib/rechargeDialog.jsx'
 import logo from '../assets/brand/yeelen-logo-on-lime.svg'
 import mark from '../assets/brand/yeelen-mark-on-lime.svg'
 import '../styles/chrome.css'
@@ -57,7 +58,7 @@ export function ShellHeader() {
       <div className="rt">
         <BalanceChip />
         <Icon name="search" />
-        <NavLink to="/recharge" className="pb">Recharger</NavLink>
+        <RechargeButton className="pb">Recharger</RechargeButton>
         <a href="#" className="pb">Entreprise</a>
         <a href="#" className="pb">Ressources</a>
         <AccountMenu fallback={<span className="av" />} />

@@ -30,7 +30,7 @@
 .cs-modes button[aria-checked="true"]{background:var(--chip)}
 .cs.min .cs-modes button{justify-content:center;padding:0;width:48px}
 .cs.min .cs-nav a,.cs.min .cs-files button,.cs.min .cs-row,.cs.min .cs-price{justify-content:center;padding:0;width:48px}
-.cs-files button,button.cs-row{width:100%;border:0;background:none;font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+.cs-files button,button.cs-row,button.cs-price{width:100%;border:0;background:none;font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
 .cs-row>span:nth-child(2){flex:1}
 .cs-row>svg{color:var(--ink-4)}
 .cs-ic{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
