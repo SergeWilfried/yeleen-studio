@@ -81,7 +81,7 @@ export function HomeHeader() {
       <Logo />
       <NavLinks />
       <div className="rt">
-        <a href="#tarifs" className="pb">Tarifs<i className="of">-30 %</i></a>
+        <a href="#tarifs" className="pb">Tarifs</a>
         <HomeAccount />
       </div>
     </header>

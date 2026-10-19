@@ -7,7 +7,6 @@ import useTabKeys from '../lib/useTabKeys.js'
 import GenerationTray from '../components/GenerationTray.jsx'
 import { useJobs } from '../lib/jobs.jsx'
 import { useHandoff } from '../lib/handoff.jsx'
-import PromoBar from '../components/PromoBar.jsx'
 import { CreateLeft, CreateRight } from './video/CreateTab.jsx'
 import { EditRight, EDIT_TOOLS } from './video/EditTab.jsx'
 import { EditLeft } from './video/EditLeft.jsx'
@@ -38,9 +37,6 @@ export default function Video() {
   return (
     <div className="pg shell video">
       <SkipLink />
-      <PromoBar seconds={2 * 3600 + 53 * 60 + 15} cta="Obtenir 50 % de remise">
-        Génération illimitée sur les formules Max. Remise personnelle de 50 %
-      </PromoBar>
       <ShellHeader />
 
       <main className="app" id="main" tabIndex={-1}>
