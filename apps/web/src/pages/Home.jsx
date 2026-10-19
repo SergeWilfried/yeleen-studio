@@ -1,5 +1,6 @@
 import useDocumentTitle from '../lib/useDocumentTitle.js'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { gradient as g } from '../lib/gradients.js'
 import Icon, { Heart, PlayBadge } from '../lib/icons.jsx'
 import { HomeHeader, SkipLink } from '../components/Headers.jsx'
@@ -69,7 +70,7 @@ function Creator({ i }) {
   )
 }
 
-function Plan({ name, sub, monthly, annual, jetons, fixed, quote, unit, cta, featured, tag, picker, perks }) {
+function Plan({ name, sub, monthly, annual, jetons, fixed, quote, unit, cta, to, featured, tag, picker, perks }) {
   const price = annual ? annualPrice(monthly) : monthly
   const note = quote ? 'Tarif par personne et par mois, selon la taille de l’équipe'
     : !monthly ? '\u00a0'
@@ -90,7 +91,7 @@ function Plan({ name, sub, monthly, annual, jetons, fixed, quote, unit, cta, fea
         <small>{usage(jetons)}{quote ? ' par personne' : ''}</small>
         {picker ?? <small className="fx">{fixed ? 'Quantité fixe, sans variation' : quote ? 'Jetons mutualisés dans l’équipe' : '\u00a0'}</small>}
       </div>
-      <a href="#" className={featured ? 'lim' : 'pbtn'}>{cta}</a>
+      {to ? <Link to={to} className={featured ? 'lim' : 'pbtn'}>{cta}</Link> : <a href="#" className={featured ? 'lim' : 'pbtn'}>{cta}</a>}
       <ul>{perks.map((x) => <li key={x}>{x}</li>)}</ul>
     </article>
   )
@@ -211,11 +212,11 @@ export default function Home() {
             </div>
           </div>
           <div className="plans">
-            <Plan name="Gratuit" sub="Pour découvrir les outils" monthly={0} unit="FCFA, pour toujours" jetons={50} cta="Commencer gratuitement" annual={annual}
+            <Plan name="Gratuit" sub="Pour découvrir les outils" monthly={0} unit="FCFA, pour toujours" jetons={50} cta="Commencer gratuitement" to="/cinema" annual={annual}
               perks={['Modèle image standard', 'Vidéo en 720p, filigrane', '1 génération à la fois']} />
-            <Plan name="Basic" sub="Pour vos premiers contenus" monthly={7000} jetons={120} fixed cta="Choisir Basic" annual={annual}
+            <Plan name="Basic" sub="Pour vos premiers contenus" monthly={7000} jetons={120} fixed cta="Choisir Basic" to="/recharge?pack=createur" annual={annual}
               perks={['Modèle vidéo 2.5 en 720p', 'Sans filigrane', '2 générations en parallèle', 'Influenceur IA : 10 essais offerts']} />
-            <Plan name="Pro" sub="Pour créer tous les jours" monthly={PRO_TIERS[tier].monthly} jetons={PRO_TIERS[tier].jetons} cta="Choisir Pro" featured tag="Le plus choisi" annual={annual}
+            <Plan name="Pro" sub="Pour créer tous les jours" monthly={PRO_TIERS[tier].monthly} jetons={PRO_TIERS[tier].jetons} cta="Choisir Pro" to="/recharge?pack=studio" featured tag="Le plus choisi" annual={annual}
               picker={(
                 <div className="tier" role="radiogroup" aria-label="Jetons par mois">
                   {PRO_TIERS.map((t, i) => (

@@ -79,6 +79,14 @@ Les écrans de création et toute l'API exigent une session Clerk ; un compte = 
 - À la déconnexion ou au changement de compte, la bibliothèque et la marque gardées dans le navigateur sont effacées (ordinateur partagé).
 - Les nouveaux comptes n'ont pas de jetons en production (le crédit de bienvenue n'existe qu'en `ENV=dev`) : il faut un paiement ou un crédit offert avant d'ouvrir au public.
 
+## Recharges (Mobile Money, paygate)
+
+Les jetons s'achètent par packs (`packages/catalog/src/packs.js`) sur la page **Recharger** (`/recharge`), accessible depuis le solde, l'en-tête, la barre latérale de Cinéma, les formules de l'accueil et le message « solde insuffisant ».
+
+- Parcours : pack → numéro et opérateur → validation propre à l'opérateur (consignes rendues par paygate) → attente, la page interroge `/topups/:reference` jusqu'au résultat. Orange Burkina demande d'abord un code à usage unique obtenu par USSD ; Wave renvoie sur `/recharge/retour`.
+- Le navigateur n'envoie que le pack : le prix et les jetons viennent de l'API, qui crédite au webhook de paygate. Historique des recharges en bas de la page.
+- Pays proposés : `VITE_TOPUP_COUNTRIES` (variable de **build**, « BF » par défaut), à garder égale à `TOPUP_COUNTRIES` de l'API.
+
 ## Déploiement (Cloudflare)
 
 Un seul script déploie l'API (Worker, Durable Object, R2) puis le site (fichiers statiques) : `scripts/deploy.mjs`.

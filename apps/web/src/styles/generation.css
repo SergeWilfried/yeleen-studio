@@ -15,6 +15,7 @@
 .gx-err{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:#2a1816;font-size:13px;line-height:1.45;text-align:left}
 .gx-err b{color:var(--danger-ink)}
 .gx-err span{color:#d4d4d0}
+.gx-err .gx-topup{align-self:flex-start;margin-top:6px;padding:6px 12px;border-radius:9px;background:var(--lime);color:var(--on-lime);font-weight:700;text-decoration:none}
 .gx-refund{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;font-weight:600;color:var(--lime)}
 .gx-spin{display:block;width:16px;height:16px;border-radius:50%;border:2px solid rgba(214,255,63,.3);border-top-color:var(--lime);animation:gxspin .8s linear infinite}
 @keyframes gxspin{to{transform:rotate(360deg)}}

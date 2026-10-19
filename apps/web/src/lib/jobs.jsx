@@ -334,6 +334,7 @@ export function JobsProvider({ children }) {
     cancel,
     dismiss: (id) => dispatch({ type: 'DISMISS', id }),
     clearDone: (kind) => dispatch({ type: 'CLEAR_DONE', kind }),
+    syncBalance: (balance) => { if (typeof balance === 'number') dispatch({ type: 'SYNC_WALLET', balance }) }, // solde réel rendu par l'API (recharges)
   }), [state.jobs, state.balance, submit, cancel])
 
   return (
