@@ -9,10 +9,13 @@ import { AUDIO_MODELS, EXTEND_MODEL, IMAGE_MODELS, VIDEO_MODELS, durationOptions
 
 const videoTakes = (m) => (m.caps.audioRef === 'required' ? ['audio'] : m.caps.startFrame === 'required' ? ['image'] : m.caps.startFrame === 'none' ? ['text'] : ['text', 'image'])
 
+// Une chaîne s'exécute chez fal : un modèle servi par Runware y garde son point d'accès et son prix fal, ou n'y figure pas.
+const onFal = (m) => (m.provider !== 'runware' ? m : m.fal ? { ...m, ...m.fal } : null)
+
 /** Toutes les étapes possibles : un modèle, ce qu'il produit (kind) et ce qu'il accepte en entrée (takes). */
 export const ENTRIES = [
   ...IMAGE_MODELS.map((m) => ({ id: `img:${m.id}`, kind: 'image', takes: ['text'], model: m })),
-  ...VIDEO_MODELS.map((m) => ({ id: `vid:${m.id}`, kind: 'video', takes: videoTakes(m), model: m })),
+  ...VIDEO_MODELS.map(onFal).filter(Boolean).map((m) => ({ id: `vid:${m.id}`, kind: 'video', takes: videoTakes(m), model: m })),
   { id: 'vid:extend', kind: 'video', takes: ['video'], model: EXTEND_MODEL },
   ...AUDIO_MODELS.map((m) => ({ id: `aud:${m.id}`, kind: 'audio', takes: ['text'], model: m })),
 ]

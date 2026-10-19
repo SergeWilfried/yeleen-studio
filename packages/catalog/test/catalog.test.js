@@ -10,8 +10,31 @@ test('toJetons applique la marge ×2 et un plancher de 0,1', () => {
 test('chaque modèle a un identifiant unique et un prix', () => {
   for (const list of [IMAGE_MODELS, VIDEO_MODELS, AUDIO_MODELS]) {
     assert.equal(new Set(list.map((m) => m.id)).size, list.length)
-    for (const m of list) assert.ok(m.price && m.endpoint, m.id)
+    for (const m of list) assert.ok(m.price && (m.provider === 'runware' ? /^[a-z]+:[\w.-]+@[\w.-]+$/.test(m.air) : m.endpoint), m.id)
   }
+})
+
+test('Runware : le son et une vidéo en entrée changent le prix ; sans précision, le tarif le plus haut', () => {
+  const kling = findModel(VIDEO_MODELS, 'kling-3-pro')
+  assert.equal(videoCost(kling, 5, undefined), toJetons(0.168 * 5))
+  assert.equal(videoCost(kling, 5, undefined, { sound: false }), toJetons(0.112 * 5))
+  const veo = findModel(VIDEO_MODELS, 'veo-3-1-lite')
+  assert.equal(videoCost(veo, 8, '720p', { sound: false }), toJetons(0.03 * 8))
+  assert.equal(videoCost(veo, 8, '1080p'), toJetons(0.08 * 8))
+  const seed = findModel(VIDEO_MODELS, 'seedance-2-5')
+  assert.equal(videoCost(seed, 5, '480p'), toJetons(0.102 * 5))
+  assert.equal(videoCost(seed, 5, '480p', { sound: false }), videoCost(seed, 5, '480p')) // Seedance : même prix avec ou sans son
+  assert.equal(videoCost(seed, 5, '720p', { inputSecs: 30.2 }), toJetons(0.295 * 5)) // tarif « vidéo en entrée », durée produite seule
+})
+
+test('chaînes : les modèles Runware y gardent leur point d’accès et leur prix fal, ou n’y figurent pas', async () => {
+  const { ENTRIES } = await import('../src/chainDefs.js')
+  const vid = (id) => ENTRIES.find((e) => e.id === `vid:${id}`)?.model
+  assert.equal(vid('kling-3-pro').endpoint, 'fal-ai/kling-video/v3/pro/image-to-video')
+  assert.equal(vid('seedance-2-5').price.byRes['720p'], 0.473)
+  assert.equal(vid('veo-3-1-lite'), undefined)
+  assert.equal(vid('kling-3-std'), undefined)
+  for (const e of ENTRIES) assert.ok(e.model.endpoint, e.id)
 })
 
 test('les coûts sont positifs et croissent avec la quantité', () => {

@@ -240,7 +240,7 @@ export function GenerateBar({ s, title, meta, blocker, cost = s.cost, needsText 
   // Modèle à références (Seedance) : les vidéos citées sont facturées en entrée, le prix affiché en tient compte.
   const preview = live?.model.caps.references ? resolveMentions({ plans: s.plans, refs: s.refs, assets, caps: live.model.caps, files: live.files }) : null
   const inputSecs = preview ? preview.references.filter((r) => r.kind === 'video').reduce((n, r) => n + (r.asset.secs || 0), 0) : 0
-  const price = preview ? videoCost(live.model, secs, s.resolutions ? s.res : undefined, { inputSecs }) : cost
+  const price = preview ? videoCost(live.model, secs, s.resolutions ? s.res : undefined, { inputSecs, sound: s.sound }) : cost
   const onClick = async () => {
     const prompt = s.plans.map((p) => p.text.trim()).filter(Boolean).join(' / ')
     const base = meta ?? `${s.total} s · ${s.ratio} · ${s.draft ? '480p' : s.res}`

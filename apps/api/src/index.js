@@ -2,13 +2,14 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { AuthError, verifyClerkToken } from './auth.js'
 import { FalError, falClient } from './fal.js'
-import { buildInput, endpointFor, outputsOf } from './inputs.js'
+import { buildInput, endpointFor, outputsOf, runwareInput } from './inputs.js'
 import { TOPUP_COUNTRIES, findPack, toE164 } from '@studio/catalog/packs'
 import { addFavorite, assetView, catalog, deleteAsset, getAsset, insertUpload, ITEM_ID, listAssets, listFavorites, removeFavorite, SCOPES } from './library.js'
 import { ledgerOf } from './mirror.js'
 import { isBlocked } from './moderation.js'
 import { PaygateError, paygateClient, verifySignature } from './paygate.js'
 import { priceJob } from './pricing.js'
+import { runwareClient } from './runware.js'
 import { serveFile, storeOutputs, uploadKey } from './storage.js'
 import { newReference, topupView } from './topups.js'
 import { ensureUser, getUser, markWelcomed } from './users.js'
@@ -84,6 +85,8 @@ const call = async (c, path, body) => {
   return res.json()
 }
 const fal = (c) => falClient({ key: c.env.FAL_KEY })
+const runware = (c) => runwareClient({ key: c.env.RUNWARE_KEY })
+const onRunware = (model) => model.provider === 'runware' // voir le catalogue : Seedance 2.5, Kling 3.0, Veo 3.1 Lite
 
 const MAX_UPLOAD = 25 * 1024 * 1024
 const UPLOAD_TYPES = /^(image\/(png|jpeg|webp|gif)|audio\/(mpeg|mp3|wav|x-wav|mp4|x-m4a|aac|ogg|webm|flac))$/
@@ -219,7 +222,8 @@ function requestOf(req, texts) {
   return { prompt: texts.map((t) => t.trim()).filter(Boolean).join(' / ').slice(0, 2000) || null, params: params.length <= 4000 ? params : null, secs: typeof req.secs === 'number' ? req.secs : null }
 }
 
-// Soumission : contrôle du texte et prix serveur → débit → envoi à fal. Si l'envoi échoue, remboursement immédiat.
+// Soumission : contrôle du texte et prix serveur → débit → envoi au fournisseur du modèle (fal ou Runware). Si l'envoi échoue,
+// remboursement immédiat.
 app.post('/jobs', async (c) => {
   const req = await c.req.json()
   const price = priceJob(req)
@@ -229,6 +233,8 @@ app.post('/jobs', async (c) => {
   // Garde-fou tant qu'il n'y a ni connexion ni plafond par compte : on refuse une seule demande très coûteuse.
   const cap = Number(c.env.MAX_JOB_COST ?? 250)
   if (price.cost > cap) return c.json({ error: 'too_expensive', max: cap }, 400)
+  // Sans clé Runware, ses modèles sont refusés avant tout débit : les servir chez fal coûterait plus que leur prix au catalogue.
+  if (onRunware(price.model) && !c.env.RUNWARE_KEY) return c.json({ error: 'provider_unavailable' }, 503)
 
   const id = crypto.randomUUID()
   // Clé de demande : la même demande rejouée (double clic, nouvel essai après une coupure) ne coûte qu'une fois.
@@ -243,32 +249,58 @@ app.post('/jobs', async (c) => {
   if (!debit.ok) { await call(c, '/job/release', { jobId: id }); return c.json(debit, 402) } // { error: 'insufficient', missing } : le message que l'interface affiche déjà
 
   let sub
-  const endpoint = req.kind === 'video' ? endpointFor(price.model, req) : price.model.endpoint
+  const provider = onRunware(price.model) ? 'runware' : 'fal'
+  const endpoint = endpointFor(price.model)
   try {
-    const input = buildInput(req.kind, price.model, { ...req, count: price.count, endUserId: accountId(c) })
-    sub = await fal(c).submit(endpoint, input)
+    const withUser = { ...req, count: price.count, endUserId: accountId(c) }
+    sub = provider === 'runware' ? await runware(c).submit(runwareInput(price.model, withUser)) : await fal(c).submit(endpoint, buildInput(req.kind, price.model, withUser))
   } catch (e) {
     const back = await call(c, '/refund', { jobId: id })
     await call(c, '/job/release', { jobId: id })
-    console.error('submit fal', e.message)
-    const policy = e instanceof FalError && e.isContentPolicy
+    console.error(`submit ${provider}`, e.message)
+    const policy = e?.isContentPolicy === true // FalError ou RunwareError
     return c.json({ error: policy ? 'moderation' : 'provider', refunded: back.refunded ?? price.cost, balance: back.balance }, policy ? 422 : 502)
   }
 
-  const job = { id, kind: req.kind, modelId: price.model.id, endpoint, cost: price.cost, count: price.count, status: 'IN_QUEUE', createdAt: Date.now(), ...sub, ...requestOf(req, texts) }
+  // Runware n'a pas de file visible ni d'annulation : la génération est « en cours » dès l'envoi (et une annulation n'est pas remboursée).
+  const status = provider === 'runware' ? 'IN_PROGRESS' : 'IN_QUEUE'
+  const job = { id, kind: req.kind, modelId: price.model.id, provider, endpoint, cost: price.cost, count: price.count, status, createdAt: Date.now(), ...(provider === 'runware' ? { startedAt: Date.now() } : {}), ...sub, ...requestOf(req, texts) }
   await call(c, '/job/put', job)
   return c.json({ jobId: id, status: job.status, cost: price.cost, balance: debit.balance }, 202)
 })
 
 const view = (job, extra = {}) => ({ jobId: job.id, status: job.status, outputs: job.outputs, failure: job.failure, refund: job.refund ?? 0, ...extra })
 
-// Suivi : on interroge fal tant que la génération est active ; un échec rembourse (une seule fois).
+/**
+ * État d'une génération chez son fournisseur, au même format pour fal et Runware :
+ * { status: IN_QUEUE | IN_PROGRESS | COMPLETED | FAILED, queuePosition?, logs?, result?, failure? }.
+ */
+async function providerStatus(c, job) {
+  if (job.provider === 'runware') {
+    const st = await runware(c).poll(job.taskUUID)
+    if (st.status === 'FAILED') {
+      console.error('résultat runware', st.error.message)
+      return { status: 'FAILED', failure: st.error.isContentPolicy ? 'moderation' : 'provider' }
+    }
+    return { status: st.status, result: st.result, logs: typeof st.progress === 'number' ? [`${st.progress} %`] : [] }
+  }
+  const client = fal(c)
+  const st = await client.status(job.statusUrl)
+  if (st.status !== 'COMPLETED') return st
+  try {
+    return { status: 'COMPLETED', result: await client.result(job.responseUrl) }
+  } catch (e) {
+    console.error('résultat fal', e.message)
+    return { status: 'FAILED', failure: e instanceof FalError && e.isContentPolicy ? 'moderation' : 'provider' }
+  }
+}
+
+// Suivi : on interroge le fournisseur tant que la génération est active ; un échec rembourse (une seule fois).
 app.get('/jobs/:id', async (c) => {
   const job = await account(c).fetch(`https://account/job/get?id=${c.req.param('id')}`).then((r) => r.json())
   if (!job) return c.json({ error: 'not_found' }, 404)
   if (job.status === 'COMPLETED' || job.status === 'FAILED' || job.status === 'CANCELED') return c.json(view(job, { balance: (await call(c, '/balance')).balance }))
 
-  const client = fal(c)
   const fail = async (failure) => {
     const back = await call(c, '/refund', { jobId: job.id })
     const next = { ...job, status: 'FAILED', failure, refund: back.refunded ?? job.cost, finishedAt: Date.now() }
@@ -276,18 +308,14 @@ app.get('/jobs/:id', async (c) => {
     return c.json(view(next, { balance: back.balance }))
   }
   try {
-    const st = await client.status(job.statusUrl)
+    const st = await providerStatus(c, job)
+    if (st.status === 'FAILED') return fail(st.failure)
     if (st.status !== 'COMPLETED') {
       const next = { ...job, status: st.status, ...(st.status === 'IN_PROGRESS' && !job.startedAt ? { startedAt: Date.now() } : {}) }
       if (next.status !== job.status) await call(c, '/job/put', next)
-      return c.json(view(next, { queuePosition: st.queuePosition, logs: st.logs.slice(-3), balance: (await call(c, '/balance')).balance }))
+      return c.json(view(next, { queuePosition: st.queuePosition ?? 0, logs: (st.logs ?? []).slice(-3), balance: (await call(c, '/balance')).balance }))
     }
-    let result
-    try { result = await client.result(job.responseUrl) } catch (e) {
-      console.error('résultat fal', e.message)
-      return fail(e instanceof FalError && e.isContentPolicy ? 'moderation' : 'provider')
-    }
-    const found = outputsOf(job.kind, result)
+    const found = outputsOf(job.kind, st.result)
     if (!found.length) return fail('provider')
     // Copie dans R2 : un seul suivi à la fois s'en charge ; les autres voient « enregistrement » et réessaient.
     if (job.storingAt && Date.now() - job.storingAt < 60_000) return c.json(view({ ...job, status: 'IN_PROGRESS' }, { logs: ['Enregistrement du résultat'], balance: (await call(c, '/balance')).balance }))
@@ -297,7 +325,7 @@ app.get('/jobs/:id', async (c) => {
     await call(c, '/job/put', next)
     return c.json(view(next, { balance: (await call(c, '/balance')).balance }))
   } catch (e) {
-    console.error('suivi fal', e.message) // erreur passagère : l'interface réessaiera
+    console.error(`suivi ${job.provider ?? 'fal'}`, e.message) // erreur passagère : l'interface réessaiera
     return c.json({ error: 'upstream' }, 502)
   }
 })
@@ -305,12 +333,13 @@ app.get('/jobs/:id', async (c) => {
 // Fichiers générés, conservés dans R2. Accès par adresse (non devinable) tant qu'il n'y a pas de comptes.
 app.get('/files/*', (c) => serveFile(c.env.FILES, c.req.path.slice('/files/'.length), c.req.raw.headers))
 
-// Annulation : remboursement complet si la génération n'a pas commencé ; sinon fal la facture, rien n'est remboursé.
+// Annulation : remboursement complet si la génération n'a pas commencé ; sinon le fournisseur la facture, rien n'est remboursé.
+// Runware ne sait pas annuler : la génération continue chez lui (et lui est payée), on cesse seulement de la suivre.
 app.post('/jobs/:id/cancel', async (c) => {
   const job = await account(c).fetch(`https://account/job/get?id=${c.req.param('id')}`).then((r) => r.json())
   if (!job) return c.json({ error: 'not_found' }, 404)
   if (job.status !== 'IN_QUEUE' && job.status !== 'IN_PROGRESS') return c.json(view(job))
-  try { await fal(c).cancel(job.cancelUrl) } catch (e) { console.error('annulation fal', e.message) }
+  if (job.provider !== 'runware') try { await fal(c).cancel(job.cancelUrl) } catch (e) { console.error('annulation fal', e.message) }
   const back = job.status === 'IN_QUEUE' ? await call(c, '/refund', { jobId: job.id }) : { refunded: 0, balance: (await call(c, '/balance')).balance }
   const next = { ...job, status: 'CANCELED', refund: back.refunded ?? 0, finishedAt: Date.now() }
   await call(c, '/job/put', next)

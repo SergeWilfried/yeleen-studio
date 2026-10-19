@@ -66,7 +66,7 @@ function assignRoles(list, caps, files) {
     if (caps.references) {
       if (used[asset.kind] < caps.references[`${asset.kind}s`]) { used[asset.kind]++; references.push({ kind: asset.kind, asset }); role = 'reference'; n = used[asset.kind] }
     } else if (caps.elements) {
-      if ((asset.kind === 'image' || asset.kind === 'video') && elements.length < MAX_ELEMENTS) { elements.push(asset); role = 'element'; n = elements.length }
+      if ((asset.kind === 'image' || asset.kind === 'video') && elements.length < (caps.maxElements ?? MAX_ELEMENTS)) { elements.push(asset); role = 'element'; n = elements.length }
     } else if (asset.kind === 'image') {
       if (startFree) { slots.start = asset; startFree = false; role = 'start' } else if (endFree) { slots.end = asset; endFree = false; role = 'end' }
     } else if (asset.kind === 'audio' && audioFree) { slots.audio = asset; audioFree = false; role = 'audio' }

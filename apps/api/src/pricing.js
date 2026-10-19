@@ -81,14 +81,16 @@ function priceVideo(req, model) {
   if (Object.values(files).some((u) => u && !FAL_FILE.test(u))) return { ok: false, error: 'invalid_file_url' } // seulement des fichiers déposés chez fal via /uploads
   if (req.elements?.length) {
     if (!c.elements) return { ok: false, error: 'elements_unsupported' }
-    if (req.elements.length > 4 || req.elements.some((e) => !['image', 'video'].includes(e.kind) || !FAL_FILE.test(e.url ?? ''))) return { ok: false, error: 'invalid_elements' }
+    if (req.elements.length > (c.maxElements ?? 4) || req.elements.some((e) => !['image', 'video'].includes(e.kind) || !FAL_FILE.test(e.url ?? ''))) return { ok: false, error: 'invalid_elements' }
   }
 
-  // Vidéos de référence : fal facture leur durée (et, pour une modification, une sortie aussi longue que la vidéo), mais le serveur
-  // ne peut pas la mesurer et ne croit pas celle que le client annonce : il compte le pire cas (30,2 s en entrée, durée maximale en
-  // sortie pour une modification). Le prix affiché dans l'interface peut donc être plus bas que le prix facturé, jamais l'inverse ;
-  // à rapprocher quand le serveur mesurera lui-même la durée du fichier (et qu'on pourra déposer des vidéos, voir /uploads).
+  // Vidéos de référence : elles changent le tarif (Runware : tarif « vidéo en entrée » ; fal : leur durée est aussi facturée), et une
+  // modification produit une vidéo aussi longue que la source. Le serveur ne peut pas mesurer ces durées et ne croit pas celles que le
+  // client annonce : il compte le pire cas (30,2 s en entrée, durée maximale en sortie pour une modification). Le prix affiché dans
+  // l'interface peut donc être plus bas que le prix facturé, jamais l'inverse ; à rapprocher quand le serveur mesurera lui-même la
+  // durée du fichier. Le son compte aussi quand le fournisseur facture moins cher sans (Kling 3.0, Veo 3.1 Lite).
   const inputSecs = count('video') ? 30.2 : 0
   const billedSecs = task === 'editing' ? c.duration.max : secs
-  return { ok: true, model, count: 1, cost: videoCost(model, billedSecs, c.resolutions ? req.resolution : undefined, { inputSecs }) }
+  const sound = c.audio === 'always' || req.sound !== false
+  return { ok: true, model, count: 1, cost: videoCost(model, billedSecs, c.resolutions ? req.resolution : undefined, { inputSecs, sound }) }
 }
