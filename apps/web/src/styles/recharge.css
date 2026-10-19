@@ -1,43 +1,80 @@
-/* Recharge Mobile Money : une colonne centrée, cartes sur fond sombre, une seule action principale (vert). */
-.rc .rc-main{width:min(100%,640px);margin:0 auto;padding:28px 16px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
+/* Recharge Mobile Money : une colonne centrée, un parcours en quatre étapes, une seule action principale (vert) par étape. */
+.rc .rc-main{width:min(100%,680px);margin:0 auto;padding:28px 16px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
 .rc .rc-head h1{font-size:34px;line-height:1}
 .rc .rc-head p{margin:8px 0 0;color:var(--ink-2);line-height:1.5}
 .rc .rc-head b{color:var(--ink);font-variant-numeric:tabular-nums}
 .rc .rc-card{display:flex;flex-direction:column;gap:18px;padding:20px;border:1px solid var(--line-soft);border-radius:16px;background:var(--surface)}
 .rc .rc-card h2{font-size:18px}
-.rc fieldset{margin:0;padding:0;border:0;min-width:0;display:flex;flex-direction:column;gap:10px}
-.rc fieldset:disabled{opacity:.7}
-.rc legend{padding:0 0 10px;font-weight:700;font-size:15px}
+.rc fieldset{margin:0;padding:0;border:0;min-width:0}
 
+/* Étapes */
+.rc .rc-stepper{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rc .rc-stepper li>*{display:flex;align-items:center;gap:8px;width:100%;padding:0 0 10px;border:0;border-bottom:3px solid var(--fill);background:none;color:var(--ink-4);font:inherit;font-size:13px;font-weight:600;text-align:left}
+.rc .rc-stepper i{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--fill);color:var(--ink-3);font-style:normal;font-size:12px;font-variant-numeric:tabular-nums}
+.rc .rc-stepper li.on>*{border-bottom-color:var(--lime);color:var(--ink)}
+.rc .rc-stepper li.on i{background:var(--lime);color:var(--on-lime)}
+.rc .rc-stepper li.done>*{border-bottom-color:#4b5a1c;color:var(--ink-2)}
+.rc .rc-stepper li.done i{background:#26300f;color:var(--lime)}
+.rc .rc-stepper button{cursor:pointer;min-height:44px;align-items:flex-end}
+.rc .rc-stepper span{min-height:44px;align-items:flex-end;box-sizing:border-box}
+.rc .rc-stepper button:hover{color:var(--ink)}
+
+/* Rappel des choix */
+.rc .rc-sum{margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.rc .rc-sum>div{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 12px;border-radius:10px;background:var(--field);border:1px solid var(--line-soft)}
+.rc .rc-sum dt{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
+.rc .rc-sum dd{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.rc .rc-sum button{border:0;border-radius:8px;padding:4px 8px;background:none;color:var(--ink-3);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rc .rc-sum button:hover{color:var(--ink);background:var(--fill)}
+.rc .rc-sum>div:has(dd):not(:has(button)){padding-right:12px}
+
+.rc .rc-panel{display:flex;flex-direction:column;gap:16px}
+.rc .rc-panel h2{font-size:22px;outline:none}
+.rc .rc-lead{margin:0;color:var(--ink-2);line-height:1.5}
+
+/* Étape 1 : packs */
 .rc .rc-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.rc .rc-packs legend{grid-column:1/-1}
-.rc .rc-pack{position:relative;display:flex;flex-direction:column;gap:4px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--field);cursor:pointer}
+.rc .rc-pack{position:relative;display:flex;flex-direction:column;gap:6px;padding:18px 16px;border:1px solid var(--line);border-radius:14px;background:var(--field);cursor:pointer}
 .rc .rc-pack:hover{border-color:var(--line-strong)}
 .rc .rc-pack.on{border-color:var(--lime);background:#1b2010}
 .rc .rc-pack input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
 .rc .rc-pack:has(input:focus-visible){outline:2px solid var(--lime);outline-offset:2px}
-.rc .rc-pack b{font-size:17px}
-.rc .rc-pack span{font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.rc .rc-pack b{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-size:34px;line-height:1;font-weight:800;font-variant-numeric:tabular-nums}
+.rc .rc-pack b span{font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:normal;font-size:14px;font-weight:600;color:var(--ink-2)}
+.rc .rc-pack strong{font-size:15px;font-variant-numeric:tabular-nums}
 .rc .rc-pack small{color:var(--ink-4);font-size:12px}
 .rc .rc-pack.on b{color:var(--lime)}
 
+/* Étape 2 : opérateurs, une rangée pleine largeur chacun */
 .rc .seg{display:flex;flex-wrap:wrap;gap:6px}
 .rc .seg button{padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink-2);font-weight:600}
 .rc .seg button.on{border-color:var(--lime);color:var(--lime);background:#1b2010}
-.rc .rc-phone{display:flex;flex-direction:column;gap:6px}
-.rc .rc-phone>span{font-size:13px;color:var(--ink-3)}
+.rc .rc-ops{display:flex;flex-direction:column;gap:10px}
+.rc .rc-op{display:flex;align-items:center;gap:14px;width:100%;min-height:72px;padding:12px 16px;border:1px solid var(--line);border-radius:14px;background:var(--field);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.rc .rc-op:hover{border-color:var(--line-strong);background:#141518}
+.rc .rc-op.on{border-color:var(--lime)}
+.rc .rc-op>i{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;font-style:normal;font-weight:800;font-size:20px;color:#fff}
+.rc .rc-op-orange>i{background:#ff7900;color:#111}
+.rc .rc-op-moov>i{background:#0060a9}
+.rc .rc-op-wave>i{background:#1dc8f2;color:#111}
+.rc .rc-op>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rc .rc-op b{font-size:16px}
+.rc .rc-op small{font-size:13px;color:var(--ink-3)}
+.rc .rc-op>svg{flex:none;color:var(--ink-4)}
+
+/* Étape 3 : numéro, et code d'Orange Burkina */
+.rc .rc-phone{display:flex;flex-direction:column;gap:8px}
+.rc .rc-phone>span{color:var(--ink-2);line-height:1.5}
 .rc .rc-phone>div{display:flex;align-items:center;border:1px solid var(--line);border-radius:12px;background:var(--field)}
 .rc .rc-phone>div:focus-within{border-color:var(--lime)}
-.rc .rc-phone em{font-style:normal;padding-left:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.rc .rc-phone input{flex:1;min-width:0;padding:12px;border:0;background:none;color:var(--ink);font:inherit;font-size:16px;font-variant-numeric:tabular-nums;outline:none}
+.rc .rc-phone em{font-style:normal;padding-left:14px;color:var(--ink-3);font-size:18px;font-variant-numeric:tabular-nums}
+.rc .rc-phone input{flex:1;min-width:0;padding:14px;border:0;background:none;color:var(--ink);font:inherit;font-size:18px;letter-spacing:.02em;font-variant-numeric:tabular-nums;outline:none}
 .rc .rc-phone small{font-size:12px;color:var(--ink-4)}
-
-.rc .rc-code p{margin:0;color:var(--ink-2);line-height:1.5}
 .rc .rc-steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;line-height:1.5;color:var(--ink)}
-.rc .rc-dial{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;background:var(--fill);font-weight:600;font-variant-numeric:tabular-nums}
+.rc .rc-dial{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:10px;background:var(--fill);font-weight:600;font-variant-numeric:tabular-nums}
 
 .rc .rc-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.rc .rc-pay{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 20px;border:0;border-radius:12px;background:var(--lime);color:var(--on-lime);font-weight:700;font-size:15px;cursor:pointer}
+.rc .rc-pay{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 22px;border:0;border-radius:12px;background:var(--lime);color:var(--on-lime);font-weight:700;font-size:15px;cursor:pointer}
 .rc .rc-pay:hover{filter:brightness(.92)}
 .rc .rc-pay:disabled{opacity:.6;cursor:progress}
 .rc .rc-ghost{min-height:46px;padding:0 16px;border:1px solid var(--line);border-radius:12px;background:none;color:var(--ink-2);font-weight:600;cursor:pointer}
@@ -45,22 +82,26 @@
 .rc .rc-err{margin:0;padding:10px 12px;border-radius:10px;background:#2a1816;color:var(--danger-ink);line-height:1.45}
 .rc .rc-note{margin:0;font-size:12px;line-height:1.5;color:var(--ink-4)}
 
+/* Étape 4 : attente et résultat */
 .rc .rc-wait,.rc .rc-result{display:flex;gap:14px;align-items:flex-start}
 .rc .rc-wait>div,.rc .rc-result>div{display:flex;flex-direction:column;gap:10px;min-width:0}
-.rc .rc-wait b,.rc .rc-result b{font-size:16px}
+.rc .rc-wait b,.rc .rc-result b{font-size:18px}
 .rc .rc-wait p,.rc .rc-result p{margin:0;line-height:1.5;color:var(--ink-2)}
-.rc .rc-left b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink)}
-.rc .rc-spin{flex:none;width:22px;height:22px;border-radius:50%;border:3px solid var(--fill);border-top-color:var(--lime);animation:rcspin 1s linear infinite}
+.rc .rc-left b{font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.rc .rc-spin{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:3px solid var(--fill);border-top-color:var(--lime);animation:rcspin 1s linear infinite}
 @keyframes rcspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.rc .rc-spin{animation-duration:3s}}
-.rc .rc-result.ok>svg{color:var(--lime);flex:none}
-.rc .rc-result.ko>svg{color:var(--danger-ink);flex:none}
+.rc .rc-result>svg{flex:none;margin-top:2px}
+.rc .rc-result.ok>svg{color:var(--lime)}
+.rc .rc-result.ko>svg{color:var(--danger-ink)}
 
+/* Historique */
 .rc .rc-hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .rc .rc-hist li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line-soft)}
 .rc .rc-hist li>div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .rc .rc-hist span{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
 .rc .rc-hist small{color:var(--ink-4);font-size:12px}
+.rc .rc-hist .rc-nw{white-space:nowrap}
 .rc .rc-st{flex:none;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;border:0;white-space:nowrap}
 .rc .rc-st-completed{background:#26300f;color:var(--lime)}
 .rc .rc-st-failed,.rc .rc-st-expired{background:#2a1816;color:var(--danger-ink)}
@@ -69,6 +110,10 @@
 
 @media (max-width:560px){
   .rc .rc-packs{grid-template-columns:1fr}
+  .rc .rc-pack{flex-direction:row;flex-wrap:wrap;align-items:baseline;column-gap:12px;padding:14px 16px}
+  .rc .rc-pack b{font-size:28px}
+  .rc .rc-pack small{flex-basis:100%}
+  .rc .rc-stepper li>*{flex-direction:column;align-items:flex-start;gap:4px;font-size:11px}
   .rc .rc-head h1{font-size:28px}
   .rc .rc-card{padding:16px}
 }
