@@ -39,4 +39,7 @@
   --z-menu: 30;
   --z-toast: 60;
   --z-skip: 70;
+
+  /* Caractères : Archivo (condensé) pour les titres, Hanken Grotesk pour tout le reste */
+  --font-body: 'Hanken Grotesk', Helvetica, sans-serif;
 }

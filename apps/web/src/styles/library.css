@@ -38,7 +38,7 @@ dialog.picker{position:fixed;inset:0 0 0 auto;margin:0;width:min(440px,100vw);he
 dialog.picker[open]{display:flex}
 dialog.picker::backdrop{background:rgba(0,0,0,.55)}
 dialog.picker header{display:flex;align-items:center;justify-content:space-between}
-dialog.picker h2{margin:0;font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:100%;text-transform:none;font-size:18px;font-weight:700}
+dialog.picker h2{margin:0;font-family:var(--font-body);font-stretch:100%;text-transform:none;font-size:18px;font-weight:700}
 .picker-bar{display:flex;gap:8px}
 .picker-grid{flex:1;min-height:0;overflow-y:auto;align-content:start;list-style:none;margin:0;padding:2px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
 .picker-grid button{position:relative;display:flex;flex-direction:column;gap:6px;width:100%;padding:6px;border:1px solid var(--fill);border-radius:12px;background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer;transition:border-color .15s}

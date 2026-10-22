@@ -1,5 +1,5 @@
 /* Studio cinéma : deux panneaux arrondis (barre latérale et scène), pile de cartes, compositeur à deux colonnes. */
-.cn{--panel:#121315;--card:var(--raised);--chip:var(--fill-hover);display:flex;min-height:100vh;padding:8px;gap:8px;background:#08090a;color:var(--ink);font-family:'Instrument Sans',Helvetica,sans-serif}
+.cn{--panel:#121315;--card:var(--raised);--chip:var(--fill-hover);display:flex;min-height:100vh;padding:8px;gap:8px;background:#08090a;color:var(--ink);font-family:var(--font-body)}
 .cn button{font-family:inherit}
 .cn-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:40px 32px;border-radius:20px;background:var(--bg);border:1px solid var(--line-soft)}
 .cn-main:focus{outline:0}

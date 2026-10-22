@@ -1,5 +1,5 @@
 .home a{color:inherit;text-decoration:none}
-.pg.home{background:var(--bg);color:var(--ink);font-family:'Instrument Sans',Helvetica,sans-serif;font-size:15px;min-height:100%}
+.pg.home{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;min-height:100%}
 .home h2,.home h3,.home .hd{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-weight:800;text-transform:uppercase;margin:0;letter-spacing:-.01em}
 .home .nv{position:sticky;top:0;z-index:var(--z-sticky);background:rgba(13,14,16,.92);height:64px;display:flex;align-items:center;gap:16px;padding:0 24px;box-sizing:border-box;flex-wrap:nowrap}
 .home .lg{height:38px;padding:0 2px;background:none;display:flex;align-items:center;flex:none}

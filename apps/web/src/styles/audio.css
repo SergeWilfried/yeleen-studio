@@ -23,7 +23,7 @@
 .audio .cv p.s{margin:8px 0 0;color:var(--ink-3);font-size:15px;text-align:center}
 .audio .two{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%}
 .audio .cd{border:1px solid var(--line-soft);border-radius:20px;padding:22px 24px 16px;background:#0e0f11}
-.audio .cd h3{font-size:18px;font-weight:500;margin:0;font-family:'Instrument Sans',sans-serif;text-transform:none}
+.audio .cd h3{font-size:18px;font-weight:500;margin:0;font-family:var(--font-body);text-transform:none}
 .audio .cd p{margin:6px 0 14px;color:var(--ink-4);font-size:13px;line-height:1.5;max-width:260px}
 .audio .il{height:240px;border-radius:12px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 30% 20%,#2a4a1a,#0d1308 70%)}
 .audio .vp{position:absolute;display:flex;align-items:center;gap:10px;border-radius:999px;background:rgba(255,255,255,.12);padding:6px 24px 6px 6px}
