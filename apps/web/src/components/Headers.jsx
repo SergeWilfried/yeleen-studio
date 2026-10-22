@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import Icon from '../lib/icons.jsx'
 import BalanceChip from './BalanceChip.jsx'
+import Cauri from './Cauri.jsx'
 import { AccountMenu, authEnabled, useAuthState } from '../lib/auth.jsx'
 import { features } from '../lib/features.js'
 import { useLibrary } from '../lib/libraryDialog.jsx'
@@ -82,7 +83,7 @@ export function HomeHeader() {
       <Logo />
       <NavLinks />
       <div className="rt">
-        <a href="#tarifs" className="pb">Tarifs</a>
+        <a href="#tarifs" className="pb"><Cauri size={16} />Tarifs</a>
         <HomeAccount />
       </div>
     </header>

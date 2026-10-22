@@ -17,6 +17,7 @@ import { logoFor } from '../lib/modelLogos.js'
 import ModelLogo from '../components/ModelLogo.jsx'
 import '../styles/shell.css'
 import '../styles/image.css'
+import Cauri from '../components/Cauri.jsx'
 
 const g = (i) => gradient(i, 'image')
 const COLLAGE = [
@@ -112,7 +113,7 @@ export default function ImageGen() {
                 <b style={{ fontWeight: 600 }}>{n}/{caps.maxImages}</b>
                 <button type="button" onClick={() => setCount((c) => Math.min(caps.maxImages, c + 1))} aria-label="Plus">+</button>
               </span>
-              <button type="button" className="gen2" disabled={!prompt.trim()} onClick={generate}>Générer<small><Icon name="sparkle" size={13} />{jetons(cost)}</small></button>
+              <button type="button" className="gen2" disabled={!prompt.trim()} onClick={generate}>Générer<small><Cauri size={15} />{jetons(cost)}</small></button>
             </div>
           </div>
         </div>

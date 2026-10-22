@@ -28,6 +28,7 @@ import useGenSettings from '../lib/useGenSettings.js'
 import '../styles/shell.css'
 import '../styles/library.css'
 import '../styles/cinema.css'
+import Cauri from '../components/Cauri.jsx'
 
 // Le modèle audio vers vidéo se pilote par un fichier audio : il a sa place dans l'écran Vidéo, pas ici.
 const VIDEO_LIST = VIDEO_MODELS.filter((m) => m.input !== 'audio')
@@ -285,7 +286,7 @@ export default function Cinema() {
                 {(error || needs || planHint || idle || long) && <p className={`cn-hint${error ? ' bad' : ''}`} role={error ? 'alert' : 'status'}>{error || needs || planHint || idle || long}</p>}
               </div>
               <button type="button" className="cn-gen" disabled={blocked} onClick={generate} title={needs ?? (emptyPlan >= 0 ? (s.multi ? `Décrivez le plan ${emptyPlan + 1}` : 'Décrivez d’abord la scène') : (video && caps.startFrame === 'required' && !ref.slots.start ? 'Ajoutez une image avec +' : undefined))}>
-                <b>Générer</b><span><Icon name="sparkle" size={14} />{jetons(cost)}</span>
+                <b>Générer</b><span><Cauri size={16} />{jetons(cost)}</span>
               </button>
 
               <div className="cn-bar">

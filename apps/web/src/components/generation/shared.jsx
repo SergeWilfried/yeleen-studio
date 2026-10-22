@@ -1,6 +1,7 @@
 import { RechargeButton } from '../../lib/rechargeDialog.jsx'
 import Icon from '../../lib/icons.jsx'
 import { FAILURES, jetonLabel, jetons, useJobs } from '../../lib/jobs.jsx'
+import { Amount } from '../Cauri.jsx'
 
 export const LABEL = { IN_QUEUE: 'En file d’attente', IN_PROGRESS: 'En cours', COMPLETED: 'Terminée', FAILED: 'Échec', CANCELED: 'Annulée' }
 export const isActive = (j) => j.status === 'IN_QUEUE' || j.status === 'IN_PROGRESS'
@@ -18,7 +19,7 @@ export function StatusLine({ job, running }) {
   if (job.live && job.status === 'IN_PROGRESS') return <>≈ {Math.round(job.progress)} % (estimation) · {job.logs[job.logs.length - 1].msg}</>
   if (job.status === 'IN_QUEUE') return <>Position {job.queuePosition} · attente ≈ {seconds(job.eta)} s · {running} en cours (limite : 2)</>
   if (job.status === 'IN_PROGRESS') return <>{Math.round(job.progress)} % · ≈ {remaining(job)} s restantes · {job.logs[job.logs.length - 1].msg}</>
-  if (job.status === 'COMPLETED') return <>Terminée en {seconds(job.finishedAt - job.startedAt)} s · {jetonLabel(job.cost)}{job.attempt > 1 ? ` · tentative ${job.attempt}` : ''}</>
+  if (job.status === 'COMPLETED') return <>Terminée en {seconds(job.finishedAt - job.startedAt)} s · <Amount n={job.cost} word />{job.attempt > 1 ? ` · tentative ${job.attempt}` : ''}</>
   return null
 }
 
@@ -38,7 +39,7 @@ export function RefundNote({ job }) {
   if ((job.status !== 'FAILED' && job.status !== 'CANCELED') || !(job.refund > 0)) return null
   return (
     <p className="gx-refund">
-      <Icon name="check" size={14} />Remboursé : +{jetonLabel(job.refund)}{job.status === 'CANCELED' && job.refund < job.cost ? ' (part non consommée)' : ''}
+      <Icon name="check" size={14} />Remboursé : +<Amount n={job.refund} word />{job.status === 'CANCELED' && job.refund < job.cost ? ' (part non consommée)' : ''}
     </p>
   )
 }

@@ -7,6 +7,7 @@ import { features } from '../../lib/features.js'
 import { jetons, useJobs } from '../../lib/jobs.jsx'
 import { useLibrary } from '../../lib/libraryDialog.jsx'
 import { useRecharge } from '../../lib/rechargeDialog.jsx'
+import { Amount } from '../Cauri.jsx'
 
 const PROMO = 'studio.cinema.promo.v1'
 const dismissed = () => { try { return localStorage.getItem(PROMO) === 'off' } catch { return false } }
@@ -97,7 +98,7 @@ export default function Sidebar({ collapsed, onToggle, mode, onMode }) {
         </button>
         <div className="cs-user">
           <AccountMenu fallback={<span className="av" aria-hidden="true" />} />
-          {!collapsed && <span className="cs-who">Mon compte<small>{jetons(balance)} cauris</small></span>}
+          {!collapsed && <span className="cs-who">Mon compte<small><Amount n={balance} word /></small></span>}
           {collapsed && <span className="sr-only">Mon compte, {jetons(balance)} cauris</span>}
         </div>
       </div>

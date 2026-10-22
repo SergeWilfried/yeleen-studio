@@ -19,6 +19,7 @@ import Flag from '../components/Flag.jsx'
 import ModelLogo from '../components/ModelLogo.jsx'
 import '../styles/shell.css'
 import '../styles/audio.css'
+import Cauri from '../components/Cauri.jsx'
 
 // Avatar d'une voix : un dégradé de teinte propre à chaque voix (repère visuel, pas un portrait).
 const avatar = (i) => `radial-gradient(circle at 40% 30%,hsl(${(i * 47 + 18) % 360} 55% 72%),hsl(${(i * 47 + 18) % 360} 45% 26%) 72%)`
@@ -123,7 +124,7 @@ export default function Audio() {
             </span>
           </div>
           {error && <p className="ep-gerr" role="alert">{error}</p>}
-          <button type="button" className="gen" disabled={!script.trim()} onClick={generate}>Générer<span className="gcost"><Icon name="sparkle" size={16} />{jetons(cost)}</span></button>
+          <button type="button" className="gen" disabled={!script.trim()} onClick={generate}>Générer<span className="gcost"><Cauri size={18} />{jetons(cost)}</span></button>
           </div>
         </aside>
 
@@ -180,7 +181,7 @@ export default function Audio() {
                       </button>
                     )}
                   </div>
-                  <button type="button" className="gn" disabled={!script.trim()} onClick={generate}>Générer <span className="gcost"><Icon name="sparkle" size={15} />{jetons(cost)}</span></button>
+                  <button type="button" className="gn" disabled={!script.trim()} onClick={generate}>Générer <span className="gcost"><Cauri size={17} />{jetons(cost)}</span></button>
                 </div>
               </div>
             </div>
