@@ -4,7 +4,6 @@ import Home from './pages/Home.jsx'
 import { JobsProvider } from './lib/jobs.jsx'
 import { AssetsProvider } from './lib/assets.jsx'
 import { CatalogProvider } from './lib/catalog.jsx'
-import { ChainsProvider } from './lib/chains.jsx'
 import { HandoffProvider } from './lib/handoff.jsx'
 import { LibraryDialogProvider } from './lib/libraryDialog.jsx'
 import { RechargeDialogProvider, RechargeRoute } from './lib/rechargeDialog.jsx'
@@ -38,7 +37,6 @@ export default function App() {
     <AssetsProvider>
     <CatalogProvider>
     <BrandProvider>
-    <ChainsProvider>
     <SpotsProvider>
     <HandoffProvider>
     <LibraryDialogProvider>
@@ -62,7 +60,6 @@ export default function App() {
     </LibraryDialogProvider>
     </HandoffProvider>
     </SpotsProvider>
-    </ChainsProvider>
     </BrandProvider>
     </CatalogProvider>
     </AssetsProvider>
