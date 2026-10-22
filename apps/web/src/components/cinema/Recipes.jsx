@@ -4,24 +4,23 @@ import AssetThumb from '../AssetThumb.jsx'
 import Menu from '../Menu.jsx'
 import MentionTextarea from '../MentionTextarea.jsx'
 import { ATTACH_PATTERN } from '../../lib/mentions.js'
-import montage from '../../assets/hero/montage.jpg'
-import montageVideo from '../../assets/hero/montage.mp4'
-import portrait from '../../assets/hero/influenceur.jpg'
-import scene from '../../assets/hero/image.jpg'
-import pubs from '../../assets/hero/pubs.jpg'
-import pubsVideo from '../../assets/hero/pubs.mp4'
+import weather from '../../assets/templates/weather.webp'
+import photoToVideo from '../../assets/templates/photo-to-video.webp'
+import fanCam from '../../assets/templates/fan-cam.webp'
+import klingMultiShot from '../../assets/templates/kling-multi-shot-creator.webp'
+import documentary from '../../assets/templates/documentary.webp'
 import { jetons } from '../../lib/jobs.jsx'
 import { RECIPES, recipeCost, recipeIssue } from '@studio/catalog/recipes'
 
 const STEP_LABEL = { IN_QUEUE: 'En attente', IN_PROGRESS: 'En cours', COMPLETED: 'Terminé', FAILED: 'Échec', CANCELED: 'Annulé' }
 
-// Aperçus provisoires : fal ne publie pas de vignette utilisable, on réutilise les visuels de l'application.
+// Vignettes des modèles, reprises de la galerie fal. Une vidéo (`video`) peut s'y ajouter : elle joue au survol.
 const PREVIEW = {
-  'wf-weather': { poster: scene },
-  'wf-photo-to-video': { poster: portrait },
-  'wf-fan-cam': { poster: pubs, video: pubsVideo },
-  'wf-kling-multi-shot-creator': { poster: montage, video: montageVideo },
-  'wf-documentary': { poster: scene },
+  'wf-weather': { poster: weather },
+  'wf-photo-to-video': { poster: photoToVideo },
+  'wf-fan-cam': { poster: fanCam },
+  'wf-kling-multi-shot-creator': { poster: klingMultiShot },
+  'wf-documentary': { poster: documentary },
 }
 
 /** Aperçu d'un modèle : l'image, et la vidéo au survol ou au focus. */

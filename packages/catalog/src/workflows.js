@@ -9,10 +9,10 @@ import { toJetons } from './models.js'
 export const WORKFLOWS = [
   {
     id: 'weather',
-    name: 'Weather',
+    name: 'Météo à la carte',
     endpoint: 'workflows/labsprogiciel-coder/weather',
     usd: 1.27,
-    blurb: 'La photo d’un lieu devient une vidéo sous la météo de votre choix',
+    blurb: 'Votre lieu sous la pluie, la neige ou un ciel d’orage : une vidéo à partir d’une seule photo',
     inputs: [
       { key: 'image_urls', type: 'images', min: 1, max: 1, label: 'Photo du lieu' },
       { key: 'weather', type: 'text', required: true, label: 'Météo', placeholder: 'Ex. : forte pluie et orage', example: 'forte pluie et orage au loin' },
@@ -20,10 +20,10 @@ export const WORKFLOWS = [
   },
   {
     id: 'photo-to-video',
-    name: 'Photo to Video',
+    name: 'Retrouvailles',
     endpoint: 'workflows/labsprogiciel-coder/photo-to-video',
     usd: 1.28,
-    blurb: 'Les photos de deux personnes deviennent une vidéo où elles se serrent dans les bras',
+    blurb: 'Deux photos, une étreinte : la vidéo de deux proches qui se retrouvent',
     inputs: [
       { key: 'person1', type: 'image', label: 'Première personne' },
       { key: 'person2', type: 'image', label: 'Deuxième personne' },
@@ -34,7 +34,7 @@ export const WORKFLOWS = [
     name: 'Ma fan-cam',
     endpoint: 'workflows/labsprogiciel-coder/fan-cam',
     usd: 1.39,
-    blurb: 'Une vidéo de fan-cam à partir de vos photos',
+    blurb: 'Vous, filmé depuis la foule comme une star : une fan-cam à partir de vos photos',
     inputs: [
       { key: 'image_urls', type: 'images', min: 1, max: 3, label: 'Vos photos' },
       { key: 'details', type: 'text', required: false, label: 'Détails', placeholder: 'Ex. : concert en plein air, ambiance de foule', example: 'concert en plein air, ambiance de foule' },

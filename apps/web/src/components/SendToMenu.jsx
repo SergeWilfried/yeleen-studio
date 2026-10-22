@@ -34,9 +34,9 @@ export function useSendActions(asset, { withLibrary = false } = {}) {
     list.push(
       { id: 'start', icon: 'img', title: 'Image de départ', aside: 'Vidéo · Créer', run: to({ target: 'video.create', slot: 'start' }, 'Image envoyée vers Vidéo · Créer') },
       { id: 'end', icon: 'img', title: 'Image de fin', aside: 'Vidéo · Créer', run: to({ target: 'video.create', slot: 'end' }, 'Image envoyée vers Vidéo · Créer') },
-      { id: 'weather', icon: 'vid', title: 'Changer la météo (Weather)', aside: 'Cinéma · Modèles', run: to({ target: 'cinema.recipe', recipeId: 'wf-weather' }) },
+      { id: 'weather', icon: 'vid', title: 'Changer la météo (Météo à la carte)', aside: 'Cinéma · Modèles', run: to({ target: 'cinema.recipe', recipeId: 'wf-weather' }) },
       { id: 'fancam', icon: 'vid', title: 'Faire ma fan-cam', aside: 'Cinéma · Modèles', run: to({ target: 'cinema.recipe', recipeId: 'wf-fan-cam' }) },
-      { id: 'hug', icon: 'vid', title: 'Photo to Video (1re personne)', aside: 'Cinéma · Modèles', run: to({ target: 'cinema.recipe', recipeId: 'wf-photo-to-video' }) },
+      { id: 'hug', icon: 'vid', title: 'Retrouvailles (1re personne)', aside: 'Cinéma · Modèles', run: to({ target: 'cinema.recipe', recipeId: 'wf-photo-to-video' }) },
       { id: 'logo', icon: 'palette', title: 'Logo de la marque', aside: 'Marque', run: () => { patchBrand({ logoId: asset.id }); toast('Logo de la marque mis à jour'); navigate('/brand') } },
     )
   } else if (asset.kind === 'video') {
