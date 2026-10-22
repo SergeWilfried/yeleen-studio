@@ -105,18 +105,19 @@ export default function Cinema() {
 
   // Modèles : une photo et quelques mots donnent plusieurs plans ; chaque plan est une génération vidéo
   const [recipeId, setRecipeId] = useState(null)
-  const [rtext, setRtext] = useState('')
+  const [rtext, setRtext] = useState({})
   const [photos, setPhotos] = useState({}) // une photo par entrée du modèle : { photo } ou { model, garment }
   const [run, setRun] = useState(null) // { id, recipeId, shots } : le modèle en cours
   const [rerror, setRerror] = useState('')
   const recipe = mode === 'recipe'
   const changeMode = (m) => { setMode(m); setError(''); if (m === 'recipe' && !recipeId) pickRecipe(RECIPES[0].id) }
-  const pickRecipe = (id) => { setRecipeId(id); setRtext((recipeById(id).text?.example ?? '')); setRerror('') }
+  const examples = (id) => Object.fromEntries(recipeById(id).texts.map((t) => [t.key, t.example ?? '']))
+  const pickRecipe = (id) => { setRecipeId(id); setRtext(examples(id)); setRerror('') }
   useEffect(() => { // « Envoyer vers » un modèle : l'image arrive comme photo de départ
     const h = take('cinema.recipe')
     const a = h && assets.find((x) => x.id === h.assetId)
     if (!a) return
-    setMode('recipe'); setRecipeId(h.recipeId); setPhotos({ [recipeById(h.recipeId).photos[0].key]: a }); setRtext((recipeById(h.recipeId).text?.example ?? ''))
+    setMode('recipe'); setRecipeId(h.recipeId); setPhotos({ [recipeById(h.recipeId).photos[0].key]: a }); setRtext(examples(h.recipeId))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const runJobs = run ? jobs.filter((j) => j.spec?.recipe?.runId === run.id) : []
   const video = mode === 'video'
@@ -211,10 +212,10 @@ export default function Cinema() {
     try {
       inputFiles = Object.fromEntries(await Promise.all(r.photos.map(async (p) => [p.key, p.list ? [await getFile(photos[p.key])] : await getFile(photos[p.key])])))
     } catch { return setRerror('Une photo est introuvable : choisissez-la de nouveau.') }
-    const inputs = r.text ? { [r.text.key]: rtext.trim() } : {}
+    const inputs = Object.fromEntries(r.texts.map((t) => [t.key, (rtext[t.key] ?? '').trim()]))
     const id = crypto.randomUUID()
     const live = { kind: 'workflow', modelId: r.workflow.id, inputs, inputFiles }
-    const res = submit({ kind: 'video', title: r.name, prompt: inputs[r.text?.key] || r.blurb, cost, live, recipe: { runId: id, step: 0, label: r.name }, meta: r.name })
+    const res = submit({ kind: 'video', title: r.name, prompt: Object.values(inputs).filter(Boolean).join(' → ') || r.blurb, cost, live, recipe: { runId: id, step: 0, label: r.name }, meta: r.name })
     if (!res.ok) return setRerror(`Solde insuffisant : il manque ${jetons(res.missing)} cauris.`)
     setRun({ id, recipeId })
   }
@@ -247,7 +248,7 @@ export default function Cinema() {
 
         <div className="cn-dock">
           {recipe ? (recipeId && !busy && (
-            <RecipeForm id={recipeId} text={rtext} onText={(t) => { setRtext(t); setRerror('') }} photos={photos} onAdd={() => setPicking('photo')} onRemove={(k) => setPhotos((x) => ({ ...x, [k]: undefined }))} onPick={pickRecipe} error={rerror} onRun={runRecipe} />
+            <RecipeForm id={recipeId} texts={rtext} onText={(k, v) => { setRtext((x) => ({ ...x, [k]: v })); setRerror('') }} photos={photos} onAdd={() => setPicking('photo')} onRemove={(k) => setPhotos((x) => ({ ...x, [k]: undefined }))} onPick={pickRecipe} error={rerror} onRun={runRecipe} />
           )) : (
           <div className="cn-comp">
             {video && attached.length > 0 && (
