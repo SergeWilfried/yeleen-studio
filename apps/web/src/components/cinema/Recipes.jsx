@@ -4,32 +4,11 @@ import AssetThumb from '../AssetThumb.jsx'
 import Menu from '../Menu.jsx'
 import MentionTextarea from '../MentionTextarea.jsx'
 import { ATTACH_PATTERN } from '../../lib/mentions.js'
-import weather from '../../assets/templates/weather.webp'
-import photoToVideo from '../../assets/templates/photo-to-video.webp'
-import fanCam from '../../assets/templates/fan-cam.webp'
-import klingMultiShot from '../../assets/templates/kling-multi-shot-creator.webp'
-import documentary from '../../assets/templates/documentary.webp'
-import cityJourney from '../../assets/templates/city-journey.webp'
-import replaceAnything from '../../assets/templates/replace-anything.webp'
-import logoMaker from '../../assets/templates/logo_maker.webp'
-import falVton from '../../assets/templates/fal-vton.webp'
 import { jetons } from '../../lib/jobs.jsx'
+import { PREVIEW } from '../../lib/templatePreviews.js'
 import { RECIPES, recipeCost, recipeIssue } from '@studio/catalog/recipes'
 
 const STEP_LABEL = { IN_QUEUE: 'En attente', IN_PROGRESS: 'En cours', COMPLETED: 'Terminé', FAILED: 'Échec', CANCELED: 'Annulé' }
-
-// Vignettes des modèles, reprises de la galerie fal. Une vidéo (`video`) peut s'y ajouter : elle joue au survol.
-const PREVIEW = {
-  'wf-weather': { poster: weather },
-  'wf-photo-to-video': { poster: photoToVideo },
-  'wf-fan-cam': { poster: fanCam },
-  'wf-kling-multi-shot-creator': { poster: klingMultiShot },
-  'wf-documentary': { poster: documentary },
-  'wf-city-journey': { poster: cityJourney },
-  'wf-replace-anything': { poster: replaceAnything },
-  'wf-logo_maker': { poster: logoMaker },
-  'wf-fal-vton': { poster: falVton },
-}
 
 /** Aperçu d'un modèle : l'image, et la vidéo au survol ou au focus. */
 function Preview({ id }) {
