@@ -13,7 +13,7 @@ export function priceJob(req) {
     const w = findWorkflow(req.modelId)
     if (!w) return { ok: false, error: 'unknown_model' }
     const issue = workflowInputIssue(w, req.inputs ?? {}, (v) => typeof v === 'string' && FAL_FILE.test(v))
-    if (issue) return { ok: false, error: issue.startsWith('missing_') && w.inputs.find((f) => `missing_${f.key}` === issue)?.type !== 'text' ? 'invalid_file_url' : 'invalid_text' }
+    if (issue) return { ok: false, error: issue.startsWith('missing_') && !['text', 'lines'].includes(w.inputs.find((f) => `missing_${f.key}` === issue)?.type) ? 'invalid_file_url' : 'invalid_text' }
     return { ok: true, model: { ...w, id: w.id }, count: 1, cost: workflowCost(w) }
   }
   if (req.kind === 'tryon') { // essayage : deux photos déposées chez fal

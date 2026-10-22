@@ -4,29 +4,35 @@ import AssetThumb from '../AssetThumb.jsx'
 import Menu from '../Menu.jsx'
 import MentionTextarea from '../MentionTextarea.jsx'
 import { ATTACH_PATTERN } from '../../lib/mentions.js'
-import montage from '../../assets/hero/montage.jpg'
-import montageVideo from '../../assets/hero/montage.mp4'
-import portrait from '../../assets/hero/influenceur.jpg'
-import scene from '../../assets/hero/image.jpg'
-import pubs from '../../assets/hero/pubs.jpg'
-import pubsVideo from '../../assets/hero/pubs.mp4'
+import weather from '../../assets/templates/weather.webp'
+import photoToVideo from '../../assets/templates/photo-to-video.webp'
+import fanCam from '../../assets/templates/fan-cam.webp'
+import klingMultiShot from '../../assets/templates/kling-multi-shot-creator.webp'
+import documentary from '../../assets/templates/documentary.webp'
+import cityJourney from '../../assets/templates/city-journey.webp'
+import replaceAnything from '../../assets/templates/replace-anything.webp'
+import logoMaker from '../../assets/templates/logo_maker.webp'
 import { jetons } from '../../lib/jobs.jsx'
 import { RECIPES, recipeCost, recipeIssue } from '@studio/catalog/recipes'
 
 const STEP_LABEL = { IN_QUEUE: 'En attente', IN_PROGRESS: 'En cours', COMPLETED: 'Terminé', FAILED: 'Échec', CANCELED: 'Annulé' }
 
-// Aperçus provisoires : fal ne publie pas de vignette utilisable, on réutilise les visuels de l'application.
+// Vignettes des modèles, reprises de la galerie fal. Une vidéo (`video`) peut s'y ajouter : elle joue au survol.
 const PREVIEW = {
-  'wf-weather': { poster: scene },
-  'wf-photo-to-video': { poster: portrait },
-  'wf-fan-cam': { poster: pubs, video: pubsVideo },
-  'wf-kling-multi-shot-creator': { poster: montage, video: montageVideo },
-  'wf-documentary': { poster: scene },
+  'wf-weather': { poster: weather },
+  'wf-photo-to-video': { poster: photoToVideo },
+  'wf-fan-cam': { poster: fanCam },
+  'wf-kling-multi-shot-creator': { poster: klingMultiShot },
+  'wf-documentary': { poster: documentary },
+  'wf-city-journey': { poster: cityJourney },
+  'wf-replace-anything': { poster: replaceAnything },
+  'wf-logo_maker': { poster: logoMaker },
 }
 
 /** Aperçu d'un modèle : l'image, et la vidéo au survol ou au focus. */
 function Preview({ id }) {
   const p = PREVIEW[id]
+  if (!p) return <span className="rc-pv" aria-hidden="true" />
   const play = (e) => e.currentTarget.querySelector('video')?.play().catch(() => {})
   const stop = (e) => e.currentTarget.querySelector('video')?.pause()
   return (
@@ -106,9 +112,9 @@ export function RunStrip({ jobs, onDone }) {
  * Formulaire d'un modèle : la même barre que les créations Image et Vidéo (pièces jointes en vignettes, + pour importer,
  * zone de texte, puces, bouton Générer avec le prix).
  */
-export function RecipeForm({ id, text, onText, photos, onAdd, onRemove, onPick, error, onRun }) {
+export function RecipeForm({ id, texts, onText, photos, onAdd, onRemove, onPick, error, onRun }) {
   const r = RECIPES.find((x) => x.id === id)
-  const issue = recipeIssue(id, { text, photos })
+  const issue = recipeIssue(id, { texts, photos })
   const cost = recipeCost(id)
   const attached = r.photos.filter((p) => photos[p.key])
   return (
@@ -128,9 +134,9 @@ export function RecipeForm({ id, text, onText, photos, onAdd, onRemove, onPick, 
       )}
       <div className="cn-edit">
         <div className="cn-field">
-          {r.text ? (
-            <MentionTextarea value={text} onChange={onText} items={[]} pattern={ATTACH_PATTERN} isRef={() => false} roles={{}} placeholder={r.text.placeholder} aria-label={r.text.label} rows={2} />
-          ) : (
+          {r.texts.length ? r.texts.map((t) => (
+            <MentionTextarea key={t.key} value={texts[t.key] ?? ''} onChange={(v) => onText(t.key, v)} items={[]} pattern={ATTACH_PATTERN} isRef={() => false} roles={{}} placeholder={t.placeholder} aria-label={t.label} rows={t.lines ? t.max : 2} />
+          )) : (
             <p className="rc-notext">{r.blurb}. Ajoutez les photos avec +.</p>
           )}
           {(error || issue) && <p className={`cn-hint${error ? ' bad' : ''}`} role={error ? 'alert' : 'status'}>{error || issue}</p>}

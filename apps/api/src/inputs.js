@@ -2,11 +2,25 @@
  * Entrée envoyée à fal pour chaque modèle. Les champs viennent des schémas OpenAPI publiés par fal
  * (https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=…) ; on n'envoie que ce que le modèle accepte.
  */
+import { splitLines } from '@studio/catalog/workflows'
+
 const joinPrompt = (req) => [req.prompt?.trim(), req.styleHint, req.brandStyle].filter(Boolean).join(', ')
 const ratio = (r) => (!r || r === 'Auto' ? 'auto' : r)
 
+/** Les champs d'un workflow : textes nettoyés, et chaque champ `lines` réparti sur les entrées que fal attend. */
+function workflowInput(model, inputs) {
+  const out = {}
+  for (const f of model.inputs) {
+    const v = inputs[f.key]
+    if (v == null || v === '') continue
+    if (f.type === 'lines') Object.assign(out, f.expand(splitLines(v)))
+    else out[f.key] = f.type === 'text' ? v.trim() : v
+  }
+  return out
+}
+
 export function buildInput(kind, model, req) {
-  if (kind === 'workflow') return Object.fromEntries(model.inputs.filter((f) => req.inputs?.[f.key] != null && req.inputs[f.key] !== '').map((f) => [f.key, f.type === 'text' ? req.inputs[f.key].trim() : req.inputs[f.key]]))
+  if (kind === 'workflow') return workflowInput(model, req.inputs ?? {})
   if (kind === 'tryon') return { model_image: req.modelImageUrl, garment_image: req.garmentImageUrl, num_samples: 1, output_format: 'png' }
   if (kind === 'image') {
     const prompt = joinPrompt(req)

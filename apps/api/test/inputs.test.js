@@ -36,3 +36,11 @@ test('la modération refuse les mots interdits', () => {
   assert.equal(isBlocked('une scène de violence'), true)
   assert.equal(isBlocked('un chat'), false)
 })
+
+test('workflow : les textes sont nettoyés et les villes réparties sur prompt … prompt_7', async () => {
+  const { findWorkflow } = await import('@studio/catalog/workflows')
+  const replace = buildInput('workflow', findWorkflow('replace-anything'), { inputs: { image_url: 'https://v3.fal.media/a.png', text_prompt: ' le sac ', prompt: 'un sac rouge' } })
+  assert.deepEqual(replace, { image_url: 'https://v3.fal.media/a.png', text_prompt: 'le sac', prompt: 'un sac rouge' })
+  const city = buildInput('workflow', findWorkflow('city-journey'), { inputs: { image_urls: ['https://v3.fal.media/p.png'], cities: 'Dakar\n\n Paris \nTokyo' } })
+  assert.deepEqual(city, { image_urls: ['https://v3.fal.media/p.png'], prompt: 'Dakar', prompt_2: 'Paris', prompt_3: 'Tokyo', prompt_4: 'Dakar', prompt_5: 'Paris', prompt_6: 'Tokyo', prompt_7: 'Dakar' })
+})

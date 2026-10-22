@@ -56,11 +56,28 @@ test('modèles : un par workflow, au prix du catalogue, avec ce qui manque pour 
   const { WORKFLOWS, workflowCost } = await import('../src/workflows.js')
   assert.equal(RECIPES.length, WORKFLOWS.length)
   for (const r of RECIPES) assert.equal(recipeCost(r.id), workflowCost(r.workflow))
-  assert.match(recipeIssue('wf-weather', { text: '', photos: {} }), /Ajoutez/)
-  assert.match(recipeIssue('wf-weather', { text: '', photos: { image_urls: 1 } }), /météo/i)
-  assert.equal(recipeIssue('wf-weather', { text: 'pluie', photos: { image_urls: 1 } }), null)
+  assert.match(recipeIssue('wf-weather', { photos: {} }), /Ajoutez/)
+  assert.match(recipeIssue('wf-weather', { texts: { weather: '' }, photos: { image_urls: 1 } }), /météo/i)
+  assert.equal(recipeIssue('wf-weather', { texts: { weather: 'pluie' }, photos: { image_urls: 1 } }), null)
   assert.equal(recipeIssue('wf-photo-to-video', { photos: { person1: 1, person2: 1 } }), null)
-  assert.equal(recipeIssue('wf-kling-multi-shot-creator', { text: 'idée' }), null)
+  assert.equal(recipeIssue('wf-kling-multi-shot-creator', { texts: { prompt: 'idée' } }), null)
+  // deux textes (Changer un objet) et une liste de villes (Voyage de ville en ville)
+  assert.match(recipeIssue('wf-replace-anything', { texts: { text_prompt: 'le sac' }, photos: { image_url: 1 } }), /par quoi/i)
+  assert.equal(recipeIssue('wf-replace-anything', { texts: { text_prompt: 'le sac', prompt: 'un sac rouge' }, photos: { image_url: 1 } }), null)
+  assert.match(recipeIssue('wf-city-journey', { texts: { cities: 'Dakar\nParis' }, photos: { image_urls: 1 } }), /3 villes/)
+  assert.match(recipeIssue('wf-city-journey', { texts: { cities: 'a\nb\nc\nd\ne\nf\ng\nh' }, photos: { image_urls: 1 } }), /7 villes/)
+  assert.equal(recipeIssue('wf-city-journey', { texts: { cities: 'Dakar\nParis\nTokyo' }, photos: { image_urls: 1 } }), null)
+})
+
+test('workflows : une liste de villes est répartie sur les sept entrées de fal', async () => {
+  const { findWorkflow, workflowInputIssue } = await import('../src/workflows.js')
+  const w = findWorkflow('city-journey')
+  const expand = w.inputs.find((f) => f.key === 'cities').expand
+  assert.deepEqual(expand(['Dakar', 'Paris', 'Tokyo']), { prompt: 'Dakar', prompt_2: 'Paris', prompt_3: 'Tokyo', prompt_4: 'Dakar', prompt_5: 'Paris', prompt_6: 'Tokyo', prompt_7: 'Dakar' })
+  assert.equal(Object.keys(expand(['a', 'b', 'c', 'd', 'e', 'f', 'g'])).length, 7)
+  assert.equal(workflowInputIssue(w, { image_urls: ['x'], cities: 'Dakar\nParis' }), 'invalid_cities')
+  assert.equal(workflowInputIssue(w, { image_urls: ['x'], cities: ' ' }), 'missing_cities')
+  assert.equal(workflowInputIssue(w, { image_urls: ['x'], cities: 'Dakar\n\nParis\nTokyo' }), null) // lignes vides ignorées
 })
 
 test('workflows fal : champs, prix et contrôle des entrées', async () => {
