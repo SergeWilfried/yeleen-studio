@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ClerkProvider, SignIn, SignUp, UserButton, useAuth } from '@clerk/clerk-react'
-import { frFR } from '@clerk/localizations'
 import { setTokenGetter } from './api.js'
 
 /**
@@ -46,13 +45,31 @@ function Bridge({ children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+/**
+ * Les textes français de Clerk pèsent 55 ko (minifiés) : on les charge à part, juste après le premier rendu, au lieu de les mettre dans le paquet
+ * d'entrée que tout visiteur télécharge. Clerk applique une langue qui change après coup (`localization` est réactif) : le temps du chargement,
+ * ses fenêtres sont en anglais, et personne ne les voit si vite (elles attendent que Clerk lui-même arrive de son CDN). Le chemin `/fr-FR`
+ * n'embarque que le français : importer le paquet entier ajouterait les 300 langues.
+ */
+function useFrench() {
+  const [loc, setLoc] = useState(null)
+  useEffect(() => {
+    if (!authEnabled) return undefined
+    let alive = true
+    import('@clerk/localizations/fr-FR').then((m) => { if (alive) setLoc(m.frFR) }).catch(() => { /* l'anglais de Clerk reste */ })
+    return () => { alive = false }
+  }, [])
+  return loc
+}
+
 export function AuthProvider({ children }) {
   const navigate = useNavigate()
+  const localization = useFrench()
   if (!authEnabled) return children
   return (
     <ClerkProvider
       publishableKey={KEY}
-      localization={frFR}
+      localization={localization ?? undefined}
       appearance={appearance}
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}

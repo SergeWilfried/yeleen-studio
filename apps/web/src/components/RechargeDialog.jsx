@@ -22,6 +22,7 @@ import '../styles/recharge.css'
  */
 const COUNTRY_LIST = topupCountries(import.meta.env.VITE_TOPUP_COUNTRIES)
 const POLL_MS = 3500
+const POLL_HIDDEN_MS = 20_000 // onglet caché : on s'en tient à un sondage espacé, et on se remet à jour dès le retour sur l'onglet
 const STEPS = ['Pack', 'Opérateur', 'Numéro', 'Paiement']
 const FORM = 'rc-form' // les boutons du pied de fenêtre soumettent le formulaire de l'étape
 const perJeton = (p) => Math.round(p.fcfa / p.jetons)
@@ -231,8 +232,19 @@ export default function RechargeDialog({ open, request, onClose }) {
         }
       } catch { /* erreur passagère : on réessaie au prochain tour */ }
     }
-    const id = setInterval(tick, POLL_MS)
-    return () => { stop = true; clearInterval(id) }
+    let timer
+    let running = false // un seul appel à la fois : un retour sur l'onglet pendant un appel en cours n'en lance pas un second
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(run, document.hidden ? POLL_HIDDEN_MS : POLL_MS) }
+    const run = async () => {
+      if (running || stop) return
+      running = true
+      try { await tick() } finally { running = false }
+      if (!stop) schedule()
+    }
+    const wake = () => { if (!document.hidden) { clearTimeout(timer); run() } }
+    document.addEventListener('visibilitychange', wake)
+    schedule()
+    return () => { stop = true; clearTimeout(timer); document.removeEventListener('visibilitychange', wake) }
   }, [ref, pending, syncBalance, loadHistory, toast])
 
   // Chaque étape amène le focus sur son titre : le lecteur d'écran l'annonce, le clavier repart de là.
