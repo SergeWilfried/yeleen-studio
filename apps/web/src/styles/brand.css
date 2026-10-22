@@ -11,7 +11,7 @@
 .brand .br-cr.bad{color:var(--danger-ink)}
 .brand .br-looks{display:flex;flex-wrap:wrap;gap:8px}
 .brand .br-looks .ep-chip{min-height:34px;padding:0 12px}
-.brand .br-looks .ep-chip[aria-pressed=true]{background:#26300f;border-color:var(--lime);color:var(--lime)}
+.brand .br-looks .ep-chip[aria-pressed=true]{background:var(--lime-tint);border-color:var(--lime);color:var(--lime)}
 .brand .br-check{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4;color:#d4d4d0;cursor:pointer}
 .brand .br-check input{flex:none;width:16px;height:16px;margin-top:2px;accent-color:var(--lime)}
 .brand .br-saved{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:12px;color:var(--ink-3)}
@@ -25,5 +25,5 @@
 .brand .br-uses p{margin:2px 0 0;font-size:12px;line-height:1.4;color:var(--ink-3)}
 .brand .br-uses a{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .brand .br-uses a:hover{color:var(--ink)}
-.brand .br-dot{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--fill);color:#111}
+.brand .br-dot{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--fill);color:var(--on-light)}
 .brand .br-dot.on{background:var(--lime)}

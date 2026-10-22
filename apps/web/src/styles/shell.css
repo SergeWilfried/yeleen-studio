@@ -20,7 +20,7 @@
 .shell .gen,.shell .gen2{border:0;font-family:inherit;cursor:pointer;width:100%;transition:filter .15s,transform .1s}
 .shell .gen2{width:144px}
 .shell .gen:hover:not(:disabled),.shell .gen2:hover:not(:disabled){filter:brightness(.94)}
-.shell .gen:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #9fbf1f}
+.shell .gen:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--lime-edge)}
 .shell .gen2:active:not(:disabled){transform:translateY(1px)}
 .shell .gen:disabled,.shell .gen2:disabled{background:var(--fill);color:var(--ink-3);box-shadow:none;cursor:not-allowed}
 .shell .pl a,.shell .bar a,.shell .pb{transition:background-color .15s,border-color .15s}

@@ -7,15 +7,15 @@
 .mn-head{padding:8px 12px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .mn-opt{display:flex;gap:12px;align-items:flex-start;width:100%;padding:10px 12px;border:0;border-radius:10px;background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit}
 .mn-opt:hover,.mn-opt:focus-visible{background:#232427}
-.mn-opt.on{background:#2a2b2e}
+.mn-opt.on{background:var(--fill-hover)}
 .mn-ic{flex:none;margin-top:1px;color:var(--ink-2)}
 .mn-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
 .mn-tx b{font-size:14px;font-weight:600;display:flex;gap:8px;align-items:center}
-.mn-tx em{font-style:normal;font-size:10px;font-weight:800;background:var(--lime);color:#111;border-radius:4px;padding:2px 6px}
+.mn-tx em{font-style:normal;font-size:10px;font-weight:800;background:var(--lime);color:var(--on-light);border-radius:4px;padding:2px 6px}
 .mn-tx small{font-size:12.5px;line-height:1.45;color:var(--ink-3)}
 
 .mn-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.mn-tags i{font-style:normal;font-size:11px;font-weight:600;color:#d4d4d0;background:#2a2b2e;border-radius:6px;padding:2px 7px}
+.mn-tags i{font-style:normal;font-size:11px;font-weight:600;color:#d4d4d0;background:var(--fill-hover);border-radius:6px;padding:2px 7px}
 .mn-aside{flex:none;align-self:flex-start;margin-left:auto;padding-left:8px;font-size:12px;font-weight:600;color:var(--lime);white-space:nowrap;font-variant-numeric:tabular-nums}
 
 /* Sélecteur de modèle : icône, nom + badge, puces de capacités, prix à droite */

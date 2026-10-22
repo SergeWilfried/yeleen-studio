@@ -8,11 +8,11 @@
 .gxt>ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 
 .gx-chip{flex:none;padding:3px 9px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;white-space:nowrap}
-.gx-chip-in-progress{background:#26300f;color:var(--lime)}
-.gx-chip-completed{background:var(--lime);color:#111}
-.gx-chip-failed{background:#4a2420;color:var(--danger-ink)}
+.gx-chip-in-progress{background:var(--lime-tint);color:var(--lime)}
+.gx-chip-completed{background:var(--lime);color:var(--on-light)}
+.gx-chip-failed{background:var(--danger-line);color:var(--danger-ink)}
 .gx-detail{margin:0;font-size:13px;line-height:1.45;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.gx-err{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:#2a1816;font-size:13px;line-height:1.45;text-align:left}
+.gx-err{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--danger-bg);font-size:13px;line-height:1.45;text-align:left}
 .gx-err b{color:var(--danger-ink)}
 .gx-err span{color:#d4d4d0}
 .gx-err .gx-topup{align-self:flex-start;margin-top:6px;padding:6px 12px;border-radius:9px;background:var(--lime);color:var(--on-lime);text-decoration:none;border:0;font:inherit;font-weight:700;cursor:pointer}
@@ -23,15 +23,15 @@
 /* Image : planche contact, tuiles qui se développent */
 .ib,.vo{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--fill);border-radius:14px;background:var(--surface);color:var(--ink)}
 .ib{padding:0;border:0;background:none;gap:12px}
-.vo-failed{border-color:#4a2420;background:#1b1413}
+.vo-failed{border-color:var(--danger-line);background:#1b1413}
 .vo-head{display:flex;align-items:center;gap:10px}
 .ib-prompt{align-self:flex-end;max-width:min(100%,520px);margin:0;padding:12px 18px;border-radius:22px;background:#1b1c1f;font-size:15px;line-height:1.45;color:#e6e6e2}
 .ib-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:min(100%,560px)}
 .ib-grid.one{grid-template-columns:minmax(0,1fr)}
-.ib-tile{position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;background:#0f1012}
+.ib-tile{position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;background:var(--field)}
 .ib-art{position:absolute;inset:0;opacity:0;transform:scale(1.04);filter:blur(14px);transition:opacity .7s ease-out,transform .7s ease-out,filter .7s ease-out}
 .ib-tile.done .ib-art{opacity:1;transform:none;filter:none}
-.ib-ph{position:absolute;inset:0;background:linear-gradient(140deg,#17181b,var(--field));transition:opacity .5s ease-out}
+.ib-ph{position:absolute;inset:0;background:linear-gradient(140deg,var(--surface),var(--field));transition:opacity .5s ease-out}
 .ib-ph:before{content:"";position:absolute;inset:-30%;background:var(--tint);opacity:.4;filter:blur(36px) saturate(.6);animation:ibdrift 7s ease-in-out infinite alternate}
 .ib-ph:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.1) 50%,transparent 70%);transform:translateX(-100%);animation:ibsweep 2.2s ease-in-out infinite}
 .ib-tile.done .ib-ph{opacity:0}
@@ -97,7 +97,7 @@
 .vo-rows{position:relative;display:flex;flex-direction:column;gap:8px}
 .vo-row{display:flex;align-items:center;gap:12px}
 .vo-disc{flex:none;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--fill);color:var(--ink-2)}
-.vo-completed .vo-disc{background:var(--lime);color:#111}
+.vo-completed .vo-disc{background:var(--lime);color:var(--on-light)}
 .vo-wave{flex:1;display:flex;align-items:center;gap:2px;height:48px;padding:0 168px 0 12px;border-radius:12px;background:var(--field)}
 .vo-wave i{flex:1;max-width:5px;border-radius:2px;background:var(--line-strong);transition:background-color .25s}
 .vo-wave i.on{background:var(--lime)}
@@ -107,8 +107,8 @@
 .ax.inline{position:static}
 .ax button{display:flex;align-items:center;justify-content:center;gap:6px;min-width:36px;height:36px;padding:0 9px;border:1px solid rgba(255,255,255,.2);border-radius:999px;background:rgba(13,14,16,.74);color:#fff;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .15s,border-color .15s}
 .ax button:hover{background:#000;border-color:rgba(255,255,255,.4)}
-.ax button.main{background:var(--lime);border-color:var(--lime);color:#111}
-.ax button.main:hover{background:#c8f02f}
+.ax button.main{background:var(--lime);border-color:var(--lime);color:var(--on-light)}
+.ax button.main:hover{background:var(--lime-hover)}
 .ib-act{top:8px;right:8px}
 .vs-act{top:58px;right:16px}
 .vo-act{top:50%;right:10px;transform:translateY(-50%)}
@@ -133,7 +133,7 @@
 
 .vo-play{border:0;cursor:pointer;font:inherit}
 .vo-play:disabled{cursor:default;opacity:.6}
-.vo-play[aria-pressed="true"]{background:var(--ink);color:#111}
+.vo-play[aria-pressed="true"]{background:var(--ink);color:var(--on-light)}
 
 /* Vidéo réelle : le lecteur remplit la scène ; le titre et les actions restent par-dessus, les commandes restent cliquables. */
 .vs-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}

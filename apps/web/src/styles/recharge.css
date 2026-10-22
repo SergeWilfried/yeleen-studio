@@ -23,7 +23,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-stepper li.on>*{border-bottom-color:var(--lime);color:var(--ink)}
 .rc-stepper li.on i{background:var(--lime);color:var(--on-lime)}
 .rc-stepper li.done>*{border-bottom-color:#4b5a1c;color:var(--ink-2)}
-.rc-stepper li.done i{background:#26300f;color:var(--lime)}
+.rc-stepper li.done i{background:var(--lime-tint);color:var(--lime)}
 .rc-stepper button{cursor:pointer}
 .rc-stepper button:hover{color:var(--ink)}
 
@@ -66,9 +66,9 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-op:hover{border-color:var(--line-strong);background:#141518}
 .rc-op.on{border-color:var(--lime);background:#1b2010}
 .rc-op>i{flex:none;display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;font-style:normal;font-weight:800;font-size:22px;color:#fff}
-.rc-op-orange>i{background:#ff7900;color:#111}
+.rc-op-orange>i{background:#ff7900;color:var(--on-light)}
 .rc-op-moov>i{background:#0060a9}
-.rc-op-wave>i{background:#1dc8f2;color:#111}
+.rc-op-wave>i{background:#1dc8f2;color:var(--on-light)}
 .rc-op>span{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .rc-op b{font-size:16px}
 .rc-op small{font-size:12px;line-height:1.35;color:var(--ink-3)}
@@ -91,7 +91,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-ghost:hover{border-color:var(--line-strong);color:var(--ink)}
 .rc-link{min-height:46px;padding:0 4px;border:0;background:none;color:var(--ink-2);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .rc-link:hover{color:var(--ink)}
-.rc-err{margin:0;padding:10px 12px;border-radius:10px;background:#2a1816;color:var(--danger-ink);line-height:1.45}
+.rc-err{margin:0;padding:10px 12px;border-radius:10px;background:var(--danger-bg);color:var(--danger-ink);line-height:1.45}
 .rc-note{margin:0;font-size:12px;line-height:1.5;color:var(--ink-4)}
 
 /* Étape 4 : attente, puis résultat centré */
@@ -107,8 +107,8 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-result b{font-size:20px}
 .rc-result p{max-width:44ch}
 .rc-mark{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%}
-.rc-result.ok .rc-mark{background:#26300f;color:var(--lime)}
-.rc-result.ko .rc-mark{background:#2a1816;color:var(--danger-ink)}
+.rc-result.ok .rc-mark{background:var(--lime-tint);color:var(--lime)}
+.rc-result.ko .rc-mark{background:var(--danger-bg);color:var(--danger-ink)}
 
 /* Historique */
 .rc-hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
@@ -119,8 +119,8 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-hist small{color:var(--ink-4);font-size:12px}
 .rc-hist .rc-nw{white-space:nowrap}
 .rc-st{flex:none;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;border:0;white-space:nowrap}
-.rc-st-completed{background:#26300f;color:var(--lime)}
-.rc-st-failed,.rc-st-expired{background:#2a1816;color:var(--danger-ink)}
+.rc-st-completed{background:var(--lime-tint);color:var(--lime)}
+.rc-st-failed,.rc-st-expired{background:var(--danger-bg);color:var(--danger-ink)}
 /* la pastille reste petite ; la zone qui répond au doigt déborde jusqu'à 44 px */
 button.rc-st{position:relative;min-height:32px;cursor:pointer}
 button.rc-st::after{content:'';position:absolute;inset:-6px -4px}

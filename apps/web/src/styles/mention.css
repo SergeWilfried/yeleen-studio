@@ -1,7 +1,7 @@
 /* Liste des assets proposée par « @ » et pastilles des références d'un plan */
 .mention{position:fixed;z-index:var(--z-menu);box-sizing:border-box;max-height:280px;overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--raised);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 8px rgba(0,0,0,.35)}
 .mention li{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;cursor:pointer;color:var(--ink)}
-.mention li.on{background:#2a2b2e}
+.mention li.on{background:var(--fill-hover)}
 .mention-none{cursor:default;padding:12px;font-size:13px;color:var(--ink-3)}
 .mention-th{flex:none;width:36px;height:36px;border-radius:8px;overflow:hidden;background:var(--fill)}
 .mention-th .at{width:100%;height:100%;min-height:0;aspect-ratio:auto;border-radius:0}
