@@ -71,17 +71,18 @@ export function ShellHeader() {
 /** Connexion et création de compte (Clerk), ou le menu du compte une fois connecté. Sans Clerk (développement), les emplacements d'origine. */
 function HomeAccount() {
   const { signedIn } = useAuthState()
-  if (!authEnabled) return (<><a href="#" className="pb">Connexion</a><a href="#" className="lim">Créer un compte</a></>)
+  if (!authEnabled) return (<><a href="#" className="pb si">Connexion</a><a href="#" className="lim">Créer un compte</a></>)
   if (signedIn) return <AccountMenu />
-  return (<><NavLink to="/sign-in" className="pb">Connexion</NavLink><NavLink to="/sign-up" className="lim">Créer un compte</NavLink></>)
+  return (<><NavLink to="/sign-in" className="pb si">Connexion</NavLink><NavLink to="/sign-up" className="lim">Créer un compte</NavLink></>)
 }
 
-/** En-tête de la page d'accueil. */
+/** En-tête de la page d'accueil. La navigation (Explorer, Cinéma, Bibliothèque) mène à des écrans réservés : elle n'est montrée qu'une fois connecté. */
 export function HomeHeader() {
+  const { signedIn } = useAuthState()
   return (
     <header className="nv">
       <Logo />
-      <NavLinks />
+      {signedIn && <NavLinks />}
       <div className="rt">
         <a href="#tarifs" className="pb"><Cauri size={16} />Tarifs</a>
         <HomeAccount />
