@@ -1,5 +1,5 @@
 /* Fenêtre de la bibliothèque : la seule interface de galerie (références dans Cinéma, et consultation depuis toute l'application) */
-dialog.am-dlg{--card:var(--raised);--chip:var(--fill-hover);font-family:'Instrument Sans',Helvetica,sans-serif;width:min(980px,94vw);height:min(640px,88vh);padding:0;border:0;border-radius:26px;background:#232325;color:var(--ink);overflow:hidden}
+dialog.am-dlg{--card:var(--raised);--chip:var(--fill-hover);font-family:var(--font-body);width:min(980px,94vw);height:min(640px,88vh);padding:0;border:0;border-radius:26px;background:#232325;color:var(--ink);overflow:hidden}
 dialog.am-dlg[open]{display:flex;flex-direction:row}
 dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 /* Barre latérale : Imports, Générations, Favoris */

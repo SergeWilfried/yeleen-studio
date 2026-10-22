@@ -1,7 +1,7 @@
 /* Générations : états communs, puis une mise en page par média (ib = image, vs = vidéo, vo = voix). */
 .gxt{display:flex;flex-direction:column;gap:8px;width:100%}
 .gxt-head{display:flex;justify-content:space-between;align-items:center}
-.gxt .gxt-head h2{margin:0;font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:100%;text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;color:var(--ink)}
+.gxt .gxt-head h2{margin:0;font-family:var(--font-body);font-stretch:100%;text-transform:none;letter-spacing:0;font-size:15px;font-weight:600;color:var(--ink)}
 .gxt .gxt-head h2 span{margin-left:6px;font-size:12px;font-weight:600;color:var(--ink-3)}
 .gxt-head button,.vs-strip-head button{background:none;border:0;padding:4px 0;font-size:13px;color:var(--ink-3);cursor:pointer}
 .gxt-head button:hover,.vs-strip-head button:hover{color:var(--ink)}

@@ -1,5 +1,5 @@
 .ep{display:flex;flex-direction:column;gap:18px;min-height:100%}
-.ep .ep-sec h2,.ep .ep-sec h3{font-family:'Instrument Sans',Helvetica,sans-serif;font-stretch:100%;letter-spacing:.06em;font-weight:600}
+.ep .ep-sec h2,.ep .ep-sec h3{font-family:var(--font-body);font-stretch:100%;letter-spacing:.06em;font-weight:600}
 .ep-sec{display:flex;flex-direction:column;gap:8px}
 .ep-sec h2,.ep-sec h3{margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .ep-row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px}

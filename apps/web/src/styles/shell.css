@@ -1,6 +1,6 @@
 .shell a{color:inherit;text-decoration:none}
 .shell button{font:inherit;color:inherit}
-.pg.shell{background:var(--bg);color:var(--ink);font-family:'Instrument Sans',Helvetica,sans-serif;font-size:14px;min-height:100%;display:flex;flex-direction:column}
+.pg.shell{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;min-height:100%;display:flex;flex-direction:column}
 .shell h1,.shell h2,.shell h3,.shell .hd{font-family:'Archivo',Helvetica,sans-serif;font-stretch:78%;font-weight:800;text-transform:uppercase;margin:0}
 .shell .nv{height:52px;display:flex;align-items:center;gap:14px;padding:0 16px;box-sizing:border-box}
 .shell .lg{height:30px;padding:0 2px;background:none;display:flex;align-items:center;flex:none}

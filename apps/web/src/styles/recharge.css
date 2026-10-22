@@ -1,5 +1,5 @@
 /* Recharge Mobile Money : une fenêtre en quatre étapes. En-tête et pied fixes, contenu défilant ; une seule action principale (vert), toujours à droite du pied. */
-dialog.rc-dlg{--rc-pad:24px;font-family:'Instrument Sans',Helvetica,sans-serif;width:min(600px,94vw);max-height:min(760px,92vh);padding:0;border:1px solid var(--line-soft);border-radius:22px;background:var(--surface);color:var(--ink);overflow:hidden;box-sizing:border-box}
+dialog.rc-dlg{--rc-pad:24px;font-family:var(--font-body);width:min(600px,94vw);max-height:min(760px,92vh);padding:0;border:1px solid var(--line-soft);border-radius:22px;background:var(--surface);color:var(--ink);overflow:hidden;box-sizing:border-box}
 dialog.rc-dlg[open]{display:flex;flex-direction:column}
 dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 

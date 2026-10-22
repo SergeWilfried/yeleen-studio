@@ -12,6 +12,7 @@ import documentary from '../../assets/templates/documentary.webp'
 import cityJourney from '../../assets/templates/city-journey.webp'
 import replaceAnything from '../../assets/templates/replace-anything.webp'
 import logoMaker from '../../assets/templates/logo_maker.webp'
+import falVton from '../../assets/templates/fal-vton.webp'
 import { jetons } from '../../lib/jobs.jsx'
 import { RECIPES, recipeCost, recipeIssue } from '@studio/catalog/recipes'
 
@@ -27,6 +28,7 @@ const PREVIEW = {
   'wf-city-journey': { poster: cityJourney },
   'wf-replace-anything': { poster: replaceAnything },
   'wf-logo_maker': { poster: logoMaker },
+  'wf-fal-vton': { poster: falVton },
 }
 
 /** Aperçu d'un modèle : l'image, et la vidéo au survol ou au focus. */
