@@ -339,9 +339,9 @@ export default function RechargeDialog({ open, request, onClose }) {
         {COUNTRY_LIST.length > 1 && (
           <Segment label="Pays" value={country} onChange={(k) => { setCountry(k); setOperator(null) }} options={COUNTRY_LIST.map((k) => ({ id: k, label: COUNTRIES[k] }))} />
         )}
-        <div className="rc-ops" role="radiogroup" aria-label="Opérateur Mobile Money">
+        <div className="rc-ops" role="group" aria-label="Opérateur Mobile Money">
           {c.operators.map((o) => (
-            <button key={o} type="button" role="radio" aria-checked={operator === o} className={`rc-op rc-op-${o}${operator === o ? ' on' : ''}`} onClick={() => { setOperator(o); go(2) }}>
+            <button key={o} type="button" aria-pressed={operator === o} className={`rc-op rc-op-${o}${operator === o ? ' on' : ''}`} onClick={() => { setOperator(o); go(2) }}>
               <i aria-hidden="true">{OPERATORS[o].charAt(0)}</i>
               <span><b>{OPERATORS[o]}</b><small>{how(o, country)}</small></span>
             </button>

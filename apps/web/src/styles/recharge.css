@@ -7,7 +7,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-top h2{margin:0;font-size:26px;line-height:1.1}
 .rc-top p{margin:6px 0 0;color:var(--ink-3);font-size:14px}
 .rc-top b{color:var(--ink);font-variant-numeric:tabular-nums}
-.rc-x{flex:none;margin:-4px -6px 0 0;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border:0;border-radius:50%;background:var(--fill);color:var(--ink);cursor:pointer}
+.rc-x{flex:none;margin:-6px -8px 0 0;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:50%;background:var(--fill);color:var(--ink);cursor:pointer}
 .rc-x:hover{background:var(--line)}
 
 .rc-body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding:16px var(--rc-pad) 20px}
@@ -17,7 +17,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 
 /* Étapes : pastille et libellé sur une même ligne, centrés verticalement ; la barre sous chaque étape marque l'avancée. */
 .rc-stepper{flex:none;list-style:none;margin:16px var(--rc-pad) 0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.rc-stepper li>*{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:0 0 8px;border:0;border-bottom:3px solid var(--fill);background:none;color:var(--ink-4);font:inherit;font-size:13px;font-weight:600;line-height:1;text-align:left;box-sizing:border-box}
+.rc-stepper li>*{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:0 0 8px;border:0;border-bottom:3px solid var(--fill);background:none;color:var(--ink-4);font:inherit;font-size:13px;font-weight:600;line-height:1;text-align:left;box-sizing:border-box}
 .rc-stepper li>* span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rc-stepper i{flex:none;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--fill);color:var(--ink-3);font-style:normal;font-size:12px;font-variant-numeric:tabular-nums}
 .rc-stepper li.on>*{border-bottom-color:var(--lime);color:var(--ink)}
@@ -33,7 +33,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-sum>div:not(:has(button)){padding-right:12px}
 .rc-sum dt{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
 .rc-sum dd{margin:0;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.rc-sum button{border:0;border-radius:8px;padding:6px 8px;background:none;color:var(--ink-3);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.rc-sum button{margin-block:-4px;min-height:44px;border:0;border-radius:8px;padding:6px 8px;background:none;color:var(--ink-3);font:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .rc-sum button:hover{color:var(--ink);background:var(--fill)}
 
 .rc-panel{display:flex;flex-direction:column;gap:16px}
@@ -59,7 +59,7 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 
 /* Étape 2 : opérateurs, en tuiles côte à côte de même taille (deux ou trois par pays). */
 .rc-dlg .seg{display:flex;flex-wrap:wrap;gap:6px}
-.rc-dlg .seg button{padding:0 14px;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink-2);font-weight:600;cursor:pointer}
+.rc-dlg .seg button{padding:0 14px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--field);color:var(--ink-2);font-weight:600;cursor:pointer}
 .rc-dlg .seg button.on{border-color:var(--lime);color:var(--lime);background:#1b2010}
 .rc-ops{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .rc-op{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:150px;padding:20px 12px;border:1px solid var(--line);border-radius:16px;background:var(--field);color:var(--ink);font:inherit;text-align:center;cursor:pointer}
@@ -121,7 +121,9 @@ dialog.rc-dlg::backdrop{background:rgba(0,0,0,.66)}
 .rc-st{flex:none;padding:4px 10px;border-radius:999px;background:var(--fill);color:var(--ink-2);font-size:12px;font-weight:600;border:0;white-space:nowrap}
 .rc-st-completed{background:#26300f;color:var(--lime)}
 .rc-st-failed,.rc-st-expired{background:#2a1816;color:var(--danger-ink)}
-button.rc-st{min-height:32px;cursor:pointer}
+/* la pastille reste petite ; la zone qui répond au doigt déborde jusqu'à 44 px */
+button.rc-st{position:relative;min-height:32px;cursor:pointer}
+button.rc-st::after{content:'';position:absolute;inset:-6px -4px}
 button.rc-st:hover{color:var(--ink)}
 
 /* Téléphone : la fenêtre occupe tout l'écran ; packs en lignes (quantité à gauche, prix aligné à droite), opérateurs en lignes. */
