@@ -53,12 +53,12 @@
 .ep-gen .gen span{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.ep-gen{position:static}}
 .ep>.mc{flex:none}
-.ep-gerr{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#2a1816;color:var(--danger-ink);font-size:13px}
+.ep-gerr{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:var(--danger-bg);color:var(--danger-ink);font-size:13px}
 
 .ep-tile.off{border-style:dashed;border-color:#2a2b2e;background:var(--bg);color:#6f7073;cursor:not-allowed}
 .ep-tile.off:hover{border-color:#2a2b2e;background:var(--bg)}
 .ep-tile.off>span:not(.sr-only){color:var(--ink-4)}
-.ep-req{position:absolute;top:8px;right:8px;font-style:normal;font-size:10px;font-weight:700;color:#111;background:var(--lime);border-radius:5px;padding:2px 6px}
+.ep-req{position:absolute;top:8px;right:8px;font-style:normal;font-size:10px;font-weight:700;color:var(--on-light);background:var(--lime);border-radius:5px;padding:2px 6px}
 .ep-ghint{margin:0 0 8px;font-size:13px;color:#d4d4d0}
 .ep-price{flex:none;font-size:12px;font-weight:600;color:var(--lime);white-space:nowrap}
 .ep-pair .mn-btn .ep-price{display:none}
@@ -76,4 +76,4 @@
 @media (pointer:coarse){.ep-lib{width:36px;height:36px}}
 .ep-brand{display:flex;margin:0 0 8px}
 .ep-brand .ep-chip{min-height:34px;padding:0 12px;text-decoration:none}
-.ep-brand .ep-chip[aria-pressed="true"]{background:#26300f;border-color:var(--lime);color:var(--lime)}
+.ep-brand .ep-chip[aria-pressed="true"]{background:var(--lime-tint);border-color:var(--lime);color:var(--lime)}

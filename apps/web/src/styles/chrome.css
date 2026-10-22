@@ -1,25 +1,25 @@
 /* Chrome partagé : en-tête vert primaire (var(--lime)). */
 
-body .pg .nv{background:var(--lime);color:#111}
+body .pg .nv{background:var(--lime);color:var(--on-light)}
 body .pg .lg{background:none}
 body .pg .nl{color:rgba(17,17,17,.72)}
-body .pg .nl:hover{color:#111}
-body .pg .nl.on{color:#111;font-weight:700;box-shadow:inset 0 -2px 0 #111;border-radius:0}
+body .pg .nl:hover{color:var(--on-light)}
+body .pg .nl.on{color:var(--on-light);font-weight:700;box-shadow:inset 0 -2px 0 #111;border-radius:0}
 body .pg .bd{background:#111;color:var(--lime)}
-body .pg .rt{color:#111}
-body .pg .nv .pb{background:rgba(17,17,17,.08);border:1px solid rgba(17,17,17,.22);color:#111}
+body .pg .rt{color:var(--on-light)}
+body .pg .nv .pb{background:rgba(17,17,17,.08);border:1px solid rgba(17,17,17,.22);color:var(--on-light)}
 body .pg .nv .pb:hover{background:rgba(17,17,17,.16)}
 body .pg .nv .lim{background:#111;color:var(--lime)}
 body .pg .nv .lim:hover{filter:none;background:var(--fill)}
 body .pg .nv :focus-visible{outline-color:#111}
 
-.skip{position:absolute;left:8px;top:-56px;z-index:var(--z-skip);padding:10px 16px;border-radius:10px;background:var(--lime);color:#111;font-weight:700;font-size:14px;transition:top .15s}
+.skip{position:absolute;left:8px;top:-56px;z-index:var(--z-skip);padding:10px 16px;border-radius:10px;background:var(--lime);color:var(--on-light);font-weight:700;font-size:14px;transition:top .15s}
 .skip:focus{top:8px;outline:2px solid #111;outline-offset:2px}
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .lp-panel{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
 #main:focus{outline:none}
 
-.bal{display:flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:10px;border:1px solid rgba(17,17,17,.22);background:rgba(17,17,17,.08);color:#111;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bal{display:flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:10px;border:1px solid rgba(17,17,17,.22);background:rgba(17,17,17,.08);color:var(--on-light);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bal b{font-weight:700}
 a.bal{text-decoration:none}
 a.bal:hover{background:rgba(17,17,17,.16)}
