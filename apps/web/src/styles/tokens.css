@@ -40,6 +40,13 @@
   --z-toast: 60;
   --z-skip: 70;
 
+  /* Surface claire (bandes de la page d'accueil) : texte tinté de la même teinte chaude, jamais gris neutre */
+  --paper: #f1eee8;
+  --paper-card: #fffefc;
+  --paper-ink: #17140f;     /* 15,9:1 sur --paper */
+  --paper-ink-2: #4f493f;   /* 7,7:1 */
+  --paper-ink-3: #5f584d;   /* 6,1:1, le plus clair admis pour du texte */
+
   /* Caractères : Archivo (condensé) pour les titres, Hanken Grotesk pour tout le reste */
   --font-body: 'Hanken Grotesk', Helvetica, sans-serif;
 }
