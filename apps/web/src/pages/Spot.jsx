@@ -23,6 +23,7 @@ import '../styles/video.css'
 import '../styles/library.css'
 import '../styles/edit-panel.css'
 import '../styles/spot.css'
+import Cauri from '../components/Cauri.jsx'
 
 const BLANK = { name: '', offer: '', price: '', whatsapp: '', tone: 'warm', lang: 'fr', voice: 'Rachel' }
 const LINE_LABELS = ['Accroche', 'Message', 'Appel à l’action']
@@ -294,7 +295,7 @@ export default function Spot() {
                 <button type="submit" className="gen">Continuer<span>{STEPS[step + 1].label}<Icon name="chevR" size={16} /></span></button>
               ) : (
                 <button type="submit" className="gen" disabled={short > 0}>
-                  {run?.status === 'done' ? 'Créer un autre spot' : 'Créer le spot'}<span><Icon name="sparkle" size={16} />{jetons(est.total)}</span>
+                  {run?.status === 'done' ? 'Créer un autre spot' : 'Créer le spot'}<span><Cauri size={18} />{jetons(est.total)}</span>
                 </button>
               )}
             </div>

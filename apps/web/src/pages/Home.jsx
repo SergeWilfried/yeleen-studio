@@ -9,6 +9,7 @@ import { RechargeButton } from '../lib/rechargeDialog.jsx'
 import { jetons } from '../lib/jobs.jsx'
 import { PREVIEW } from '../lib/templatePreviews.js'
 import { CONTACT, SOCIALS } from '../lib/contact.js'
+import Cauri, { Amount } from '../components/Cauri.jsx'
 import '../styles/home.css'
 
 // Crédit offert à l'inscription : à régler sur WELCOME_JETONS côté API (0 par défaut). Tant qu'il est à 0, la page n'en parle pas.
@@ -74,7 +75,7 @@ function Pack({ pack }) {
       </div>
       <small className="pn">≈ {Math.round(pack.fcfa / pack.jetons)} FCFA le cauri</small>
       <div className="jt">
-        <b>{fcfa(pack.jetons)} cauris</b>
+        <b><Amount n={pack.jetons} size={22} word /></b>
         <small>{usage(pack.jetons)}</small>
       </div>
       {/* Connecté : la fenêtre de recharge s'ouvre ici. Sinon, connexion d'abord, puis la fenêtre s'ouvre sur le studio. */}
@@ -96,7 +97,7 @@ function Model({ recipe, to }) {
         <span className="mi"><img src={PREVIEW[recipe.id].poster} alt="" width="320" height="320" loading="lazy" /></span>
         <b>{recipe.name}</b>
         <span className="mb">{recipe.blurb}</span>
-        <span className="mp"><b>{cauris(cost)}</b><small>{pack ? `dès ${fcfa(pack.fcfa)} FCFA` : 'plusieurs recharges'}</small></span>
+        <span className="mp"><b><Amount n={cost} word /></b><small>{pack ? `dès ${fcfa(pack.fcfa)} FCFA` : 'plusieurs recharges'}</small></span>
       </Link>
     </li>
   )
@@ -128,13 +129,13 @@ export default function Home() {
                 <Link className="lim big" to={start}>{startLabel}</Link>
                 <a className="ll" href="#buts">Voir les modèles</a>
               </div>
-              <small>{WELCOME > 0 ? `${cauris(WELCOME)} offerts à l’inscription. ` : ''}Compte gratuit, sans abonnement.</small>
+              <small>{WELCOME > 0 && <><Amount n={WELCOME} word /> offerts à l’inscription. </>}Compte gratuit, sans abonnement.</small>
             </div>
             <ul className="lm" aria-label="Exemples de modèles">
               {hero.map((r, i) => (
                 <li key={r.id}>
                   <img src={PREVIEW[r.id].poster} alt="" width="320" height="400" {...(i < 2 ? { fetchpriority: 'high' } : { loading: 'lazy' })} />
-                  <span><b>{r.name}</b>{cauris(recipeCost(r.id))}</span>
+                  <span><b>{r.name}</b><Amount n={recipeCost(r.id)} word /></span>
                 </li>
               ))}
             </ul>
@@ -152,7 +153,7 @@ export default function Home() {
                 <li key={g.id} className={`g-${g.id}`}>
                   <button type="button" onClick={() => pick(g.id)}>
                     <img src={PREVIEW[g.poster].poster} alt="" width="640" height="640" loading="lazy" />
-                    <span><b>{g.title}</b><small>{g.ids.length} modèle{g.ids.length > 1 ? 's' : ''} · dès {cauris(cheapest(g.ids))}</small></span>
+                    <span><b>{g.title}</b><small>{g.ids.length} modèle{g.ids.length > 1 ? 's' : ''} · dès <Amount n={cheapest(g.ids)} word /></small></span>
                   </button>
                 </li>
               ))}
@@ -177,6 +178,7 @@ export default function Home() {
 
         <div className="wrap">
           <section className="pricing" id="tarifs" aria-labelledby="pricing-title">
+            <span className="deco" aria-hidden="true"><Cauri className="d1" /><Cauri className="d2" /><Cauri className="d3" /></span>
             <div className="ph">
               <div>
                 <h2 id="pricing-title">Rechargez, créez</h2>
@@ -246,7 +248,7 @@ export default function Home() {
               )}
             </div>
           )}
-          <small>Paiement par Orange Money ou Moov Money · © {new Date().getFullYear()} Studio Yeelen</small>
+          <small>Paiement par Orange Money ou Moov Money · © {new Date().getFullYear()} Studio Yeelen · Cauri : <a href="https://www.vecteezy.com" target="_blank" rel="noopener noreferrer">Vecteezy.com<span className="sr-only"> (nouvel onglet)</span></a></small>
         </div>
       </footer>
     </div>

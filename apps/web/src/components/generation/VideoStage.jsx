@@ -6,6 +6,7 @@ import { MAX_PARALLEL, jetonLabel, useJobs } from '../../lib/jobs.jsx'
 import { useAssets } from '../../lib/assets.jsx'
 import SendToMenu from '../SendToMenu.jsx'
 import { AssetActions, FailureNotice, RefundNote, StatusChip, StatusLine, clamp, isActive, remaining, seconds } from './shared.jsx'
+import { Amount } from '../Cauri.jsx'
 
 const poster = (job) => gradient(vividIndex(job.seeds[0]), 'video')
 
@@ -122,7 +123,7 @@ export default function VideoStage({ jobs }) {
 
           <div className="vs-bot">
             {(job.status === 'IN_PROGRESS' || job.status === 'IN_QUEUE') && <Chapters job={job} />}
-            {job.status === 'COMPLETED' && !real && <p className="vs-done">{job.meta ? `${job.meta} · ` : ''}{jetonLabel(job.cost)}</p>}
+            {job.status === 'COMPLETED' && !real && <p className="vs-done">{job.meta ? `${job.meta} · ` : ''}<Amount n={job.cost} word /></p>}
           </div>
         </div>
       </div>

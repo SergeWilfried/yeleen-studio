@@ -13,6 +13,7 @@ import { KINDS } from '../lib/assets.jsx'
 import { useBrand } from '../lib/brand.jsx'
 import { DURATIONS, QUALITY, MODES, next } from '../lib/useGenSettings.js'
 import '../styles/edit-panel.css'
+import Cauri from './Cauri.jsx'
 
 /** Section à intitulé en petites capitales. */
 export function Section({ id, title, children }) {
@@ -278,7 +279,7 @@ export function GenerateBar({ s, title, meta, blocker, cost = s.cost, needsText 
       {error && <p className="ep-gerr" role="alert">{error}</p>}
       {/* {blocker && <p className="ep-ghint">{blocker}</p>} */}
       <button type="button" className="gen" disabled={(needsText && !s.ready) || Boolean(blocker)} onClick={onClick}>
-        Générer<span><Icon name="sparkle" size={16} />{jetons(price)}</span>
+        Générer<span><Cauri size={18} />{jetons(price)}</span>
       </button>
     </div>
   )

@@ -7,6 +7,7 @@ import { ATTACH_PATTERN } from '../../lib/mentions.js'
 import { jetons } from '../../lib/jobs.jsx'
 import { PREVIEW } from '../../lib/templatePreviews.js'
 import { RECIPES, recipeCost, recipeIssue } from '@studio/catalog/recipes'
+import Cauri from '../Cauri.jsx'
 
 const STEP_LABEL = { IN_QUEUE: 'En attente', IN_PROGRESS: 'En cours', COMPLETED: 'Terminé', FAILED: 'Échec', CANCELED: 'Annulé' }
 
@@ -61,7 +62,7 @@ export function RecipeCards({ value, onPick }) {
               <Preview id={e.id} />
               <b>{e.name}</b>
               <span className="rc-d">{e.blurb}</span>
-              <span className="rc-m"><Icon name="sparkle" size={13} />{jetons(recipeCost(e.id))}</span>
+              <span className="rc-m"><Cauri size={15} />{jetons(recipeCost(e.id))}</span>
             </button>
           </li>
         ))}
@@ -123,7 +124,7 @@ export function RecipeForm({ id, texts, onText, photos, onAdd, onRemove, onPick,
           {(error || issue) && <p className={`cn-hint${error ? ' bad' : ''}`} role={error ? 'alert' : 'status'}>{error || issue}</p>}
         </div>
         <button type="button" className="cn-gen" disabled={Boolean(issue)} onClick={onRun} title={issue ?? undefined}>
-          <b>Générer</b><span><Icon name="sparkle" size={14} />{jetons(cost)}</span>
+          <b>Générer</b><span><Cauri size={16} />{jetons(cost)}</span>
         </button>
         <div className="cn-bar">
           <div className="cn-pair">

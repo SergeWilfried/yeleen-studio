@@ -10,6 +10,7 @@ import {
   maskPhone, telHref, topupCountries, ussdCodes,
 } from '../lib/topups.js'
 import '../styles/recharge.css'
+import Cauri, { Amount } from './Cauri.jsx'
 
 /*
  * Recharge de cauris par Mobile Money (paygate, via l'API), dans une fenêtre, en quatre étapes : pack → opérateur → numéro → paiement.
@@ -68,7 +69,7 @@ function Stepper({ step, onGo }) {
 function Summary({ pack, operator, phone, country, step, onGo }) {
   const c = TOPUP_COUNTRIES[country]
   const items = [
-    step > 0 && { k: 0, label: 'Pack', value: `${jetons(pack.jetons)} cauris · ${fcfa(pack.fcfa)}` },
+    step > 0 && { k: 0, label: 'Pack', value: <><Amount n={pack.jetons} word /> · {fcfa(pack.fcfa)}</> },
     step > 1 && operator && { k: 1, label: 'Opérateur', value: `${OPERATORS[operator]}${COUNTRY_LIST.length > 1 ? ` · ${COUNTRIES[country]}` : ''}` },
     step > 2 && phone && { k: 2, label: 'Numéro', value: `+${c.dial} ${localNumber(phone, c)}` },
   ].filter(Boolean)
@@ -111,7 +112,7 @@ function Waiting({ topup }) {
     return (
       <div className="rc-result ok" role="status">
         <span className="rc-mark"><Icon name="check" size={22} /></span>
-        <b>Recharge réussie : +{jetonLabel(topup.jetons)}</b>
+        <b>Recharge réussie : +<Amount n={topup.jetons} word /></b>
         <p>{topup.late ? 'Le paiement a été confirmé en retard, mais il est bien crédité. ' : ''}Vos cauris sont disponibles tout de suite.</p>
       </div>
     )
@@ -146,7 +147,7 @@ function History({ items, onOpen }) {
       {items.map((t) => (
         <li key={t.reference}>
           <div>
-            <b>+{jetonLabel(t.jetons)}</b>
+            <b>+<Amount n={t.jetons} word /></b>
             <span>{fcfa(t.amountFcfa)} · {OPERATORS[t.operator] ?? t.operator} <span className="rc-nw">{maskPhone(t.phone)}</span></span>
             <small>{new Date(t.createdAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}{t.late ? ' · confirmée en retard' : ''}</small>
           </div>
@@ -318,7 +319,7 @@ export default function RechargeDialog({ open, request, onClose }) {
             <label key={p.id} className={`rc-pack${pack === p.id ? ' on' : ''}`}>
               <input type="radio" name="pack" value={p.id} checked={pack === p.id} onChange={() => setPack(p.id)} />
               {p.id === BEST && <em>Meilleur prix</em>}
-              <span className="rc-qty"><b>{jetons(p.jetons)}</b> cauris</span>
+              <span className="rc-qty"><Cauri size={30} /><b>{jetons(p.jetons)}</b> cauris</span>
               <span className="rc-price"><strong>{fcfa(p.fcfa)}</strong><small>≈ {perJeton(p)} FCFA le cauri</small></span>
             </label>
           ))}
@@ -406,7 +407,7 @@ export default function RechargeDialog({ open, request, onClose }) {
       <header className="rc-top">
         <div>
           <h2 id="rc-title">Recharger</h2>
-          <p>Solde : <b>{jetonLabel(balance)}</b></p>
+          <p>Solde : <b><Amount n={balance} word /></b></p>
         </div>
         <button type="button" className="rc-x" onClick={onClose} aria-label="Fermer"><Icon name="close" size={18} /></button>
       </header>

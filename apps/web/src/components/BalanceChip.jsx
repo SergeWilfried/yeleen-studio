@@ -1,6 +1,6 @@
-import Icon from '../lib/icons.jsx'
 import { jetons, useJobs } from '../lib/jobs.jsx'
 import { useRecharge } from '../lib/rechargeDialog.jsx'
+import Cauri from './Cauri.jsx'
 
 /** Solde de cauris et nombre de générations en cours, visibles depuis tous les outils. Ouvre la recharge. */
 export default function BalanceChip() {
@@ -9,7 +9,7 @@ export default function BalanceChip() {
   const busy = running + queued
   return (
     <button type="button" className="bal" aria-haspopup="dialog" onClick={() => openRecharge()} aria-label={`Solde : ${jetons(balance)} cauris${busy ? `, ${busy} génération${busy > 1 ? 's' : ''} en cours` : ''}. Recharger`}>
-      <Icon name="sparkle" size={14} />
+      <Cauri size={16} />
       <b>{jetons(balance)}</b>
       {busy > 0 && <span className="bal-busy"><i />{busy} en cours</span>}
     </button>
