@@ -97,6 +97,15 @@
 .home .ft nav{display:flex;flex-direction:column;align-items:flex-start;gap:0}
 .home .ft nav a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink-2)}
 .home .ft nav a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.home .fti.has-contact{grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) minmax(0,1.1fr)}
+.home .ftc{display:flex;flex-direction:column;gap:20px}
+.home .ftc>div{display:flex;flex-direction:column;align-items:flex-start}
+.home .ftc b{margin-bottom:2px;font-size:13px;font-weight:600;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
+.home .ftc>div>a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink-2);overflow-wrap:anywhere}
+.home .ftc>div>a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.home .soc{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px}
+.home .soc a{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;color:var(--ink-2);transition:background-color .15s,color .15s}
+.home .soc a:hover{background:var(--fill);color:var(--ink)}
 .home .ft small{grid-column:1/-1;padding-top:20px;border-top:1px solid var(--fill);font-size:13px;color:var(--ink-4)}
 
 /* Tablette et téléphone */
@@ -131,12 +140,13 @@
 .home .mb{font-size:13px}
 .home .lend{padding:40px 16px}
 .home .pricing,.home .lend,.home .faq,.home .ft{margin-top:56px}
-.home .fti{grid-template-columns:1fr}
+.home .fti,.home .fti.has-contact{grid-template-columns:1fr}
 }
 @media (pointer:coarse){
 .home .pb,.home .lim,.home .nl{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 }
-@media (prefers-reduced-motion:reduce){.home .md,.home .chips button,.home .goals img{transition:none}.home .goals button:hover img{transform:none}}
+@media (max-width:900px){.home .fti.has-contact{grid-template-columns:repeat(2,minmax(0,1fr))}.home .fti.has-contact .ftb{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){.home .soc a,.home .md,.home .chips button,.home .goals img{transition:none}.home .goals button:hover img{transform:none}}
 
 /* Pricing */
 .home .pricing{scroll-margin-top:88px}

@@ -8,6 +8,7 @@ import { useAuthState } from '../lib/auth.jsx'
 import { RechargeButton } from '../lib/rechargeDialog.jsx'
 import { jetons } from '../lib/jobs.jsx'
 import { PREVIEW } from '../lib/templatePreviews.js'
+import { CONTACT, SOCIALS } from '../lib/contact.js'
 import '../styles/home.css'
 
 // Crédit offert à l'inscription : à régler sur WELCOME_JETONS côté API (0 par défaut). Tant qu'il est à 0, la page n'en parle pas.
@@ -107,6 +108,7 @@ export default function Home() {
   const [goal, setGoal] = useState('all')
   const start = signedIn ? '/cinema' : '/sign-up'
   const startLabel = signedIn ? 'Ouvrir le studio' : 'Créer mon compte'
+  const hasContact = Boolean(CONTACT.email || CONTACT.whatsapp || SOCIALS.length)
   const hero = HERO_IDS.map((id) => RECIPES.find((r) => r.id === id))
   const shown = goal === 'all' ? RECIPES : RECIPES.filter((r) => GOALS.find((g) => g.id === goal).ids.includes(r.id))
   const pick = (id) => { setGoal(id); document.getElementById('modeles')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }) }
@@ -207,7 +209,7 @@ export default function Home() {
       </main>
 
       <footer className="ft">
-        <div className="wrap fti">
+        <div className={`wrap fti${hasContact ? ' has-contact' : ''}`}>
           <div className="ftb">
             <b>Studio Yeelen</b>
             <p>Des vidéos, des images et des voix par l’IA, pour les créateurs d’Afrique francophone.</p>
@@ -219,6 +221,31 @@ export default function Home() {
             {!signedIn && <Link to="/sign-in">Connexion</Link>}
             <Link to={start}>{startLabel}</Link>
           </nav>
+          {hasContact && (
+            <div className="ftc">
+              {(CONTACT.email || CONTACT.whatsapp) && (
+                <div>
+                  <b>Contact professionnel</b>
+                  {CONTACT.email && <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>}
+                  {CONTACT.whatsapp && <a href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noopener noreferrer">WhatsApp Business<span className="sr-only"> (nouvel onglet)</span></a>}
+                </div>
+              )}
+              {SOCIALS.length > 0 && (
+                <div>
+                  <b>Suivez-nous</b>
+                  <ul className="soc">
+                    {SOCIALS.map((n) => (
+                      <li key={n.name}>
+                        <a href={n.href} target="_blank" rel="noopener noreferrer" aria-label={`${n.name} (nouvel onglet)`}>
+                          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d={n.path} /></svg>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
           <small>Paiement par Orange Money ou Moov Money · © {new Date().getFullYear()} Studio Yeelen</small>
         </div>
       </footer>
