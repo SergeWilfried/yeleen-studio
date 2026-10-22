@@ -40,6 +40,7 @@ dialog.am-dlg::backdrop{background:rgba(0,0,0,.66)}
 .am-cell:hover .am-fav,.am-fav:focus-visible,.am-fav.on{opacity:1}
 .am-fav.on{color:var(--lime)}
 .am-fav:hover{background:rgba(0,0,0,.75)}
+.am-fav::after{content:'';position:absolute;inset:-8px} /* l'étoile reste à 28 px ; la zone tactile fait 44 px */
 @media (hover:none){.am-fav{opacity:1}}
 .am-tag{position:absolute;left:8px;bottom:30px;padding:0 7px;border-radius:999px;background:rgba(0,0,0,.6);color:var(--ink);font-size:11px;font-weight:700;line-height:18px;pointer-events:none}
 .am-retry{margin-left:6px;padding:0;border:0;background:none;color:var(--lime);font:inherit;text-decoration:underline;cursor:pointer}
