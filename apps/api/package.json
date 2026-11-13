@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@studio/catalog": "workspace:*",
-    "hono": "^4.6.0"
+    "hono": "^4.13.16"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
